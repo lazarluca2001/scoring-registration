@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nevezés</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#f5f7fb; --surface:#ffffff; --ink:#0b1633; --soft:#5d6a86; --rule:#dfe5f0;
+    --accent:#1e4fd8; --accent-2:#6f97ff; --on-accent:#ffffff; --ok:#16855a; --err:#c62f3b;
+    --glow:rgba(30,79,216,.08);
+  }
+  :root[data-theme="dark"] {
+    --bg:#070e22; --surface:#0d1833; --ink:#eef3ff; --soft:#8a98b8; --rule:#1f2c4d;
+    --accent:#8fb2ff; --accent-2:#3e6ae0; --on-accent:#07102a; --ok:#5fd39b; --err:#ff7a84;
+    --glow:rgba(111,151,255,.14);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#070e22; --surface:#0d1833; --ink:#eef3ff; --soft:#8a98b8; --rule:#1f2c4d;
+      --accent:#8fb2ff; --accent-2:#3e6ae0; --on-accent:#07102a; --ok:#5fd39b; --err:#ff7a84;
+      --glow:rgba(111,151,255,.14);
+    }
+  }
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; }
+  body { margin:0; color:var(--ink); min-height:100vh; font:16px/1.55 Inter, system-ui, sans-serif;
+         background:radial-gradient(1000px 600px at 85% -10%, var(--glow), transparent 60%), var(--bg);
+         background-attachment:fixed; transition:background-color .3s, color .3s; }
+
+  .wrap { max-width:520px; margin:0 auto; padding:40px 16px 64px; }
+  .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:44px; }
+  .eyebrow { font:600 .72rem Montserrat, sans-serif; letter-spacing:.22em; text-transform:uppercase; color:var(--accent); }
+  .theme { background:none; border:1px solid var(--rule); color:var(--soft); width:36px; height:36px; border-radius:50%;
+           display:grid; place-items:center; cursor:pointer; padding:0; }
+  .theme:hover { color:var(--ink); border-color:var(--soft); }
+  .theme svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; }
+  .theme .sun { display:none; }
+  :root[data-theme="dark"] .theme .sun { display:block; } :root[data-theme="dark"] .theme .moon { display:none; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .theme .sun { display:block; }
+                                         :root:not([data-theme="light"]) .theme .moon { display:none; } }
+
+  h1 { font:800 clamp(2.1rem, 8vw, 3rem)/1 Montserrat, sans-serif; text-transform:uppercase; letter-spacing:-.01em; margin:0; }
+  .sub { color:var(--soft); margin:10px 0 0; font-size:.95rem; }
+
+  /* Lépésjelző */
+  .progress { display:flex; align-items:center; gap:12px; margin:36px 0 32px; font:600 .72rem Montserrat, sans-serif;
+              letter-spacing:.14em; text-transform:uppercase; color:var(--soft); }
+  .progress .p { display:flex; align-items:center; gap:8px; transition:color .2s; white-space:nowrap; }
+  .progress .p b { font-weight:700; }
+  .progress .p.on { color:var(--ink); }
+  .progress .p.on b { color:var(--accent); }
+  .progress .line { flex:1; height:2px; background:var(--rule); position:relative; overflow:hidden; border-radius:2px; }
+  .progress .line i { position:absolute; inset:0; background:linear-gradient(90deg, var(--accent-2), var(--accent));
+                      transform:scaleX(0); transform-origin:left; transition:transform .45s ease; }
+
+  /* Mezők */
+  .field { margin-bottom:22px; }
+  .field label { display:block; font:600 .7rem Montserrat, sans-serif; letter-spacing:.14em; text-transform:uppercase;
+                 color:var(--soft); margin-bottom:8px; }
+  .field input[type=text], .field input[type=number] {
+    width:100%; padding:14px 16px; font:500 1.05rem Inter, sans-serif; color:var(--ink);
+    background:var(--surface); border:1px solid var(--rule); border-radius:10px; outline:none;
+    transition:border-color .2s, box-shadow .2s; -moz-appearance:textfield; }
+  .field input::-webkit-outer-spin-button, .field input::-webkit-inner-spin-button { -webkit-appearance:none; }
+  .field input:focus { border-color:var(--accent); box-shadow:0 0 0 4px var(--glow); }
+  .field input:disabled { color:var(--soft); background:transparent; }
+  .field input::placeholder { color:var(--soft); opacity:.5; }
+  .hint { font-size:.8rem; color:var(--soft); margin-top:8px; }
+  .names { display:grid; grid-template-columns:1fr 1fr; gap:0 14px; }
+  @media (max-width:420px) { .names { grid-template-columns:1fr; } }
+
+  .toggle { display:inline-flex; align-items:center; gap:10px; cursor:pointer; font-size:.92rem; margin:2px 0 26px; }
+  .toggle input { position:absolute; opacity:0; }
+  .toggle .sw { width:36px; height:20px; border-radius:10px; background:var(--rule); position:relative; transition:background .2s; flex:none; }
+  .toggle .sw::after { content:""; position:absolute; top:3px; left:3px; width:14px; height:14px; border-radius:50%;
+                       background:var(--surface); transition:transform .2s; }
+  .toggle input:checked + .sw { background:var(--accent); }
+  .toggle input:checked + .sw::after { transform:translateX(16px); background:var(--on-accent); }
+  .toggle input:focus-visible + .sw { outline:2px solid var(--accent); outline-offset:2px; }
+
+  .divider { border:0; border-top:1px solid var(--rule); margin:0 0 26px; }
+
+  /* Divíziók */
+  .who { font:700 1.35rem Montserrat, sans-serif; margin:0 0 4px; }
+  .who small { font:500 .85rem Inter, sans-serif; color:var(--soft); margin-left:8px; }
+  .lead { color:var(--soft); margin:0 0 28px; font-size:.92rem; }
+  .group { margin-bottom:26px; }
+  .group h3 { font:600 .7rem Montserrat, sans-serif; letter-spacing:.18em; text-transform:uppercase; color:var(--soft); margin:0 0 12px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip { position:relative; cursor:pointer; user-select:none; }
+  .chip input { position:absolute; opacity:0; }
+  .chip span { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; background:var(--surface);
+               border:1px solid var(--rule); border-radius:10px; font-size:.9rem; font-weight:500;
+               transition:background .15s, color .15s, border-color .15s; }
+  .chip span::before { content:""; width:8px; height:8px; border-radius:50%; border:1.5px solid var(--soft); transition:.15s; }
+  .chip:hover span { border-color:var(--accent); }
+  .chip input:checked + span { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+  .chip input:checked + span::before { background:var(--on-accent); border-color:var(--on-accent); }
+  .chip input:focus-visible + span { outline:2px solid var(--accent); outline-offset:3px; }
+  .empty { color:var(--soft); }
+
+  /* Gombok */
+  .actions { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:10px; }
+  button { font:600 .95rem Inter, sans-serif; cursor:pointer; border:0; transition:transform .1s, opacity .2s, background .2s; }
+  button:active { transform:translateY(1px); }
+  .primary { background:var(--accent); color:var(--on-accent); padding:15px 26px; border-radius:10px;
+             font-family:Montserrat, sans-serif; letter-spacing:.06em; text-transform:uppercase; font-size:.82rem; }
+  .primary:hover { filter:brightness(1.08); }
+  .primary:disabled { opacity:.35; cursor:default; filter:none; }
+  .link { background:none; color:var(--soft); padding:8px 0; }
+  .link:hover { color:var(--ink); }
+
+  .msg { min-height:1.4em; font-size:.88rem; margin:12px 0 0; }
+  .ok { color:var(--ok); } .err { color:var(--err); }
+  .hp { position:absolute; left:-9999px; }
+  [hidden] { display:none !important; }
+
+  /* Kész */
+  .done h2 { font:800 2rem/1.05 Montserrat, sans-serif; text-transform:uppercase; margin:0 0 14px; }
+  .done h2 em { font-style:normal; color:var(--accent); }
+  .done p { color:var(--soft); margin:0 0 28px; }
+
+  section { animation:in .35s ease both; }
+  @keyframes in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce) { section { animation:none; } * { transition:none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="eyebrow">West Coast Swing</div>
+    <button class="theme" id="tema" aria-label="Világos / sötét mód">
+      <svg class="moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </div>
+  <h1 id="cim">Nevezés</h1>
+  <p class="sub">Regisztrálj a versenyre két egyszerű lépésben.</p>
+
+  <div class="progress" aria-hidden="true">
+    <div class="p on" id="s1"><b>01</b> Adatok</div>
+    <div class="line"><i id="bar"></i></div>
+    <div class="p" id="s2"><b>02</b> Divíziók</div>
+  </div>
+
+  <!-- 1. lépés -->
+  <section id="lepes1">
+    <div class="field">
+      <label for="wsdc">WSDC azonosító</label>
+      <input type="number" id="wsdc" inputmode="numeric" placeholder="pl. 12345">
+      <div class="hint">Ha már versenyeztél, a neved automatikusan kitöltődik.</div>
+    </div>
+
+    <label class="toggle">
+      <input type="checkbox" id="nincs"><span class="sw"></span> Még nincs WSDC azonosítóm
+    </label>
+
+    <hr class="divider">
+
+    <div class="names">
+      <div class="field">
+        <label for="kn">Keresztnév</label>
+        <input type="text" id="kn" autocomplete="given-name" disabled>
+      </div>
+      <div class="field">
+        <label for="vn">Vezetéknév</label>
+        <input type="text" id="vn" autocomplete="family-name" disabled>
+      </div>
+    </div>
+    <input type="text" id="web" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+    <div class="actions">
+      <span></span>
+      <button class="primary" id="tovabb">Tovább →</button>
+    </div>
+    <p class="msg" id="msg1" role="status"></p>
+  </section>
+
+  <!-- 2. lépés -->
+  <section id="lepes2" hidden>
+    <p class="who" id="who"></p>
+    <p class="lead">Csak azok a divíziók látszanak, amelyekben indulhatsz. Válassz egyet vagy többet.</p>
+    <div id="divlist"></div>
+
+    <div class="actions">
+      <button class="link" id="vissza">← Vissza</button>
+      <button class="primary" id="kuld" disabled>Nevezés elküldése</button>
+    </div>
+    <p class="msg" id="msg2" role="status"></p>
+  </section>
+
+  <!-- Kész -->
+  <section id="kesz" class="done" hidden>
+    <h2>Köszönjük!<br><em>Találkozunk a parketten.</em></h2>
+    <p id="keszSzoveg"></p>
+    <button class="primary" id="ujra">Új nevezés</button>
+  </section>
+</div>
+
+<script>
+// ====== BEÁLLÍTÁSOK ======
+const SCRIPT_URL = 'https://script.google.com/macros/s/IDE_JON_A_DEPLOYMENT_ID/exec';
+const VERSENY_NEV = 'Nevezés';
+// =========================
+
+const $ = id => document.getElementById(id);
+const msg = (el, t, cls) => { $(el).textContent = t || ''; $(el).className = 'msg ' + (cls || ''); };
+let adat = null; // { wsdc, keresztnev, vezeteknev, diviziok }
+
+// Világos / sötét mód váltó (a választás megmarad)
+(() => {
+  const root = document.documentElement;
+  try { const t = localStorage.getItem('tema'); if (t) root.dataset.theme = t; } catch {}
+  $('tema').addEventListener('click', () => {
+    const sotet = root.dataset.theme ? root.dataset.theme === 'dark'
+                : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = sotet ? 'light' : 'dark';
+    try { localStorage.setItem('tema', root.dataset.theme); } catch {}
+  });
+})();
+
+if (VERSENY_NEV) { $('cim').textContent = VERSENY_NEV; document.title = VERSENY_NEV; }
+
+$('nincs').addEventListener('change', () => {
+  const n = $('nincs').checked;
+  $('wsdc').disabled = n; if (n) $('wsdc').value = '';
+  $('kn').disabled = $('vn').disabled = !n;
+  if (!n) { $('kn').value = $('vn').value = ''; } else { $('kn').focus(); }
+  adat = null;
+  msg('msg1');
+});
+
+let idoz;
+$('wsdc').addEventListener('input', () => {
+  clearTimeout(idoz);
+  adat = null; $('kn').value = $('vn').value = '';
+  const id = $('wsdc').value.trim();
+  if (!id) return msg('msg1');
+  idoz = setTimeout(() => lekerdez(id), 600);
+});
+
+async function lekerdez(id) {
+  msg('msg1', 'Keresés a WSDC adatbázisban…');
+  try {
+    const r = await fetch(SCRIPT_URL + '?wsdc=' + encodeURIComponent(id));
+    const v = await r.json();
+    if ($('wsdc').value.trim() !== id) return;
+    if (!v.ok) { adat = null; return msg('msg1', v.hiba, 'err'); }
+    $('kn').value = v.keresztnev; $('vn').value = v.vezeteknev;
+    adat = { wsdc: id, keresztnev: v.keresztnev, vezeteknev: v.vezeteknev, diviziok: v.diviziok };
+    msg('msg1', 'Megtaláltunk!', 'ok');
+  } catch {
+    msg('msg1', 'Hálózati hiba, próbáld újra.', 'err');
+  }
+}
+
+$('tovabb').addEventListener('click', async () => {
+  if ($('nincs').checked) {
+    const kn = $('kn').value.trim(), vn = $('vn').value.trim();
+    if (!kn || !vn) return msg('msg1', 'Add meg a keresztneved és a vezetékneved.', 'err');
+    $('tovabb').disabled = true;
+    msg('msg1', 'Divíziók betöltése…');
+    try {
+      const v = await (await fetch(SCRIPT_URL)).json();
+      if (!v.ok) return msg('msg1', v.hiba, 'err');
+      adat = { wsdc: '', keresztnev: kn, vezeteknev: vn, diviziok: v.diviziok };
+    } catch { return msg('msg1', 'Hálózati hiba, próbáld újra.', 'err'); }
+    finally { $('tovabb').disabled = false; }
+  } else {
+    const id = $('wsdc').value.trim();
+    if (!id) return msg('msg1', 'Add meg a WSDC azonosítód, vagy kapcsold be, hogy még nincs.', 'err');
+    if (!adat || adat.wsdc !== id) { await lekerdez(id); if (!adat) return; }
+  }
+  msg('msg1');
+  mutat2();
+});
+
+// Divíziók csoportosítása név alapján
+function csoport(nev) {
+  if (/strictly/i.test(nev)) return 'Strictly';
+  if (/jack\s*&?\s*jill|j&j/i.test(nev)) return 'Jack & Jill';
+  return 'Egyéb';
+}
+
+function mutat2() {
+  $('who').innerHTML = '';
+  $('who').append(adat.keresztnev + ' ' + adat.vezeteknev);
+  if (adat.wsdc) { const s = document.createElement('small'); s.textContent = '#' + adat.wsdc; $('who').append(s); }
+
+  const lista = $('divlist');
+  lista.innerHTML = '';
+  if (!adat.diviziok.length) {
+    lista.innerHTML = '<p class="empty">Ezen a versenyen most nincs olyan divízió, amelyben indulhatsz.</p>';
+  }
+  const csoportok = {};
+  adat.diviziok.forEach(d => (csoportok[csoport(d.nev)] ||= []).push(d));
+  ['Jack & Jill', 'Strictly', 'Egyéb'].filter(c => csoportok[c]).forEach(c => {
+    const g = document.createElement('div'); g.className = 'group';
+    const h = document.createElement('h3'); h.textContent = c;
+    const w = document.createElement('div'); w.className = 'chips';
+    csoportok[c].forEach(d => {
+      const l = document.createElement('label'); l.className = 'chip';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = d.nev;
+      cb.addEventListener('change', frissit);
+      const s = document.createElement('span'); s.textContent = d.nev;
+      l.append(cb, s); w.append(l);
+    });
+    g.append(h, w); lista.append(g);
+  });
+  frissit();
+  lepes(2);
+}
+
+function frissit() {
+  const n = document.querySelectorAll('#divlist input:checked').length;
+  $('kuld').disabled = !n;
+  $('kuld').textContent = n ? `Nevezés elküldése (${n})` : 'Nevezés elküldése';
+}
+
+function lepes(n) {
+  $('lepes1').hidden = n !== 1;
+  $('lepes2').hidden = n !== 2;
+  $('kesz').hidden = n !== 3;
+  $('s1').classList.toggle('on', n >= 1);
+  $('s2').classList.toggle('on', n >= 2);
+  $('bar').style.transform = `scaleX(${n === 1 ? 0 : 1})`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+$('vissza').addEventListener('click', () => { msg('msg2'); lepes(1); });
+
+$('kuld').addEventListener('click', async () => {
+  if ($('web').value) return; // spam-csapda
+  const diviziok = [...document.querySelectorAll('#divlist input:checked')].map(c => c.value);
+  $('kuld').disabled = true;
+  msg('msg2', 'Küldés…');
+  try {
+    const r = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ wsdc: adat.wsdc, keresztnev: adat.keresztnev, vezeteknev: adat.vezeteknev, diviziok })
+    });
+    const v = await r.json();
+    if (!v.ok) { frissit(); return msg('msg2', v.hiba, 'err'); }
+    let t = '';
+    if (v.hozzaadva.length) t += 'Rögzítettük: ' + v.hozzaadva.join(', ') + '. ';
+    if (v.marNevezett.length) t += 'Ezekre már korábban neveztél: ' + v.marNevezett.join(', ') + '.';
+    $('keszSzoveg').textContent = t.trim();
+    msg('msg2');
+    lepes(3);
+  } catch {
+    frissit();
+    msg('msg2', 'Hálózati hiba, próbáld újra.', 'err');
+  }
+});
+
+$('ujra').addEventListener('click', () => {
+  adat = null;
+  $('wsdc').value = $('kn').value = $('vn').value = '';
+  $('nincs').checked = false;
+  $('nincs').dispatchEvent(new Event('change'));
+  lepes(1);
+});
+</script>
+</body>
+</html>

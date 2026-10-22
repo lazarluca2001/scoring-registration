@@ -215,6 +215,7 @@
         <label class="chk"><input type="checkbox" id="csakVegl" checked> Csak véglegesítettek</label>
         <button class="btn" id="csvOssz">CSV</button>
         <button class="btn" id="xlsxOssz">XLSX</button>
+        <button class="btn" id="appExport" title="Csak a véglegesített versenyzők, a pontozó app formátumában (Rajtszám, Név, Szerep, Divízió)">App export</button>
       </div>
       <div class="stats">
         <div><b id="stNev">0</b><span>nevezés</span></div>
@@ -658,6 +659,52 @@ $('xlsxOssz').addEventListener('click', () => {
     lap(l, n);
   });
   XLSX.writeFile(wb, fajlnev('osszes') + '.xlsx');
+});
+
+// ---- Export a pontozó appnak ----
+// Az app csak hibátlan fájlt fogad el: minden sorban egész bib, Leader/Follower szerep,
+// a divízió neve szerep nélkül, és egy divízión belül nincs két azonos bib.
+const kulcsSzo = t => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+const APP_SZEREP = { leader: 'Leader', lead: 'Leader', l: 'Leader', vezeto: 'Leader',
+                     follower: 'Follower', follow: 'Follower', f: 'Follower', koveto: 'Follower' };
+const SZEREP_VEG = /[\s\-–(]*(leaders?|followers?|lead|follow|vezető|követő)\)?\s*$/i;
+
+function appExportAdat() {
+  const divInfo = new Map(adat.diviziok.map(d => [d.nev, d]));
+  const sorok = [], kihagyott = [], hibak = [];
+  adat.sorok.filter(s => s.vegleges).forEach(s => {
+    const d = divInfo.get(s.divizio);
+    const nev = (s.vezeteknev + ' ' + s.keresztnev).trim();
+    const szerep = APP_SZEREP[kulcsSzo(s.szerep || (d && d.szerep))];
+    if (!szerep) { kihagyott.push(nev + ' – ' + s.divizio); return; }
+    const bib = String(s.bib ?? '').trim();
+    if (!/^\d+$/.test(bib)) { hibak.push(`${nev} (${s.divizio}): a bib „${bib}” nem szám`); return; }
+    const divizio = ((d && d.alap && d.alap !== d.nev) ? d.alap : s.divizio.replace(SZEREP_VEG, '')).trim() || s.divizio;
+    sorok.push({ bib: parseInt(bib, 10), nev, szerep, divizio });
+  });
+  const egyezes = new Map();
+  sorok.forEach(r => { const k = r.divizio + '\u0000' + r.bib; egyezes.set(k, [...(egyezes.get(k) || []), r]); });
+  egyezes.forEach(l => {
+    if (l.length > 1) hibak.push(`${l[0].divizio}: a ${l[0].bib}-es bib többször szerepel (${l.map(r => r.nev + ', ' + r.szerep).join('; ')})`);
+  });
+  sorok.sort((a, b) => a.divizio.localeCompare(b.divizio, 'hu') || a.bib - b.bib);
+  return { sorok, kihagyott, hibak };
+}
+
+function appCsv(sorok) {
+  const esc = v => { v = String(v); return /[";\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  return '﻿' + [['Rajtszám', 'Név', 'Szerep', 'Divízió'], ...sorok.map(r => [r.bib, r.nev, r.szerep, r.divizio])]
+    .map(r => r.map(esc).join(';')).join('\r\n');
+}
+
+$('appExport').addEventListener('click', () => {
+  const { sorok, kihagyott, hibak } = appExportAdat();
+  if (hibak.length) return msg('msgPanel', 'Az app nem tudná beolvasni, előbb javítsd: ' + hibak.join(' | '));
+  if (!sorok.length) return msg('msgPanel', 'Nincs véglegesített, bib számmal rendelkező Leader/Follower nevezés.');
+  letolt(appCsv(sorok), fajlnev('app') + '.csv', 'text/csv');
+  msg('msgPanel', sorok.length + ' nevezés exportálva.' + (kihagyott.length
+    ? ' Kihagyva, mert nincs Leader/Follower szerepük (az app nem kezeli): ' + kihagyott.join('; ') : ''),
+    kihagyott.length ? 'info' : 'ok');
 });
 
 // ======================================================================

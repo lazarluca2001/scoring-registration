@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Nevezések – admin</title>
+<title>Admin – Nevezések</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,90 +12,155 @@
 <style>
   :root {
     --bg:#eef1f6; --head:#0b1a45; --head-ink:#fff; --card:#fff; --ink:#111a33; --soft:#7a849b;
-    --line:#dfe3ec; --accent:#1d4ed8; --on-accent:#fff; --sel:#eaf0ff; --err:#d23a46; --zebra:#f7f9fc;
-  }
-  :root[data-theme="dark"] {
-    --bg:#070d1f; --head:#0f1f52; --card:#0e1730; --ink:#e9eefb; --soft:#7e8bab;
-    --line:#1e2a4a; --accent:#8db0ff; --on-accent:#081233; --sel:#15254d; --err:#ff8089; --zebra:#111c38;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg:#070d1f; --head:#0f1f52; --card:#0e1730; --ink:#e9eefb; --soft:#7e8bab;
-      --line:#1e2a4a; --accent:#8db0ff; --on-accent:#081233; --sel:#15254d; --err:#ff8089; --zebra:#111c38;
-    }
+    --line:#dfe3ec; --accent:#1d4ed8; --on-accent:#fff; --sel:#eaf0ff; --err:#d23a46; --ok:#15803d; --zebra:#f7f9fc;
   }
   * { box-sizing:border-box; margin:0; }
   body { background:var(--bg); color:var(--ink); font:15px/1.5 Inter, system-ui, sans-serif; min-height:100vh; }
+  svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
 
-  header { background:var(--head); color:var(--head-ink); padding:36px 16px 92px; text-align:center; position:relative; }
-  header h1 { font-weight:600; font-size:clamp(1.5rem, 4vw, 2.2rem); }
-  .tema { position:absolute; top:12px; right:12px; width:36px; height:36px; border:0; border-radius:50%;
-          background:transparent; color:rgba(255,255,255,.75); cursor:pointer; display:grid; place-items:center; }
-  .tema:hover { background:rgba(255,255,255,.12); color:#fff; }
-  svg.i { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-  .sun { display:none; }
-  :root[data-theme="dark"] .sun { display:block; } :root[data-theme="dark"] .moon { display:none; }
-  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sun { display:block; }
-                                        :root:not([data-theme="light"]) .moon { display:none; } }
-
-  main { position:relative; z-index:1; max-width:1000px; margin:-64px auto 48px; padding:0 16px; }
+  header { background:var(--head); color:var(--head-ink); padding:32px 16px 92px; text-align:center; }
+  header h1 { font-weight:600; font-size:clamp(1.5rem, 4vw, 2.1rem); }
+  main { position:relative; z-index:1; max-width:1040px; margin:-64px auto 48px; padding:0 16px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:10px; box-shadow:0 10px 30px rgba(11,26,69,.08); }
   .pad { padding:24px; }
+  [hidden] { display:none !important; }
 
-  /* Belépés */
-  .login { max-width:400px; margin:0 auto; }
-  label.f { display:block; font-size:.9rem; font-weight:500; margin-bottom:6px; }
-  input[type=password], input[type=search] {
-    width:100%; height:44px; padding:0 14px; font:inherit; color:var(--ink); background:var(--card);
+  /* Űrlapelemek */
+  label.f { display:block; font-size:.85rem; font-weight:500; margin-bottom:6px; }
+  input[type=text], input[type=password], input[type=search], select {
+    width:100%; height:42px; padding:0 12px; font:inherit; color:var(--ink); background:var(--card);
     border:1px solid var(--line); border-radius:6px; outline:none; }
-  input:focus { border-color:var(--accent); }
-  .msg { min-height:22px; margin-top:12px; font-size:.88rem; color:var(--err); }
-  .msg.info { color:var(--soft); }
+  input:focus, select:focus { border-color:var(--accent); }
+  .grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
+  .grid .full { grid-column:1 / -1; }
+  @media (max-width:700px) { .grid { grid-template-columns:1fr; } }
+  .msg { min-height:20px; font-size:.88rem; color:var(--err); }
+  .msg.info { color:var(--soft); } .msg.ok { color:var(--ok); }
 
   .btn { height:40px; padding:0 16px; border:0; border-radius:6px; background:var(--accent); color:var(--on-accent);
-         font:600 .9rem Inter, sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
-  .btn.full { width:100%; height:44px; justify-content:center; margin-top:16px; }
+         font:600 .88rem Inter, sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
   .btn.ghost { background:transparent; color:var(--ink); border:1px solid var(--line); }
   .btn.ghost:hover { border-color:var(--accent); }
-  .btn.sm { height:32px; padding:0 10px; font-size:.82rem; }
+  .btn.danger { background:transparent; color:var(--err); border:1px solid var(--line); }
+  .btn.danger:hover { border-color:var(--err); }
+  .btn.sm { height:30px; padding:0 10px; font-size:.8rem; }
+  .btn.full { width:100%; justify-content:center; height:44px; }
   .btn:disabled { opacity:.4; cursor:default; }
+  .ib { width:30px; height:30px; display:inline-grid; place-items:center; border:0; border-radius:6px; background:transparent;
+        color:var(--soft); cursor:pointer; }
+  .ib:hover { background:var(--sel); color:var(--accent); }
+  .ib.del:hover { background:#fdecee; color:var(--err); }
 
-  /* Eszköztár */
-  .tools { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:16px 24px; border-bottom:1px solid var(--line); }
+  /* Belépés */
+  .login { max-width:380px; margin:0 auto; }
+  .login .btn { margin-top:14px; }
+  .login .msg { margin-top:10px; }
+
+  /* Fülek */
+  .tabs { display:flex; align-items:center; gap:4px; padding:8px 12px 0; border-bottom:1px solid var(--line); overflow-x:auto; }
+  .tab { border:0; background:none; padding:12px 14px; font:600 .9rem Inter, sans-serif; color:var(--soft); cursor:pointer;
+         border-bottom:2px solid transparent; margin-bottom:-1px; white-space:nowrap; }
+  .tab:hover { color:var(--ink); }
+  .tab[aria-selected="true"] { color:var(--accent); border-color:var(--accent); }
+  .tabs .sp { flex:1; }
+
+  /* Nevezések */
+  .tools { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:16px 24px; border-bottom:1px solid var(--line); }
   .tools .grow { flex:1; min-width:200px; }
-  .stats { display:flex; gap:28px; padding:16px 24px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
-  .stats div b { display:block; font-size:1.5rem; font-weight:700; }
-  .stats div span { color:var(--soft); font-size:.82rem; }
-
-  /* Divíziók */
-  .divs { padding:16px 24px 24px; display:flex; flex-direction:column; gap:12px; }
+  .stats { display:flex; gap:28px; padding:14px 24px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .stats b { display:block; font-size:1.4rem; font-weight:700; }
+  .stats span { color:var(--soft); font-size:.8rem; }
+  .divs { padding:16px 24px 24px; display:flex; flex-direction:column; gap:10px; }
   details { border:1px solid var(--line); border-radius:8px; overflow:hidden; }
-  summary { display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer; list-style:none; user-select:none; }
+  summary { display:flex; align-items:center; gap:12px; padding:12px 16px; cursor:pointer; list-style:none; user-select:none; }
   summary::-webkit-details-marker { display:none; }
   summary .chev { transition:transform .2s; color:var(--soft); }
   details[open] summary .chev { transform:rotate(90deg); }
   details[open] summary { border-bottom:1px solid var(--line); background:var(--sel); }
   summary .n { font-weight:600; flex:1; }
-  .badge { background:var(--accent); color:var(--on-accent); border-radius:999px; padding:2px 10px; font-size:.8rem; font-weight:600; }
+  .badge { background:var(--accent); color:var(--on-accent); border-radius:999px; padding:1px 9px; font-size:.78rem; font-weight:600; }
   .tbl { overflow-x:auto; }
-  table { width:100%; border-collapse:collapse; font-size:.9rem; }
-  th, td { text-align:left; padding:10px 16px; white-space:nowrap; }
-  th { font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; color:var(--soft); font-weight:600; }
+  table { width:100%; border-collapse:collapse; font-size:.88rem; }
+  th, td { text-align:left; padding:8px 12px; white-space:nowrap; }
+  th { font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; color:var(--soft); font-weight:600; }
   tbody tr:nth-child(odd) { background:var(--zebra); }
   td.num { color:var(--soft); width:1%; }
+  td.act { width:1%; text-align:right; }
+  .tag { display:inline-block; font-size:.72rem; padding:1px 7px; border-radius:4px; background:var(--sel); color:var(--accent); font-weight:600; }
+  .tag.gray { background:var(--zebra); color:var(--soft); border:1px solid var(--line); }
   .empty { color:var(--soft); padding:24px; text-align:center; }
-  [hidden] { display:none !important; }
-  @media (max-width:600px) { .pad, .tools, .stats, .divs { padding-left:16px; padding-right:16px; } }
+
+  /* Versenyzők */
+  .fbar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:16px 24px; border-bottom:1px solid var(--line); }
+  .fbar .grow { flex:1; min-width:200px; }
+  .filt { display:flex; border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+  .filt button { border:0; background:var(--card); color:var(--soft); font:500 .85rem Inter, sans-serif; padding:0 12px; height:40px; cursor:pointer; }
+  .filt button + button { border-left:1px solid var(--line); }
+  .filt button[aria-pressed="true"] { background:var(--accent); color:var(--on-accent); }
+  .people { padding:8px 24px 24px; }
+  .p { display:grid; grid-template-columns:1fr auto; gap:6px 16px; align-items:center; padding:14px 0; border-bottom:1px solid var(--line); }
+  .p .nm { font-weight:600; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .p .sub { color:var(--soft); font-size:.8rem; font-weight:400; }
+  .p .dv { grid-column:1; display:flex; flex-wrap:wrap; gap:6px; }
+  .p .fin { grid-row:1 / span 2; grid-column:2; display:flex; align-items:center; gap:8px; }
+  .p .fin input { width:90px; height:36px; text-align:center; font-weight:600; }
+  .p .fin .btn { height:36px; }
+  .st { font-size:.72rem; font-weight:600; padding:2px 8px; border-radius:999px; }
+  .st.ok { background:#e6f4ec; color:var(--ok); }
+  .st.wait { background:#fff4e0; color:#b45309; }
+  .dtag { font-size:.78rem; padding:2px 8px; border-radius:4px; background:var(--zebra); border:1px solid var(--line); }
+  .dtag.wait { border-color:#f2c27a; background:#fff8ec; }
+  .bibcell { font-weight:700; }
+  @media (max-width:640px) { .p { grid-template-columns:1fr; } .p .fin { grid-row:auto; grid-column:1; } }
+
+  /* Divíziók kapcsolók */
+  .dgrp + .dgrp { margin-top:22px; }
+  .dgrp h2, .grp h2 { font-size:.72rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--soft); margin-bottom:8px; }
+  .rows { border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+  .row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 16px; }
+  .row + .row { border-top:1px solid var(--line); }
+  .row .n { font-weight:500; flex:1; }
+  .row .meta { color:var(--soft); font-size:.8rem; display:flex; gap:8px; align-items:center; }
+  .row.off .n { color:var(--soft); }
+  .sw { position:relative; width:40px; height:22px; flex:none; }
+  .sw input { position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; z-index:1; }
+  .sw span { position:absolute; inset:0; border-radius:11px; background:var(--line); transition:background .2s; }
+  .sw span::after { content:""; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:#fff; transition:transform .2s; }
+  .sw input:checked + span { background:var(--accent); }
+  .sw input:checked + span::after { transform:translateX(18px); }
+  .sw input:focus-visible + span { outline:2px solid var(--accent); outline-offset:2px; }
+  .sw input:disabled + span { opacity:.5; }
+
+  /* Helyszíni nevezés */
+  .grp + .grp { margin-top:22px; }
+  .row.sel { background:var(--sel); }
+  .seg { display:flex; border:1px solid var(--line); border-radius:6px; overflow:hidden; flex:none; }
+  .seg button { border:0; background:var(--card); color:var(--soft); font:500 .82rem Inter, sans-serif; padding:7px 12px; cursor:pointer; }
+  .seg button + button { border-left:1px solid var(--line); }
+  .seg button:hover { color:var(--ink); }
+  .seg button[aria-pressed="true"] { background:var(--accent); color:var(--on-accent); }
+  .chk { display:inline-flex; align-items:center; gap:8px; font-size:.85rem; color:var(--soft); cursor:pointer; }
+  .chk input { width:16px; height:16px; accent-color:var(--accent); }
+  .bar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:22px 0 12px; flex-wrap:wrap; }
+  .foot { display:flex; align-items:center; gap:12px; border-top:1px solid var(--line); padding:14px 24px; }
+  .foot .msg { flex:1; }
+  .result { text-align:center; padding:36px 24px; }
+  .reg { display:inline-block; margin:6px 0 14px; padding:10px 20px; border:2px dashed var(--accent); border-radius:10px;
+         font:700 1.6rem/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing:.12em; color:var(--accent); }
+  .result ul { list-style:none; padding:0; color:var(--soft); margin-bottom:20px; }
+
+  /* Szerkesztő ablak */
+  dialog { margin:auto; border:0; border-radius:12px; padding:0; width:min(560px, calc(100% - 32px)); box-shadow:0 20px 60px rgba(11,26,69,.3); color:var(--ink); }
+  dialog::backdrop { background:rgba(11,26,69,.45); }
+  dialog h3 { font-size:1.05rem; padding:18px 24px; border-bottom:1px solid var(--line); }
+  dialog .pad { display:grid; gap:14px; }
+  dialog .two { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  dialog .foot { justify-content:space-between; }
+  @media (max-width:600px) { .pad, .tools, .stats, .divs, .foot { padding-left:16px; padding-right:16px; } dialog .two { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
-<header>
-  <h1>Nevezések</h1>
-  <button class="tema" id="tema" aria-label="Világos / sötét mód">
-    <svg class="i moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-    <svg class="i sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-  </button>
-</header>
+<header><h1>Admin</h1></header>
 
 <main>
   <!-- Belépés -->
@@ -108,26 +173,135 @@
     </form>
   </section>
 
-  <!-- Lista -->
   <section id="panel" class="card" hidden>
-    <div class="tools">
-      <input type="search" id="kereses" class="grow" placeholder="Keresés név vagy WSDC ID alapján">
-      <button class="btn ghost" id="frissit" title="Frissítés">
-        <svg class="i" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
-      </button>
-      <button class="btn" id="csvOssz">CSV</button>
-      <button class="btn" id="xlsxOssz">XLSX</button>
-      <button class="btn ghost" id="kilep">Kilépés</button>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="versenyzok" aria-selected="true">Versenyzők</button>
+      <button class="tab" role="tab" data-tab="nevezesek" aria-selected="false">Nevezések</button>
+      <button class="tab" role="tab" data-tab="diviziok" aria-selected="false">Divíziók</button>
+      <button class="tab" role="tab" data-tab="helyszini" aria-selected="false">Helyszíni nevezés</button>
+      <span class="sp"></span>
+      <button class="btn ghost sm" id="kilep">Kilépés</button>
     </div>
-    <div class="stats">
-      <div><b id="stNev">0</b><span>nevezés</span></div>
-      <div><b id="stFo">0</b><span>versenyző</span></div>
-      <div><b id="stDiv">0</b><span>divízió</span></div>
+
+    <!-- VERSENYZŐK – véglegesítés -->
+    <div id="t-versenyzok">
+      <div class="fbar">
+        <input type="search" id="vKer" class="grow" placeholder="Keresés: név, WSDC ID, reg. szám vagy bib">
+        <div class="filt" id="vFilt">
+          <button data-f="fuggo" aria-pressed="true">Függő</button>
+          <button data-f="vegleges" aria-pressed="false">Végleges</button>
+          <button data-f="mind" aria-pressed="false">Mind</button>
+        </div>
+        <button class="btn ghost" id="vFrissit" title="Frissítés" aria-label="Frissítés">
+          <svg class="i" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
+        </button>
+      </div>
+      <div class="stats">
+        <div><b id="vFuggo">0</b><span>függő</span></div>
+        <div><b id="vVegl">0</b><span>végleges</span></div>
+        <div><b id="vKov">–</b><span>következő szabad bib</span></div>
+      </div>
+      <div class="people" id="people"></div>
+      <p class="msg" id="msgV" role="status" style="padding:0 24px 16px"></p>
     </div>
-    <div class="divs" id="divs"></div>
-    <p class="msg" id="msgPanel" role="status" style="padding:0 24px 16px"></p>
+
+    <!-- NEVEZÉSEK -->
+    <div id="t-nevezesek" hidden>
+      <div class="tools">
+        <input type="search" id="kereses" class="grow" placeholder="Keresés: név, WSDC ID, reg. szám vagy bib">
+        <button class="btn ghost" id="frissit" title="Frissítés" aria-label="Frissítés">
+          <svg class="i" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
+        </button>
+        <label class="chk"><input type="checkbox" id="csakVegl" checked> Csak véglegesítettek</label>
+        <button class="btn" id="csvOssz">CSV</button>
+        <button class="btn" id="xlsxOssz">XLSX</button>
+      </div>
+      <div class="stats">
+        <div><b id="stNev">0</b><span>nevezés</span></div>
+        <div><b id="stFo">0</b><span>versenyző</span></div>
+        <div><b id="stDiv">0</b><span>divízió</span></div>
+      </div>
+      <div class="divs" id="divs"></div>
+      <p class="msg" id="msgPanel" role="status" style="padding:0 24px 16px"></p>
+    </div>
+
+    <!-- DIVÍZIÓK -->
+    <div id="t-diviziok" hidden>
+      <div class="pad" id="divKapcs"></div>
+      <p class="msg" id="msgDiv" role="status" style="padding:0 24px 16px"></p>
+    </div>
+
+    <!-- HELYSZÍNI NEVEZÉS -->
+    <div id="t-helyszini" hidden>
+      <div id="hForm">
+        <div class="pad">
+          <div class="grid">
+            <div>
+              <label class="f" for="hWsdc">WSDC azonosító</label>
+              <input type="text" id="hWsdc" inputmode="numeric" placeholder="Ha van" autocomplete="off">
+            </div>
+            <div>
+              <label class="f" for="hKn">Keresztnév</label>
+              <input type="text" id="hKn" autocomplete="off">
+            </div>
+            <div>
+              <label class="f" for="hVn">Vezetéknév</label>
+              <input type="text" id="hVn" autocomplete="off">
+            </div>
+            <div>
+              <label class="f" for="hBib">Bib szám</label>
+              <input type="text" id="hBib" placeholder="Ha megadod, rögtön véglegesít" autocomplete="off">
+            </div>
+          </div>
+          <div class="bar">
+            <p class="msg info" id="hInfo"></p>
+            <label class="chk"><input type="checkbox" id="hInaktiv"> Inaktív divíziók is</label>
+          </div>
+          <div id="hDivs"></div>
+        </div>
+        <div class="foot">
+          <p class="msg" id="msgH" role="status"></p>
+          <button class="btn" id="hKuld" disabled>Nevezés rögzítése</button>
+        </div>
+      </div>
+      <div class="result" id="hKesz" hidden>
+        <div class="reg-l" style="color:var(--soft);font-size:.85rem">Regisztrációs szám</div>
+        <h2 style="font-weight:600;margin-bottom:6px" id="hKeszNev"></h2>
+        <div class="reg" id="hReg"></div>
+        <ul id="hKeszLista"></ul>
+        <button class="btn" id="hUj">Új nevezés</button>
+      </div>
+    </div>
   </section>
 </main>
+
+<!-- Nevezés szerkesztése -->
+<dialog id="dlg">
+  <form method="dialog" id="dlgForm">
+    <h3>Nevezés szerkesztése</h3>
+    <div class="pad">
+      <div class="two">
+        <div><label class="f" for="eKn">Keresztnév</label><input type="text" id="eKn" required></div>
+        <div><label class="f" for="eVn">Vezetéknév</label><input type="text" id="eVn" required></div>
+      </div>
+      <div class="two">
+        <div><label class="f" for="eWsdc">WSDC azonosító</label><input type="text" id="eWsdc" inputmode="numeric"></div>
+        <div><label class="f" for="eReg">Reg. szám</label><input type="text" id="eReg" disabled></div>
+      </div>
+      <div><label class="f" for="eDiv">Divízió</label><select id="eDiv"></select></div>
+      <p class="msg" id="msgDlg" role="status"></p>
+    </div>
+    <div class="foot">
+      <button type="button" class="btn danger" id="eTorol">
+        <svg class="i" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>Törlés
+      </button>
+      <span style="display:flex;gap:8px">
+        <button type="button" class="btn ghost" id="eMegse">Mégse</button>
+        <button type="submit" class="btn" id="eMent">Mentés</button>
+      </span>
+    </div>
+  </form>
+</dialog>
 
 <script>
 // ====== BEÁLLÍTÁSOK ======
@@ -137,104 +311,234 @@ const FAJL_ELOTAG = 'nevezesek';
 // =========================
 
 const $ = id => document.getElementById(id);
-const msg = (el, t, info) => { $(el).textContent = t || ''; $(el).className = 'msg' + (info ? ' info' : ''); };
+const msg = (el, t, cls) => { $(el).textContent = t || ''; $(el).className = 'msg' + (cls ? ' ' + cls : ''); };
+const ICO = {
+  edit: '<svg class="i" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  del:  '<svg class="i" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>',
+  chev: '<svg class="i chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>'
+};
 let jelszo = '';
-let adat = { sorok: [], sorrend: [] };
+let adat = { sorok: [], diviziok: [] };
+const nyitott = new Set();   // nyitva hagyott divíziók újrarajzoláskor
 
-// Téma
-(() => {
-  const root = document.documentElement;
-  try { const t = localStorage.getItem('tema'); if (t) root.dataset.theme = t; } catch {}
-  $('tema').addEventListener('click', () => {
-    const sotet = root.dataset.theme ? root.dataset.theme === 'dark'
-                : matchMedia('(prefers-color-scheme: dark)').matches;
-    root.dataset.theme = sotet ? 'light' : 'dark';
-    try { localStorage.setItem('tema', root.dataset.theme); } catch {}
-  });
-})();
-
-async function lekeres() {
+// ---------- API ----------
+async function api(muvelet, extra = {}) {
   const v = await (await fetch(SCRIPT_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ muvelet: 'admin', jelszo })
+    body: JSON.stringify({ muvelet, jelszo, ...extra })
   })).json();
-  if (!v.ok) throw new Error(v.hiba);
-  adat = v;
+  if (!v.ok) throw new Error(v.hiba || 'Ismeretlen hiba.');
+  return v;
 }
+async function betolt() { adat = await api('admin'); rajzolMind(); }
+function rajzolMind() { rajzolVersenyzok(); rajzolNevezesek(); rajzolDiviziok(); rajzolHelyszini(); }
 
+// ---------- Belépés ----------
 $('loginForm').addEventListener('submit', async e => {
   e.preventDefault();
   jelszo = $('jelszo').value;
-  $('belep').disabled = true; msg('msgLogin', 'Belépés…', true);
+  $('belep').disabled = true; msg('msgLogin', 'Belépés…', 'info');
   try {
-    await lekeres();
+    await betolt();
     try { sessionStorage.setItem('adminJelszo', jelszo); } catch {}
-    $('jelszo').value = '';
-    msg('msgLogin');
+    $('jelszo').value = ''; msg('msgLogin');
     $('belepes').hidden = true; $('panel').hidden = false;
-    rajzol();
-  } catch (err) {
-    msg('msgLogin', err.message || 'Hálózati hiba.');
-  } finally { $('belep').disabled = false; }
+  } catch (err) { jelszo = ''; msg('msgLogin', err.message || 'Hálózati hiba.'); }
+  finally { $('belep').disabled = false; }
 });
 
-// A munkamenet idejére megjegyzi a jelszót (lap bezárásáig)
 (async () => {
   let j = '';
   try { j = sessionStorage.getItem('adminJelszo') || ''; } catch {}
   if (!j) return;
   jelszo = j;
-  try { await lekeres(); $('belepes').hidden = true; $('panel').hidden = false; rajzol(); }
+  try { await betolt(); $('belepes').hidden = true; $('panel').hidden = false; }
   catch { try { sessionStorage.removeItem('adminJelszo'); } catch {} jelszo = ''; }
 })();
 
 $('kilep').addEventListener('click', () => {
-  jelszo = ''; adat = { sorok: [], sorrend: [] };
+  jelszo = ''; adat = { sorok: [], diviziok: [] };
   try { sessionStorage.removeItem('adminJelszo'); } catch {}
   $('panel').hidden = true; $('belepes').hidden = false; $('jelszo').focus();
 });
 
-$('frissit').addEventListener('click', async () => {
-  msg('msgPanel', 'Frissítés…', true);
-  try { await lekeres(); rajzol(); msg('msgPanel'); }
-  catch (err) { msg('msgPanel', err.message || 'Hálózati hiba.'); }
+// ---------- Fülek ----------
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x === t ? 'true' : 'false'));
+  ['versenyzok', 'nevezesek', 'diviziok', 'helyszini'].forEach(n => $('t-' + n).hidden = n !== t.dataset.tab);
+}));
+
+// ---------- Közös ----------
+function csoport(nev) {
+  if (/strictly/i.test(nev)) return 'Strictly';
+  if (/jack\s*&?\s*jill|j&j/i.test(nev)) return 'Jack & Jill';
+  return 'Egyéb';
+}
+function rovid(alap, c) {
+  const r = c === 'Strictly' ? alap.replace(/strictly/i, '')
+          : c === 'Jack & Jill' ? alap.replace(/jack\s*&?\s*jill|j&j/i, '') : alap;
+  return r.replace(/\s+/g, ' ').trim() || alap;
+}
+const emberKulcs = s => s.wsdc ? 'id' + s.wsdc : (s.keresztnev + ' ' + s.vezeteknev).toLowerCase();
+
+// ======================================================================
+// VERSENYZŐK – véglegesítés bib számmal
+// ======================================================================
+let vSzuro = 'fuggo';
+document.querySelectorAll('#vFilt button').forEach(b => b.addEventListener('click', () => {
+  vSzuro = b.dataset.f;
+  document.querySelectorAll('#vFilt button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+  rajzolVersenyzok();
+}));
+$('vKer').addEventListener('input', rajzolVersenyzok);
+$('vFrissit').addEventListener('click', async () => {
+  msg('msgV', 'Frissítés…', 'info');
+  try { await betolt(); msg('msgV'); } catch (err) { msg('msgV', err.message || 'Hálózati hiba.'); }
 });
 
-$('kereses').addEventListener('input', rajzol);
+// Nevezések összevonása versenyzőnként (regisztrációs szám alapján)
+function versenyzok() {
+  const m = new Map();
+  adat.sorok.forEach(s => {
+    const k = s.regszam || emberKulcs(s);
+    if (!m.has(k)) m.set(k, { regszam: s.regszam, keresztnev: s.keresztnev, vezeteknev: s.vezeteknev,
+                              wsdc: s.wsdc, bib: '', sorok: [], elso: s.ido });
+    const p = m.get(k);
+    p.sorok.push(s);
+    if (s.bib) p.bib = s.bib;
+    if (s.ido < p.elso) p.elso = s.ido;
+  });
+  m.forEach(p => {
+    p.vegl = p.sorok.filter(s => s.vegleges).length;
+    p.allapot = p.vegl === p.sorok.length ? 'vegleges' : 'fuggo';
+  });
+  return [...m.values()];
+}
 
-// Divíziók szerinti szétbontás, a Sheet sorrendjében
+function kovetkezoBib() {
+  const foglalt = new Set(adat.sorok.map(s => parseInt(s.bib, 10)).filter(n => !isNaN(n)));
+  let n = 1; while (foglalt.has(n)) n++;
+  return n;
+}
+
+function rajzolVersenyzok() {
+  const lista = versenyzok();
+  $('vFuggo').textContent = lista.filter(p => p.allapot === 'fuggo').length;
+  $('vVegl').textContent = lista.filter(p => p.allapot === 'vegleges').length;
+  $('vKov').textContent = kovetkezoBib();
+
+  const q = $('vKer').value.trim().toLowerCase().replace(/-/g, '');
+  const mutat = lista
+    .filter(p => vSzuro === 'mind' || p.allapot === vSzuro)
+    .filter(p => talal(q, p))
+    .sort((a, b) => vSzuro === 'fuggo' ? a.elso.localeCompare(b.elso) : rendezo(a, b));
+
+  const box = $('people'); box.innerHTML = '';
+  if (!mutat.length) {
+    box.innerHTML = '<p class="empty">' + (vSzuro === 'fuggo' ? 'Nincs véglegesítésre váró versenyző.' : 'Nincs találat.') + '</p>';
+    return;
+  }
+  mutat.forEach(p => {
+    const el = document.createElement('div'); el.className = 'p';
+    const nm = document.createElement('div'); nm.className = 'nm';
+    nm.append(p.vezeteknev + ' ' + p.keresztnev);
+    const st = document.createElement('span'); st.className = 'st ' + (p.allapot === 'vegleges' ? 'ok' : 'wait');
+    st.textContent = p.allapot === 'vegleges' ? 'végleges' : (p.vegl ? 'új divízió vár' : 'függő');
+    const sub = document.createElement('span'); sub.className = 'sub';
+    sub.textContent = [p.regszam, p.wsdc ? 'WSDC ' + p.wsdc : ''].filter(Boolean).join(' · ');
+    nm.append(st, sub);
+
+    const dv = document.createElement('div'); dv.className = 'dv';
+    p.sorok.forEach(s => {
+      const t = document.createElement('span'); t.className = 'dtag' + (s.vegleges ? '' : ' wait');
+      t.textContent = s.divizio; dv.append(t);
+    });
+
+    const fin = document.createElement('div'); fin.className = 'fin';
+    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Bib';
+    inp.value = p.bib || ''; inp.setAttribute('aria-label', 'Bib szám – ' + p.vezeteknev + ' ' + p.keresztnev);
+    const ok = document.createElement('button'); ok.className = 'btn';
+    ok.textContent = p.allapot === 'vegleges' ? 'Mentés' : 'Véglegesít';
+    const ment = async () => {
+      const bib = inp.value.trim();
+      if (!bib) { inp.value = p.bib || String(kovetkezoBib()); inp.focus(); inp.select(); return; }
+      ok.disabled = true; msg('msgV', 'Mentés…', 'info');
+      try {
+        await api('veglegesit', { regszam: p.regszam, bib });
+        await betolt();
+        msg('msgV', p.vezeteknev + ' ' + p.keresztnev + ' véglegesítve, bib: ' + bib, 'ok');
+      } catch (err) { ok.disabled = false; msg('msgV', err.message || 'Hálózati hiba.'); }
+    };
+    ok.addEventListener('click', ment);
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') ment(); });
+    fin.append(inp, ok);
+    if (p.vegl) {
+      const vv = document.createElement('button'); vv.className = 'ib del'; vv.title = 'Véglegesítés visszavonása';
+      vv.innerHTML = '<svg class="i" viewBox="0 0 24 24"><path d="M3 7v6h6M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>';
+      vv.addEventListener('click', async () => {
+        if (!confirm('Visszavonod ' + p.vezeteknev + ' ' + p.keresztnev + ' véglegesítését? A bib szám is törlődik.')) return;
+        msg('msgV', 'Visszavonás…', 'info');
+        try { await api('visszavon', { regszam: p.regszam }); await betolt(); msg('msgV'); }
+        catch (err) { msg('msgV', err.message || 'Hálózati hiba.'); }
+      });
+      fin.append(vv);
+    }
+    el.append(nm, fin, dv);
+    box.append(el);
+  });
+}
+
+// ======================================================================
+// NEVEZÉSEK
+// ======================================================================
+$('kereses').addEventListener('input', rajzolNevezesek);
+$('csakVegl').addEventListener('change', rajzolNevezesek);
+$('frissit').addEventListener('click', async () => {
+  msg('msgPanel', 'Frissítés…', 'info');
+  try { await betolt(); msg('msgPanel'); } catch (err) { msg('msgPanel', err.message || 'Hálózati hiba.'); }
+});
+
 function csoportok(sorok) {
   const m = new Map();
-  adat.sorrend.forEach(d => m.set(d, []));
+  adat.diviziok.forEach(d => m.set(d.nev, []));
   sorok.forEach(s => { if (!m.has(s.divizio)) m.set(s.divizio, []); m.get(s.divizio).push(s); });
-  m.forEach(l => l.sort((a, b) => (a.vezeteknev + a.keresztnev).localeCompare(b.vezeteknev + b.keresztnev, 'hu')));
+  m.forEach(l => l.sort(rendezo));
   return [...m].filter(([, l]) => l.length);
 }
 
+// bib szerint (számként), utána név szerint
+function rendezo(a, b) {
+  const x = parseInt(a.bib, 10), y = parseInt(b.bib, 10);
+  if (!isNaN(x) || !isNaN(y)) { if (isNaN(x)) return 1; if (isNaN(y)) return -1; if (x !== y) return x - y; }
+  return (a.vezeteknev + a.keresztnev).localeCompare(b.vezeteknev + b.keresztnev, 'hu');
+}
+const talal = (q, s) => !q || [s.keresztnev + ' ' + s.vezeteknev, s.vezeteknev + ' ' + s.keresztnev, s.wsdc,
+  s.regszam.replace(/-/g, ''), s.bib].join(' ').toLowerCase().includes(q);
+const exportSorok = () => adat.sorok.filter(s => !$('csakVegl').checked || s.vegleges);
+
 function szurt() {
-  const q = $('kereses').value.trim().toLowerCase();
-  if (!q) return adat.sorok;
-  return adat.sorok.filter(s => (s.keresztnev + ' ' + s.vezeteknev + ' ' + s.vezeteknev + ' ' + s.keresztnev + ' ' + s.wsdc)
-    .toLowerCase().includes(q));
+  const q = $('kereses').value.trim().toLowerCase().replace(/-/g, '');
+  return exportSorok().filter(s => talal(q, s));
 }
 
-function rajzol() {
-  const sorok = szurt();
-  const cs = csoportok(sorok);
-  const fok = new Set(adat.sorok.map(s => s.wsdc ? 'id' + s.wsdc : (s.keresztnev + ' ' + s.vezeteknev).toLowerCase()));
-  $('stNev').textContent = adat.sorok.length;
-  $('stFo').textContent = fok.size;
-  $('stDiv').textContent = csoportok(adat.sorok).length;
+function rajzolNevezesek() {
+  const cs = csoportok(szurt());
+  const alap = exportSorok();
+  $('stNev').textContent = alap.length;
+  $('stFo').textContent = new Set(alap.map(s => s.regszam || emberKulcs(s))).size;
+  $('stDiv').textContent = csoportok(alap).length;
 
   const box = $('divs');
   box.innerHTML = '';
-  if (!cs.length) { box.innerHTML = '<p class="empty">Nincs nevezés.</p>'; return; }
+  if (!cs.length) { box.innerHTML = '<p class="empty">' + ($('csakVegl').checked ? 'Nincs véglegesített nevezés.' : 'Nincs nevezés.') + '</p>'; return; }
 
   cs.forEach(([div, lista]) => {
     const det = document.createElement('details');
+    det.open = nyitott.has(div) || !!$('kereses').value.trim();
+    det.addEventListener('toggle', () => det.open ? nyitott.add(div) : nyitott.delete(div));
     const sum = document.createElement('summary');
-    sum.innerHTML = '<svg class="i chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>';
+    sum.innerHTML = ICO.chev;
     const n = document.createElement('span'); n.className = 'n'; n.textContent = div;
     const b = document.createElement('span'); b.className = 'badge'; b.textContent = lista.length;
     const dl = document.createElement('button'); dl.className = 'btn ghost sm'; dl.textContent = 'CSV';
@@ -243,27 +547,78 @@ function rajzol() {
 
     const wrap = document.createElement('div'); wrap.className = 'tbl';
     const t = document.createElement('table');
-    t.innerHTML = '<thead><tr><th>#</th><th>Név</th><th>WSDC ID</th><th>Szerep</th><th>Időpont</th></tr></thead>';
+    t.innerHTML = '<thead><tr><th>Bib</th><th>Név</th><th>Státusz</th><th>Reg. szám</th><th>WSDC ID</th><th>Forrás</th><th>Időpont</th><th></th></tr></thead>';
     const tb = document.createElement('tbody');
     lista.forEach((s, i) => {
       const tr = document.createElement('tr');
-      [i + 1, s.vezeteknev + ' ' + s.keresztnev, s.wsdc || '–', s.szerep || '–', s.ido].forEach((v, k) => {
-        const td = document.createElement('td'); td.textContent = v; if (k === 0) td.className = 'num'; tr.append(td);
+      [s.vegleges ? s.bib : '–', s.vezeteknev + ' ' + s.keresztnev, '', s.regszam || '–', s.wsdc || '–', s.forras || '–', s.ido].forEach((v, k) => {
+        const td = document.createElement('td'); td.textContent = v;
+        if (k === 0) td.className = 'bibcell';
+        if (k === 2) { const st = document.createElement('span'); st.className = 'st ' + (s.vegleges ? 'ok' : 'wait');
+          st.textContent = s.vegleges ? 'végleges' : 'függő'; td.append(st); }
+        tr.append(td);
       });
-      tb.append(tr);
+      const act = document.createElement('td'); act.className = 'act';
+      const be = document.createElement('button'); be.className = 'ib'; be.title = 'Szerkesztés'; be.innerHTML = ICO.edit;
+      be.addEventListener('click', () => szerkeszt(s));
+      const bd = document.createElement('button'); bd.className = 'ib del'; bd.title = 'Törlés'; bd.innerHTML = ICO.del;
+      bd.addEventListener('click', () => torol(s));
+      act.append(be, bd); tr.append(act); tb.append(tr);
     });
     t.append(tb); wrap.append(t);
     det.append(sum, wrap);
-    if ($('kereses').value.trim()) det.open = true;
     box.append(det);
   });
 }
 
-// ---- Export ----
-const FEJLEC = ['Divízió', 'Szerep', 'Vezetéknév', 'Keresztnév', 'WSDC ID', 'Időpont'];
-const sorTomb = s => [s.divizio, s.szerep, s.vezeteknev, s.keresztnev, s.wsdc, s.ido];
+// ---- Szerkesztés / törlés ----
+let szerk = null;
+function szerkeszt(s) {
+  szerk = s;
+  $('eKn').value = s.keresztnev; $('eVn').value = s.vezeteknev; $('eWsdc').value = s.wsdc; $('eReg').value = s.regszam;
+  const sel = $('eDiv'); sel.innerHTML = '';
+  adat.diviziok.forEach(d => {
+    const o = document.createElement('option'); o.value = d.nev; o.textContent = d.nev + (d.aktiv ? '' : ' (inaktív)');
+    sel.append(o);
+  });
+  if (!adat.diviziok.some(d => d.nev === s.divizio)) {
+    const o = document.createElement('option'); o.value = s.divizio; o.textContent = s.divizio; sel.prepend(o);
+  }
+  sel.value = s.divizio;
+  msg('msgDlg');
+  $('dlg').showModal();
+}
+const regi = s => ({ divizio: s.divizio, keresztnev: s.keresztnev, vezeteknev: s.vezeteknev });
 
-function rendezett(sorok) { return csoportok(sorok).flatMap(([, l]) => l); }
+$('eMegse').addEventListener('click', () => $('dlg').close());
+$('eWsdc').addEventListener('input', () => { $('eWsdc').value = $('eWsdc').value.replace(/\D/g, ''); });
+$('dlgForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('eMent').disabled = true; msg('msgDlg', 'Mentés…', 'info');
+  try {
+    await api('nevezesModosit', { sor: szerk.sor, regi: regi(szerk), keresztnev: $('eKn').value,
+      vezeteknev: $('eVn').value, wsdc: $('eWsdc').value, divizio: $('eDiv').value });
+    $('dlg').close();
+    await betolt();
+  } catch (err) { msg('msgDlg', err.message || 'Hálózati hiba.'); }
+  finally { $('eMent').disabled = false; }
+});
+$('eTorol').addEventListener('click', async () => {
+  if (await torol(szerk, 'msgDlg')) $('dlg').close();
+});
+
+async function torol(s, hova = 'msgPanel') {
+  if (!confirm(`Biztosan törlöd?\n\n${s.vezeteknev} ${s.keresztnev}\n${s.divizio}`)) return false;
+  msg(hova, 'Törlés…', 'info');
+  try { await api('nevezesTorles', { sor: s.sor, regi: regi(s) }); await betolt(); msg(hova); return true; }
+  catch (err) { msg(hova, err.message || 'Hálózati hiba.'); return false; }
+}
+
+// ---- Export ----
+const FEJLEC = ['Bib', 'Vezetéknév', 'Keresztnév', 'Divízió', 'Szerep', 'WSDC ID', 'Reg. szám', 'Státusz', 'Forrás', 'Időpont'];
+const sorTomb = s => [s.vegleges ? s.bib : '', s.vezeteknev, s.keresztnev, s.divizio, s.szerep, s.wsdc, s.regszam,
+  s.vegleges ? 'végleges' : 'függő', s.forras, s.ido];
+const rendezett = sorok => csoportok(sorok).flatMap(([, l]) => l);
 
 function csv(sorok) {
   const esc = v => {
@@ -272,44 +627,168 @@ function csv(sorok) {
   };
   return '﻿' + [FEJLEC, ...sorok.map(sorTomb)].map(r => r.map(esc).join(CSV_ELVALASZTO)).join('\r\n');
 }
-
 function fajlnev(s) {
   const nap = new Date().toISOString().slice(0, 10);
   return FAJL_ELOTAG + '_' + String(s).normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/[^\w]+/g, '_').replace(/^_|_$/g, '').toLowerCase() + '_' + nap;
 }
-
 function letolt(tartalom, nev, tipus) {
-  const blob = tartalom instanceof Blob ? tartalom : new Blob([tartalom], { type: tipus + ';charset=utf-8' });
+  const blob = new Blob([tartalom], { type: tipus + ';charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = nev;
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
-
-$('csvOssz').addEventListener('click', () => {
-  letolt(csv(rendezett(adat.sorok)), fajlnev('osszes') + '.csv', 'text/csv');
-});
-
+$('csvOssz').addEventListener('click', () => letolt(csv(rendezett(exportSorok())), fajlnev('osszes') + '.csv', 'text/csv'));
 $('xlsxOssz').addEventListener('click', () => {
   if (!window.XLSX) return msg('msgPanel', 'Az XLSX modul nem töltődött be, frissítsd az oldalt.');
   const wb = XLSX.utils.book_new();
   const lap = (sorok, nev) => {
     const ws = XLSX.utils.aoa_to_sheet([FEJLEC, ...sorok.map(sorTomb)]);
-    ws['!cols'] = [{ wch: 34 }, { wch: 10 }, { wch: 18 }, { wch: 16 }, { wch: 10 }, { wch: 17 }];
+    ws['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 16 }, { wch: 34 }, { wch: 10 }, { wch: 10 }, { wch: 11 }, { wch: 10 }, { wch: 10 }, { wch: 17 }];
     XLSX.utils.book_append_sheet(wb, ws, nev);
   };
-  lap(rendezett(adat.sorok), 'Összes');
+  const forras = exportSorok();
+  lap(rendezett(forras), 'Összes');
   const hasznalt = new Set(['összes']);
-  csoportok(adat.sorok).forEach(([div, l]) => {
-    // Munkalapnév: max. 31 karakter, tiltott karakterek nélkül, egyedi
-    let n = div.replace(/[\\\/\?\*\[\]:]/g, '-').slice(0, 31).trim();
-    let k = 2;
+  csoportok(forras).forEach(([div, l]) => {
+    let n = div.replace(/[\\\/\?\*\[\]:]/g, '-').slice(0, 31).trim(), k = 2;
     while (hasznalt.has(n.toLowerCase())) n = n.slice(0, 28) + ' ' + k++;
     hasznalt.add(n.toLowerCase());
     lap(l, n);
   });
   XLSX.writeFile(wb, fajlnev('osszes') + '.xlsx');
+});
+
+// ======================================================================
+// DIVÍZIÓK – ki/be kapcsolás
+// ======================================================================
+function rajzolDiviziok() {
+  const db = {};
+  adat.sorok.forEach(s => db[s.divizio] = (db[s.divizio] || 0) + 1);
+  const csop = {};
+  adat.diviziok.forEach(d => (csop[csoport(d.nev)] ||= []).push(d));
+  const box = $('divKapcs'); box.innerHTML = '';
+  ['Jack & Jill', 'Strictly', 'Egyéb'].filter(c => csop[c]).forEach(c => {
+    const g = document.createElement('div'); g.className = 'dgrp';
+    const h = document.createElement('h2'); h.textContent = c;
+    const rows = document.createElement('div'); rows.className = 'rows';
+    csop[c].forEach(d => {
+      const row = document.createElement('div'); row.className = 'row' + (d.aktiv ? '' : ' off');
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = d.nev;
+      const meta = document.createElement('span'); meta.className = 'meta';
+      if (d.szintek) { const t = document.createElement('span'); t.className = 'tag gray'; t.textContent = d.szintek; meta.append(t); }
+      if (db[d.nev]) { const t = document.createElement('span'); t.className = 'tag'; t.textContent = db[d.nev] + ' nevezés'; meta.append(t); }
+      const sw = document.createElement('label'); sw.className = 'sw'; sw.title = d.aktiv ? 'Aktív' : 'Inaktív';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = d.aktiv;
+      cb.setAttribute('aria-label', d.nev + ' aktív');
+      cb.addEventListener('change', async () => {
+        cb.disabled = true; msg('msgDiv', 'Mentés…', 'info');
+        try {
+          const v = await api('divizioAllit', { nev: d.nev, aktiv: cb.checked });
+          adat.diviziok = v.diviziok; rajzolDiviziok(); rajzolHelyszini();
+          msg('msgDiv', d.nev + (cb.checked ? ' bekapcsolva.' : ' kikapcsolva.'), 'ok');
+        } catch (err) { cb.checked = !cb.checked; cb.disabled = false; msg('msgDiv', err.message || 'Hálózati hiba.'); }
+      });
+      sw.append(cb, document.createElement('span'));
+      row.append(n, meta, sw); rows.append(row);
+    });
+    g.append(h, rows); box.append(g);
+  });
+}
+
+// ======================================================================
+// HELYSZÍNI NEVEZÉS – bármely divízióba, a jogosultság csak tájékoztató
+// ======================================================================
+let hValasztas = {};
+let hJogosult = null;   // Set a WSDC alapján jogosult divíziókból (ha van ID)
+
+function rajzolHelyszini() {
+  const mutat = adat.diviziok.filter(d => d.aktiv || $('hInaktiv').checked);
+  const sorok = new Map();
+  mutat.forEach(d => { if (!sorok.has(d.alap)) sorok.set(d.alap, []); sorok.get(d.alap).push(d); });
+  // a már nem látható választásokat töröljük
+  Object.keys(hValasztas).forEach(a => { if (!sorok.has(a) || !sorok.get(a).some(d => d.nev === hValasztas[a])) delete hValasztas[a]; });
+
+  const csop = {};
+  sorok.forEach((l, alap) => (csop[csoport(alap)] ||= []).push([alap, l]));
+  const box = $('hDivs'); box.innerHTML = '';
+  const rend = { Leader: 0, Follower: 1 };
+  ['Jack & Jill', 'Strictly', 'Egyéb'].filter(c => csop[c]).forEach(c => {
+    const g = document.createElement('div'); g.className = 'grp';
+    const h = document.createElement('h2'); h.textContent = c;
+    const rows = document.createElement('div'); rows.className = 'rows';
+    csop[c].forEach(([alap, lista]) => {
+      const row = document.createElement('div'); row.className = 'row' + (hValasztas[alap] ? ' sel' : '');
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = rovid(alap, c);
+      const meta = document.createElement('span'); meta.className = 'meta';
+      if (lista.some(d => !d.aktiv)) { const t = document.createElement('span'); t.className = 'tag gray'; t.textContent = 'inaktív'; meta.append(t); }
+      if (hJogosult && !lista.some(d => hJogosult.has(d.nev))) { const t = document.createElement('span'); t.className = 'tag gray'; t.textContent = 'nem jogosult'; meta.append(t); }
+      const seg = document.createElement('div'); seg.className = 'seg';
+      lista.slice().sort((a, b) => (rend[a.szerep] ?? 2) - (rend[b.szerep] ?? 2)).forEach(d => {
+        const b = document.createElement('button'); b.type = 'button';
+        b.textContent = d.szerep || 'Nevezés';
+        b.setAttribute('aria-pressed', hValasztas[alap] === d.nev ? 'true' : 'false');
+        b.addEventListener('click', () => {
+          hValasztas[alap] = hValasztas[alap] === d.nev ? undefined : d.nev;
+          if (!hValasztas[alap]) delete hValasztas[alap];
+          rajzolHelyszini();
+        });
+        seg.append(b);
+      });
+      row.append(n, meta, seg); rows.append(row);
+    });
+    g.append(h, rows); box.append(g);
+  });
+  if (!sorok.size) box.innerHTML = '<p class="empty">Nincs aktív divízió.</p>';
+  $('hKuld').disabled = !Object.keys(hValasztas).length;
+}
+$('hInaktiv').addEventListener('change', rajzolHelyszini);
+
+// WSDC ID → név és jogosultság (tájékoztató)
+let hIdoz;
+$('hWsdc').addEventListener('input', () => {
+  $('hWsdc').value = $('hWsdc').value.replace(/\D/g, '');
+  clearTimeout(hIdoz); hJogosult = null; msg('hInfo', '', 'info');
+  const id = $('hWsdc').value;
+  if (!id) return rajzolHelyszini();
+  hIdoz = setTimeout(async () => {
+    msg('hInfo', 'Keresés a WSDC adatbázisban…', 'info');
+    try {
+      const v = await (await fetch(SCRIPT_URL + '?wsdc=' + encodeURIComponent(id))).json();
+      if ($('hWsdc').value !== id) return;
+      if (!v.ok) { msg('hInfo', v.hiba); return rajzolHelyszini(); }
+      $('hKn').value = v.keresztnev; $('hVn').value = v.vezeteknev;
+      hJogosult = new Set(v.diviziok.map(d => d.nev));
+      msg('hInfo', 'Megtalálva.', 'info');
+      rajzolHelyszini();
+    } catch { msg('hInfo', 'A WSDC keresés nem sikerült, a nevet írd be kézzel.'); }
+  }, 500);
+});
+
+$('hKuld').addEventListener('click', async () => {
+  const kn = $('hKn').value.trim(), vn = $('hVn').value.trim();
+  if (!kn || !vn) return msg('msgH', 'Add meg a teljes nevet.');
+  $('hKuld').disabled = true; msg('msgH', 'Rögzítés…', 'info');
+  try {
+    const v = await api('kezi', { wsdc: $('hWsdc').value, keresztnev: kn, vezeteknev: vn,
+                                  bib: $('hBib').value.trim(), diviziok: Object.values(hValasztas) });
+    $('hKeszNev').textContent = v.nev + (v.bib ? ' · Bib ' + v.bib : ' · függő');
+    $('hReg').textContent = v.regszam;
+    $('hKeszLista').innerHTML = '';
+    v.osszes.forEach(d => { const li = document.createElement('li'); li.textContent = d; $('hKeszLista').append(li); });
+    msg('msgH');
+    $('hForm').hidden = true; $('hKesz').hidden = false;
+    betolt().catch(() => {});
+  } catch (err) { msg('msgH', err.message || 'Hálózati hiba.'); $('hKuld').disabled = false; }
+});
+
+$('hUj').addEventListener('click', () => {
+  $('hWsdc').value = $('hKn').value = $('hVn').value = $('hBib').value = '';
+  hValasztas = {}; hJogosult = null; msg('hInfo', '', 'info');
+  $('hKesz').hidden = true; $('hForm').hidden = false;
+  rajzolHelyszini();
+  $('hWsdc').focus();
 });
 </script>
 </body>

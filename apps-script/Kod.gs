@@ -612,17 +612,19 @@ function nevezesLap_() {
   return lap;
 }
 
-// pl. "K7QM-4XHP" – összetéveszthető karakterek (0/O, 1/I/L) nélkül
+// pl. "K7M" – 3 karakter, betű és szám vegyesen, összetéveszthető karakterek (0/O, 1/I/L) nélkül.
+// Kb. 17 000 lehetséges kód; ha egyszer elfogynának, 4 karakteresre vált.
 function ujRegszam_(sorok) {
   const ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  const foglalt = new Set(sorok.map(r => String(r[OSZ.REG] || '')));
-  let kod;
-  do {
-    kod = '';
-    for (let i = 0; i < 8; i++) kod += ABC[Math.floor(Math.random() * ABC.length)];
-    kod = kod.slice(0, 4) + '-' + kod.slice(4);
-  } while (foglalt.has(kod));
-  return kod;
+  const foglalt = new Set(sorok.map(r => String(r[OSZ.REG] || '').toUpperCase()));
+  for (let hossz = 3; hossz <= 6; hossz++) {
+    for (let proba = 0; proba < 500; proba++) {
+      let kod = '';
+      for (let i = 0; i < hossz; i++) kod += ABC[Math.floor(Math.random() * ABC.length)];
+      if (/[A-Z]/.test(kod) && /\d/.test(kod) && !foglalt.has(kod)) return kod;
+    }
+  }
+  throw new Error('Nem sikerült új regisztrációs kódot létrehozni.');
 }
 
 function json(obj) {

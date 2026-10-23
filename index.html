@@ -79,6 +79,11 @@
   .done .ok svg { width:30px; height:30px; fill:none; stroke:currentColor; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
   .done h2 { font-weight:600; margin-bottom:10px; }
   .done ul { list-style:none; padding:0; color:var(--soft); margin-bottom:24px; }
+  .regkep { display:block; width:min(100%, 360px); margin:4px auto 16px; border-radius:12px; border:1px solid var(--line);
+            box-shadow:0 8px 24px rgba(11,26,69,.12); }
+  .gombok { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .btn.masod { background:transparent; color:var(--ink); border:1px solid var(--line); }
+  .tipp { color:var(--soft); font-size:.82rem; margin:10px auto 22px; max-width:420px; }
   .reg { display:inline-block; margin:6px 0 6px; padding:12px 22px; border:2px dashed var(--accent); border-radius:10px;
          font:700 1.8rem/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing:.12em; color:var(--accent); }
   .reg-l { color:var(--soft); font-size:.85rem; }
@@ -185,11 +190,16 @@
       <div class="done">
         <div class="ok"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div>
         <h2>Sikeres nevezés</h2>
-        <div class="reg-l">Regisztrációs szám</div>
+        <div class="reg-l">Regisztrációs kódod</div>
         <div class="reg" id="regszam"></div>
-        <p class="note" id="regNote"></p>
-        <ul id="keszLista"></ul>
-        <button class="btn" id="ujra">Új nevezés</button>
+        <p class="note">Mentsd el ezt a képet, és mutasd meg a regisztrációnál.<br>A nevezésed a szervezők véglegesítése után válik hivatalossá.</p>
+        <img id="regKep" class="regkep" alt="">
+        <div class="gombok">
+          <button class="btn" id="kepMent">Kép mentése</button>
+          <button class="btn masod" id="ujra">Új nevezés</button>
+        </div>
+        <p class="tipp" id="kepTipp">Telefonon a „Kép mentése” után válaszd a „Kép mentése” / „Mentés a Fotókba” lehetőséget,
+          vagy tartsd az ujjad a képen.</p>
       </div>
     </section>
   </div>
@@ -355,15 +365,84 @@ $('kuld').addEventListener('click', async () => {
       body: JSON.stringify({ wsdc: adat.wsdc, keresztnev: adat.keresztnev, vezeteknev: adat.vezeteknev, diviziok })
     })).json();
     if (!v.ok) { frissit(); return msg('msg2', v.hiba); }
-    $('keszLista').innerHTML = '';
     $('regszam').textContent = v.regszam;
-    $('regNote').textContent = 'A nevezésed a szervezők véglegesítése után válik hivatalossá.';
-    (v.osszes || [...v.hozzaadva, ...v.marNevezett]).forEach(d => {
-      const li = document.createElement('li'); li.textContent = d; $('keszLista').append(li);
-    });
+    await kepKeszit({ kod: v.regszam, nev: adat.vezeteknev + ' ' + adat.keresztnev, wsdc: adat.wsdc,
+                      diviziok: v.osszes || [...v.hozzaadva, ...v.marNevezett] });
     msg('msg2');
     lepes(3);
   } catch { frissit(); msg('msg2', 'Hálózati hiba.'); }
+});
+
+// ---------- Regisztrációs kód képként (a galériába menthető) ----------
+let kepBlob = null, kepNev = 'nevezes.png';
+async function kepKeszit({ kod, nev, wsdc, diviziok }) {
+  const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  try { await Promise.all(['400 40px Inter', '600 40px Inter', '700 40px Inter'].map(f => document.fonts.load(f))); } catch {}
+  const F = (w, s) => `${w} ${s}px Inter, system-ui, sans-serif`;
+  const MONO = s => `700 ${s}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+  const kozep = (t, y) => x.fillText(t, W / 2, y);
+  const vag = (t, max) => { if (x.measureText(t).width <= max) return t; while (t.length > 1 && x.measureText(t + '…').width > max) t = t.slice(0, -1); return t + '…'; };
+  const kerek = (x0, y0, w, h, r) => { x.beginPath(); x.roundRect ? x.roundRect(x0, y0, w, h, r) : x.rect(x0, y0, w, h); };
+  const e = esemeny || {};
+
+  // háttér és fejléc
+  x.fillStyle = '#eef1f6'; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#0b1a45'; x.fillRect(0, 0, W, 420);
+  x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+  x.fillStyle = '#ffffff'; x.font = F(700, 68); kozep(vag(e.nev || VERSENY_NEV, W - 120), 150);
+  const al = [e.datum, e.helyszin].filter(Boolean).join(' · ');
+  if (al) { x.fillStyle = 'rgba(255,255,255,.75)'; x.font = F(400, 38); kozep(vag(al, W - 120), 215); }
+
+  // kártya
+  x.fillStyle = '#ffffff'; x.shadowColor = 'rgba(11,26,69,.12)'; x.shadowBlur = 40; x.shadowOffsetY = 12;
+  kerek(60, 290, W - 120, H - 350, 28); x.fill();
+  x.shadowColor = 'transparent';
+  x.fillStyle = '#7a849b'; x.font = F(600, 32);
+  x.letterSpacing = '6px'; kozep('REGISZTRÁCIÓS KÓD', 400); x.letterSpacing = '0px';
+
+  // a kód
+  x.font = MONO(230);
+  const kw = Math.max(x.measureText(kod).width + 120, 520);
+  x.strokeStyle = '#1d4ed8'; x.lineWidth = 6; x.setLineDash([22, 14]);
+  kerek((W - kw) / 2, 450, kw, 290, 30); x.stroke(); x.setLineDash([]);
+  x.fillStyle = '#1d4ed8'; x.letterSpacing = '18px'; kozep(kod, 680); x.letterSpacing = '0px';
+
+  // név, WSDC, divíziók
+  x.fillStyle = '#111a33'; x.font = F(700, 60); kozep(vag(nev, W - 200), 850);
+  let y = 850;
+  if (wsdc) { x.fillStyle = '#7a849b'; x.font = F(400, 36); kozep('WSDC #' + wsdc, y += 60); }
+  x.strokeStyle = '#dfe3ec'; x.lineWidth = 2; x.beginPath(); x.moveTo(140, y + 45); x.lineTo(W - 140, y + 45); x.stroke();
+  y += 105;
+  x.fillStyle = '#111a33'; x.font = F(500, 38);
+  const lista = diviziok.slice(0, 5);
+  lista.forEach(d => { kozep(vag(d, W - 220), y); y += 56; });
+  if (diviziok.length > lista.length) { x.fillStyle = '#7a849b'; kozep('+ ' + (diviziok.length - lista.length) + ' további', y); }
+
+  // lábléc
+  x.fillStyle = '#7a849b'; x.font = F(400, 30);
+  kozep('Mutasd meg ezt a képet a regisztrációnál.', H - 130);
+  kozep('Nevezés: ' + new Intl.DateTimeFormat('hu-HU', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date()), H - 88);
+
+  kepNev = 'nevezes-' + kod + '.png';
+  kepBlob = await new Promise(r => c.toBlob(r, 'image/png'));
+  const img = $('regKep');
+  img.src = URL.createObjectURL(kepBlob);
+  img.alt = 'Regisztrációs kód: ' + kod + ' – ' + nev;
+}
+
+$('kepMent').addEventListener('click', async () => {
+  if (!kepBlob) return;
+  const file = new File([kepBlob], kepNev, { type: 'image/png' });
+  // Telefonon a megosztás menüből menthető a galériába („Kép mentése”, „Mentés a Fotókba”)
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Regisztrációs kód' }); return; }
+    catch (err) { if (err && err.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(kepBlob); a.download = kepNev;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 });
 
 // ---------- Eseménykártya ----------

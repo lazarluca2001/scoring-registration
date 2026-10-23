@@ -156,6 +156,16 @@
   dialog .pad { display:grid; gap:14px; }
   dialog .two { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   dialog .foot { justify-content:space-between; }
+  /* Hibák, létszám */
+  tr.hiba td { background:#fdecee; }
+  td.bibcell.hiba, .hibatxt { color:var(--err); }
+  .st.err { background:#fdecee; color:var(--err); }
+  .stats .err b { color:var(--err); }
+  .letszam { margin-bottom:26px; }
+  .letszam table { border:1px solid var(--line); border-radius:6px; }
+  .letszam td.n, .letszam th.n { text-align:right; width:1%; }
+  .letszam .warn { color:#b45309; font-weight:600; }
+  .letszam .sub { color:var(--soft); font-size:.78rem; }
   @media (max-width:600px) { .pad, .tools, .stats, .divs, .foot { padding-left:16px; padding-right:16px; } dialog .two { grid-template-columns:1fr; } }
 </style>
 </head>
@@ -213,6 +223,7 @@
           <svg class="i" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
         </button>
         <label class="chk"><input type="checkbox" id="csakVegl" checked> Csak véglegesítettek</label>
+        <label class="chk"><input type="checkbox" id="csakHiba"> Csak hibásak</label>
         <button class="btn" id="csvOssz">CSV</button>
         <button class="btn" id="xlsxOssz">XLSX</button>
       </div>
@@ -220,6 +231,7 @@
         <div><b id="stNev">0</b><span>nevezés</span></div>
         <div><b id="stFo">0</b><span>versenyző</span></div>
         <div><b id="stDiv">0</b><span>divízió</span></div>
+        <div id="stHibaBox"><b id="stHiba">0</b><span>hiba</span></div>
       </div>
       <div class="divs" id="divs"></div>
       <p class="msg" id="msgPanel" role="status" style="padding:0 24px 16px"></p>
@@ -227,7 +239,10 @@
 
     <!-- DIVÍZIÓK -->
     <div id="t-diviziok" hidden>
-      <div class="pad" id="divKapcs"></div>
+      <div class="pad">
+        <div class="letszam" id="letszam"></div>
+        <div id="divKapcs"></div>
+      </div>
       <p class="msg" id="msgDiv" role="status" style="padding:0 24px 16px"></p>
     </div>
 
@@ -332,7 +347,7 @@ async function api(muvelet, extra = {}) {
   return v;
 }
 async function betolt() { adat = await api('admin'); rajzolMind(); }
-function rajzolMind() { rajzolVersenyzok(); rajzolNevezesek(); rajzolDiviziok(); rajzolHelyszini(); }
+function rajzolMind() { szamolHibak(); rajzolVersenyzok(); rajzolNevezesek(); rajzolDiviziok(); rajzolHelyszini(); }
 
 // ---------- Belépés ----------
 $('loginForm').addEventListener('submit', async e => {
@@ -381,6 +396,41 @@ function rovid(alap, c) {
   return r.replace(/\s+/g, ' ').trim() || alap;
 }
 const emberKulcs = s => s.wsdc ? 'id' + s.wsdc : (s.keresztnev + ' ' + s.vezeteknev).toLowerCase();
+const szemely = s => s.regszam || emberKulcs(s);
+const teljesNev = s => s.vezeteknev + ' ' + s.keresztnev;
+
+// Hibák nevezésenként (amiért az app nem tudná beolvasni, vagy ami ütközést okoz).
+// Kulcs: a nevezés objektuma; érték: a hibák szövege.
+let hibaMap = new Map();
+function szamolHibak() {
+  const m = new Map();
+  const add = (s, t) => { if (!m.has(s)) m.set(s, []); if (!m.get(s).includes(t)) m.get(s).push(t); };
+  const bibSzemely = new Map();   // bib → személyek
+  const divSzemely = new Map();   // alap divízió + személy → nevezések
+  adat.sorok.forEach(s => {
+    if (!szerepOf(s)) add(s, 'nincs Leader/Follower szerep');
+    const k = alapDivizio(s) + '\u0000' + szemely(s);
+    divSzemely.set(k, [...(divSzemely.get(k) || []), s]);
+    if (!s.vegleges) return;
+    const bib = String(s.bib ?? '').trim();
+    if (!/^\d+$/.test(bib)) { add(s, `a bib „${bib}” nem szám`); return; }
+    if (!bibSzemely.has(bib)) bibSzemely.set(bib, new Map());
+    bibSzemely.get(bib).set(szemely(s), teljesNev(s));
+  });
+  adat.sorok.forEach(s => {
+    const bib = String(s.bib ?? '').trim();
+    const tobbi = s.vegleges && bibSzemely.get(bib);
+    if (tobbi && tobbi.size > 1)
+      add(s, `a ${bib}-es bib másnál is szerepel: ` + [...tobbi].filter(([k]) => k !== szemely(s)).map(([, n]) => n).join(', '));
+  });
+  divSzemely.forEach(l => { if (l.length > 1) l.forEach(s => add(s, 'kétszer nevezett ide: ' + l.map(x => x.divizio).join(' és '))); });
+  hibaMap = m;
+}
+// Melyik másik versenyzőnél van már ez a bib (véglegesítés előtti figyelmeztetéshez)
+function bibFoglalta(bib, kulcs) {
+  const s = adat.sorok.find(x => x.vegleges && String(x.bib).trim() === String(bib).trim() && szemely(x) !== kulcs);
+  return s ? teljesNev(s) : '';
+}
 
 // ======================================================================
 // VERSENYZŐK – véglegesítés bib számmal
@@ -447,7 +497,10 @@ function rajzolVersenyzok() {
     st.textContent = p.allapot === 'vegleges' ? 'végleges' : (p.vegl ? 'új divízió vár' : 'függő');
     const sub = document.createElement('span'); sub.className = 'sub';
     sub.textContent = [p.regszam, p.wsdc ? 'WSDC ' + p.wsdc : ''].filter(Boolean).join(' · ');
-    nm.append(st, sub);
+    nm.append(st);
+    const ph = [...new Set(p.sorok.flatMap(s => hibaMap.get(s) || []))];
+    if (ph.length) { const e = document.createElement('span'); e.className = 'st err'; e.textContent = 'hiba'; e.title = ph.join('\n'); nm.append(e); }
+    nm.append(sub);
 
     const dv = document.createElement('div'); dv.className = 'dv';
     p.sorok.forEach(s => {
@@ -463,6 +516,9 @@ function rajzolVersenyzok() {
     const ment = async () => {
       const bib = inp.value.trim();
       if (!bib) { inp.value = p.bib || String(kovetkezoBib()); inp.focus(); inp.select(); return; }
+      if (!/^\d+$/.test(bib)) { msg('msgV', 'A bib csak szám lehet, különben a pontozó app nem tudja beolvasni.'); inp.focus(); return; }
+      const foglalt = bibFoglalta(bib, p.regszam || emberKulcs(p));
+      if (foglalt && !confirm(`A ${bib}-es bib már ${foglalt} versenyzőé. Biztosan ezt adod ${p.vezeteknev} ${p.keresztnev} versenyzőnek is?`)) return;
       ok.disabled = true; msg('msgV', 'Mentés…', 'info');
       try {
         await api('veglegesit', { regszam: p.regszam, bib });
@@ -494,6 +550,7 @@ function rajzolVersenyzok() {
 // ======================================================================
 $('kereses').addEventListener('input', rajzolNevezesek);
 $('csakVegl').addEventListener('change', rajzolNevezesek);
+$('csakHiba').addEventListener('change', rajzolNevezesek);
 $('frissit').addEventListener('click', async () => {
   msg('msgPanel', 'Frissítés…', 'info');
   try { await betolt(); msg('msgPanel'); } catch (err) { msg('msgPanel', err.message || 'Hálózati hiba.'); }
@@ -519,7 +576,7 @@ const exportSorok = () => adat.sorok.filter(s => !$('csakVegl').checked || s.veg
 
 function szurt() {
   const q = $('kereses').value.trim().toLowerCase().replace(/-/g, '');
-  return exportSorok().filter(s => talal(q, s));
+  return exportSorok().filter(s => talal(q, s)).filter(s => !$('csakHiba').checked || hibaMap.has(s));
 }
 
 function rajzolNevezesek() {
@@ -528,10 +585,12 @@ function rajzolNevezesek() {
   $('stNev').textContent = alap.length;
   $('stFo').textContent = new Set(alap.map(s => s.regszam || emberKulcs(s))).size;
   $('stDiv').textContent = csoportok(alap).length;
+  const hdb = alap.filter(s => hibaMap.has(s)).length;
+  $('stHiba').textContent = hdb; $('stHibaBox').className = hdb ? 'err' : '';
 
   const box = $('divs');
   box.innerHTML = '';
-  if (!cs.length) { box.innerHTML = '<p class="empty">' + ($('csakVegl').checked ? 'Nincs véglegesített nevezés.' : 'Nincs nevezés.') + '</p>'; return; }
+  if (!cs.length) { box.innerHTML = '<p class="empty">' + ($('csakHiba').checked ? 'Nincs hibás nevezés.' : $('csakVegl').checked ? 'Nincs véglegesített nevezés.' : 'Nincs nevezés.') + '</p>'; return; }
 
   cs.forEach(([div, lista]) => {
     const det = document.createElement('details');
@@ -551,11 +610,15 @@ function rajzolNevezesek() {
     const tb = document.createElement('tbody');
     lista.forEach((s, i) => {
       const tr = document.createElement('tr');
+      const hb = hibaMap.get(s);
+      if (hb) { tr.className = 'hiba'; tr.title = hb.join('\n'); }
       [s.vegleges ? s.bib : '–', s.vezeteknev + ' ' + s.keresztnev, '', s.regszam || '–', s.wsdc || '–', s.forras || '–', s.ido].forEach((v, k) => {
         const td = document.createElement('td'); td.textContent = v;
-        if (k === 0) td.className = 'bibcell';
+        if (k === 0) td.className = 'bibcell' + (hb ? ' hiba' : '');
         if (k === 2) { const st = document.createElement('span'); st.className = 'st ' + (s.vegleges ? 'ok' : 'wait');
-          st.textContent = s.vegleges ? 'végleges' : 'függő'; td.append(st); }
+          st.textContent = s.vegleges ? 'végleges' : 'függő'; td.append(st);
+          if (hb) { const e = document.createElement('span'); e.className = 'st err'; e.style.marginLeft = '6px';
+            e.textContent = hb.length > 1 ? hb.length + ' hiba' : hb[0]; td.append(e); } }
         tr.append(td);
       });
       const act = document.createElement('td'); act.className = 'act';
@@ -709,7 +772,40 @@ $('xlsxOssz').addEventListener('click', () => {
 // ======================================================================
 // DIVÍZIÓK – ki/be kapcsolás
 // ======================================================================
+function rajzolLetszam() {
+  const m = new Map();
+  adat.sorok.forEach(s => {
+    const sz = szerepOf(s); if (!sz) return;
+    const d = alapDivizio(s);
+    if (!m.has(d)) m.set(d, { Leader: [0, 0], Follower: [0, 0] });
+    m.get(d)[sz][s.vegleges ? 0 : 1]++;
+  });
+  const box = $('letszam'); box.innerHTML = '';
+  if (!m.size) return;
+  const h = document.createElement('h2'); h.textContent = 'Létszám'; h.className = 'dgrp-h';
+  h.style.cssText = 'font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);margin-bottom:8px';
+  const t = document.createElement('table');
+  t.innerHTML = '<thead><tr><th>Divízió</th><th class="n">Leader</th><th class="n">Follower</th><th class="n">Eltérés</th></tr></thead>';
+  const tb = document.createElement('tbody');
+  const sorrend = d => { const i = adat.diviziok.findIndex(x => alapDivizio({ divizio: x.nev }) === d); return i < 0 ? 999 : i; };
+  [...m].sort((a, b) => sorrend(a[0]) - sorrend(b[0]) || a[0].localeCompare(b[0], 'hu')).forEach(([d, c]) => {
+    const tr = document.createElement('tr');
+    const cella = ([v, f]) => v + (f ? `<span class="sub"> +${f} függő</span>` : '');
+    const L = c.Leader[0] + c.Leader[1], F = c.Follower[0] + c.Follower[1], diff = L - F;
+    const td = document.createElement('td'); td.textContent = d; tr.append(td);
+    [cella(c.Leader), cella(c.Follower)].forEach(x => { const e = document.createElement('td'); e.className = 'n'; e.innerHTML = x; tr.append(e); });
+    const e = document.createElement('td'); e.className = 'n' + (Math.abs(diff) >= 2 ? ' warn' : '');
+    e.textContent = diff === 0 ? '0' : (diff > 0 ? '+' + diff + ' L' : '+' + (-diff) + ' F');
+    e.title = 'Összes nevezés (függőkkel együtt) alapján';
+    tr.append(e); tb.append(tr);
+  });
+  t.append(tb);
+  const w = document.createElement('div'); w.className = 'tbl'; w.append(t);
+  box.append(h, w);
+}
+
 function rajzolDiviziok() {
+  rajzolLetszam();
   const db = {};
   adat.sorok.forEach(s => db[s.divizio] = (db[s.divizio] || 0) + 1);
   const csop = {};

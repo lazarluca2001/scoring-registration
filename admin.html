@@ -174,7 +174,11 @@
   .btn.ci.on { background:#e6f4ec; color:var(--ok); border-color:#b7e0c6; }
   .fbar select { width:auto; height:40px; }
   /* Divízió korlát */
-  .row .korl { width:70px; height:30px; text-align:center; padding:0 6px; font-size:.82rem; }
+  .row .korl { width:56px; height:30px; text-align:center; padding:0 6px; font-size:.82rem; }
+  .rk { display:inline-flex; align-items:center; gap:5px; font-size:.8rem; color:var(--soft); margin-left:6px; }
+  .rk b { color:var(--ink); font-weight:600; }
+  .rk.red b, .rk.red span:first-child { color:var(--err); }
+  @media (max-width:640px) { .row { flex-wrap:wrap; } .row .meta { flex-wrap:wrap; order:3; width:100%; } }
   .tag.red { background:#fdecee; color:var(--err); }
   /* Esemény */
   .sec { font-size:.72rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--soft); }
@@ -943,49 +947,69 @@ function rajzolDiviziok() {
   rajzolLetszam();
   const db = {};
   adat.sorok.forEach(s => db[s.divizio] = (db[s.divizio] || 0) + 1);
+  // Egy sor = egy divízió (a Leader és Follower változat együtt)
+  const sorok = new Map();
+  adat.diviziok.forEach(d => { const a = d.alap || alapDivizio({ divizio: d.nev }); if (!sorok.has(a)) sorok.set(a, []); sorok.get(a).push(d); });
   const csop = {};
-  adat.diviziok.forEach(d => (csop[csoport(d.nev)] ||= []).push(d));
+  sorok.forEach((l, a) => (csop[csoport(a)] ||= []).push([a, l]));
+  const rend = { Leader: 0, Follower: 1 };
   const box = $('divKapcs'); box.innerHTML = '';
   ['Jack & Jill', 'Strictly', 'Egyéb'].filter(c => csop[c]).forEach(c => {
     const g = document.createElement('div'); g.className = 'dgrp';
     const h = document.createElement('h2'); h.textContent = c;
     const rows = document.createElement('div'); rows.className = 'rows';
-    csop[c].forEach(d => {
-      const row = document.createElement('div'); row.className = 'row' + (d.aktiv ? '' : ' off');
-      const n = document.createElement('span'); n.className = 'n'; n.textContent = d.nev;
+    csop[c].forEach(([alap, lista]) => {
+      lista.sort((x, y) => (rend[x.szerep] ?? 2) - (rend[y.szerep] ?? 2));
+      const aktivDb = lista.filter(d => d.aktiv).length;
+      const mind = aktivDb === lista.length, resz = aktivDb > 0 && !mind;
+      const row = document.createElement('div'); row.className = 'row' + (aktivDb ? '' : ' off');
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = alap;
       const meta = document.createElement('span'); meta.className = 'meta';
-      if (d.szintek) { const t = document.createElement('span'); t.className = 'tag gray'; t.textContent = d.szintek; meta.append(t); }
-      const n0 = db[d.nev] || 0;
-      if (n0 || d.korlat) { const t = document.createElement('span'); t.className = 'tag' + (d.korlat && n0 >= d.korlat ? ' red' : '');
-        t.textContent = d.korlat ? `${n0} / ${d.korlat}` + (n0 >= d.korlat ? ' betelt' : '') : n0 + ' nevezés'; meta.append(t); }
-      if ('korlat' in d) {
-        const k = document.createElement('input'); k.type = 'text'; k.className = 'korl'; k.inputMode = 'numeric';
-        k.placeholder = 'korlát'; k.value = d.korlat || ''; k.title = 'Létszámkorlát (üres = nincs). Betelt divízióba online nem lehet nevezni.';
-        k.setAttribute('aria-label', d.nev + ' létszámkorlát');
-        const kMent = async () => {
-          const v = k.value.trim();
-          if (v === String(d.korlat || '') || k.dataset.ment) return;   // Enter után a blur ne mentsen újra
-          if (v && !/^\d+$/.test(v)) { msg('msgDiv', 'A létszámkorlát csak szám lehet.'); k.focus(); return; }
-          k.dataset.ment = '1'; k.disabled = true; msg('msgDiv', 'Mentés…', 'info');
-          try { const r = await api('divizioAllit', { nev: d.nev, korlat: v });
-                adat.diviziok = r.diviziok; rajzolDiviziok(); rajzolHelyszini();
-                msg('msgDiv', d.nev + ': ' + (v ? 'létszámkorlát ' + v + ' fő.' : 'nincs létszámkorlát.'), 'ok'); }
-          catch (err) { delete k.dataset.ment; k.disabled = false; msg('msgDiv', err.message || 'Hálózati hiba.'); }
-        };
-        k.addEventListener('keydown', e => { if (e.key === 'Enter') kMent(); });
-        k.addEventListener('blur', kMent);
-        meta.append(k);
-      }
-      const sw = document.createElement('label'); sw.className = 'sw'; sw.title = d.aktiv ? 'Aktív' : 'Inaktív';
-      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = d.aktiv;
-      cb.setAttribute('aria-label', d.nev + ' aktív');
+      const szint = lista.map(d => d.szintek).find(Boolean);
+      if (szint) { const t = document.createElement('span'); t.className = 'tag gray'; t.textContent = szint; meta.append(t); }
+      if (resz) { const t = document.createElement('span'); t.className = 'tag red'; t.textContent = 'részben aktív';
+        t.title = 'Csak ez aktív: ' + lista.filter(d => d.aktiv).map(d => d.szerep || d.nev).join(', ') + '. A kapcsolóval mindkettő bekapcsol.'; meta.append(t); }
+      // szerepenként: létszám és korlát
+      lista.forEach(d => {
+        const n0 = db[d.nev] || 0, tele = d.korlat && n0 >= d.korlat;
+        const rk = document.createElement('span'); rk.className = 'rk' + (tele ? ' red' : '');
+        rk.title = d.nev + (tele ? ' – betelt' : '');
+        const cim = document.createElement('span'); cim.textContent = (d.szerep || 'Nevezés');
+        const sz = document.createElement('b'); sz.textContent = n0;
+        rk.append(cim, sz);
+        if ('korlat' in d) {
+          const per = document.createElement('span'); per.textContent = '/';
+          const k = document.createElement('input'); k.type = 'text'; k.className = 'korl'; k.inputMode = 'numeric';
+          k.placeholder = 'max'; k.value = d.korlat || ''; k.title = 'Létszámkorlát (üres = nincs). Betelt divízióba online nem lehet nevezni.';
+          k.setAttribute('aria-label', d.nev + ' létszámkorlát');
+          const kMent = async () => {
+            const v = k.value.trim();
+            if (v === String(d.korlat || '') || k.dataset.ment) return;   // Enter után a blur ne mentsen újra
+            if (v && !/^\d+$/.test(v)) { msg('msgDiv', 'A létszámkorlát csak szám lehet.'); k.focus(); return; }
+            k.dataset.ment = '1'; k.disabled = true; msg('msgDiv', 'Mentés…', 'info');
+            try { const r = await api('divizioAllit', { nev: d.nev, korlat: v });
+                  adat.diviziok = r.diviziok; rajzolDiviziok(); rajzolHelyszini();
+                  msg('msgDiv', d.nev + ': ' + (v ? 'létszámkorlát ' + v + ' fő.' : 'nincs létszámkorlát.'), 'ok'); }
+            catch (err) { delete k.dataset.ment; k.disabled = false; msg('msgDiv', err.message || 'Hálózati hiba.'); }
+          };
+          k.addEventListener('keydown', e => { if (e.key === 'Enter') kMent(); });
+          k.addEventListener('blur', kMent);
+          rk.append(per, k);
+        }
+        meta.append(rk);
+      });
+      // egy kapcsoló az egész divízióra
+      const sw = document.createElement('label'); sw.className = 'sw'; sw.title = mind ? 'Aktív' : resz ? 'Részben aktív' : 'Inaktív';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = mind;
+      cb.setAttribute('aria-label', alap + ' aktív');
       cb.addEventListener('change', async () => {
         cb.disabled = true; msg('msgDiv', 'Mentés…', 'info');
         try {
-          const v = await api('divizioAllit', { nev: d.nev, aktiv: cb.checked });
+          const v = await api('divizioAllit', { nevek: lista.map(d => d.nev), aktiv: cb.checked });
           adat.diviziok = v.diviziok; rajzolDiviziok(); rajzolHelyszini();
-          msg('msgDiv', d.nev + (cb.checked ? ' bekapcsolva.' : ' kikapcsolva.'), 'ok');
-        } catch (err) { cb.checked = !cb.checked; cb.disabled = false; msg('msgDiv', err.message || 'Hálózati hiba.'); }
+          msg('msgDiv', alap + (cb.checked ? ' bekapcsolva.' : ' kikapcsolva.'), 'ok');
+        } catch (err) { cb.checked = !cb.checked; cb.disabled = false;
+          msg('msgDiv', /Nincs ilyen divízió/.test(err.message) ? 'Ehhez frissíteni kell a Google Scriptet (lásd apps-script/README.md).' : (err.message || 'Hálózati hiba.')); }
       });
       sw.append(cb, document.createElement('span'));
       row.append(n, meta, sw); rows.append(row);

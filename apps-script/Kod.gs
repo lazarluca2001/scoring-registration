@@ -219,21 +219,23 @@ function adminAdatok_() {
   return { ok: true, sorok, diviziok: osszesDivizio_(), esemeny: esemeny_() };
 }
 
+// d.nev: egy divízió, vagy d.nevek: több (pl. a Leader és a Follower változat együtt kapcsolva)
 function divizioAllit_(d) {
-  const lap = SpreadsheetApp.getActive().getSheetByName(LAP_DIVIZIO);
+  const lap = divizioLap_();
   const nevek = lap.getRange(2, 1, Math.max(lap.getLastRow() - 1, 1), 1).getValues().flat().map(v => String(v).trim());
-  const i = nevek.indexOf(String(d.nev));
-  if (i < 0) return { ok: false, hiba: 'Nincs ilyen divízió.' };
-  divizioLap_();
+  const kert = (Array.isArray(d.nevek) ? d.nevek : [d.nev]).map(String);
+  const sorok = kert.map(n => nevek.indexOf(n));
+  if (!kert.length || sorok.some(i => i < 0)) return { ok: false, hiba: 'Nincs ilyen divízió.' };
   const valt = [];
-  if (typeof d.aktiv === 'boolean') { lap.getRange(i + 2, 4).setValue(d.aktiv); valt.push(d.aktiv ? 'bekapcsolva' : 'kikapcsolva'); }
+  if (typeof d.aktiv === 'boolean') { sorok.forEach(i => lap.getRange(i + 2, 4).setValue(d.aktiv)); valt.push(d.aktiv ? 'bekapcsolva' : 'kikapcsolva'); }
   if ('korlat' in d) {
+    if (kert.length !== 1) return { ok: false, hiba: 'Létszámkorlátot egyszerre egy divízióra lehet állítani.' };
     const k = String(d.korlat ?? '').trim();
     if (k && !/^\d{1,4}$/.test(k)) return { ok: false, hiba: 'A létszámkorlát pozitív egész szám legyen (vagy üres).' };
-    lap.getRange(i + 2, 5).setValue(k ? Number(k) : '');
+    lap.getRange(sorok[0] + 2, 5).setValue(k ? Number(k) : '');
     valt.push('létszámkorlát: ' + (k || 'nincs'));
   }
-  naploz_(d.ki, 'Divízió', d.nev + ': ' + valt.join(', '));
+  naploz_(d.ki, 'Divízió', kert.join(' + ') + ': ' + valt.join(', '));
   return { ok: true, diviziok: osszesDivizio_() };
 }
 

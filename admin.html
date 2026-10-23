@@ -189,6 +189,13 @@
   /* Napló */
   #t-naplo td.r { white-space:normal; min-width:280px; }
   #t-naplo td.t { color:var(--soft); }
+  /* Eseményválasztó */
+  .evbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:14px 24px; border-bottom:1px solid var(--line);
+           background:var(--zebra); border-radius:10px 10px 0 0; }
+  .evbar label { font-size:.72rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--soft); }
+  .evbar select { width:auto; min-width:220px; max-width:100%; font-weight:600; }
+  .evbar .sp { flex:1; }
+  .tag.ok { background:#e6f4ec; color:var(--ok); }
   @media (max-width:600px) { .pad, .tools, .stats, .divs, .foot { padding-left:16px; padding-right:16px; } dialog .two { grid-template-columns:1fr; } }
 </style>
 </head>
@@ -209,6 +216,14 @@
   </section>
 
   <section id="panel" class="card" hidden>
+    <div class="evbar" id="evBar" hidden>
+      <label for="evValaszt">Esemény</label>
+      <select id="evValaszt"></select>
+      <span class="tag" id="evAllapot"></span>
+      <button class="btn ghost sm" id="evAktival" hidden>Legyen ez az aktív</button>
+      <span class="sp"></span>
+      <button class="btn ghost sm" id="evUjGomb">+ Új esemény</button>
+    </div>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="versenyzok" aria-selected="true">Versenyzők</button>
       <button class="tab" role="tab" data-tab="nevezesek" aria-selected="false">Nevezések</button>
@@ -368,6 +383,26 @@
   </section>
 </main>
 
+<!-- Új esemény -->
+<dialog id="ujDlg">
+  <form method="dialog" id="ujForm">
+    <h3>Új esemény</h3>
+    <div class="pad">
+      <div><label class="f" for="ujNev">Esemény neve</label><input type="text" id="ujNev" required placeholder="pl. Budapest Swing Open 2027"></div>
+      <label class="chk"><input type="checkbox" id="ujMasol" checked> Divíziók átvétele innen: <b id="ujForras" style="color:var(--ink)"></b></label>
+      <p class="hint" style="margin:0">Új táblázat készül ugyanabban a Drive mappában. A nevezési oldalon csak akkor jelenik meg, ha aktívvá teszed.</p>
+      <p class="msg" id="msgUj" role="status"></p>
+    </div>
+    <div class="foot">
+      <span></span>
+      <span style="display:flex;gap:8px">
+        <button type="button" class="btn ghost" id="ujMegse">Mégse</button>
+        <button type="submit" class="btn" id="ujMent">Létrehozás</button>
+      </span>
+    </div>
+  </form>
+</dialog>
+
 <!-- Nevezés szerkesztése -->
 <dialog id="dlg">
   <form method="dialog" id="dlgForm">
@@ -412,6 +447,9 @@ const ICO = {
 };
 let jelszo = '';
 let adminNev = '';
+let esemenyId = '';       // az adminban kezelt esemény (táblázat); üres = az aktív
+let esemenyLista = [];
+try { esemenyId = sessionStorage.getItem('adminEsemeny') || ''; } catch {}
 try { adminNev = sessionStorage.getItem('adminNev') || ''; } catch {}
 let adat = { sorok: [], diviziok: [] };
 const nyitott = new Set();   // nyitva hagyott divíziók újrarajzoláskor
@@ -421,12 +459,74 @@ async function api(muvelet, extra = {}) {
   const v = await (await fetch(SCRIPT_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ muvelet, jelszo, ki: adminNev, ...extra })
+    body: JSON.stringify({ muvelet, jelszo, ki: adminNev, ...(esemenyId ? { esemenyId } : {}), ...extra })
   })).json();
   if (!v.ok) throw new Error(v.hiba || 'Ismeretlen hiba.');
   return v;
 }
-async function betolt() { adat = await api('admin'); rajzolMind(); }
+async function betolt() {
+  try { adat = await api('admin'); }
+  catch (err) {
+    if (!esemenyId || !/Nincs ilyen esemény/.test(err.message)) throw err;
+    esemenyValt('');               // a megjegyzett esemény már nincs meg: vissza az aktívra
+    adat = await api('admin');
+  }
+  if (adat.esemenyId && !esemenyId) esemenyId = adat.esemenyId;
+  rajzolMind(); rajzolEsemenySav();
+}
+function esemenyValt(id) {
+  esemenyId = id; evPiszkos = false; naplo = [];
+  try { sessionStorage.setItem('adminEsemeny', id); } catch {}
+}
+async function betoltEsemenyek() {
+  try { esemenyLista = (await api('esemenyek')).esemenyek; rajzolEsemenySav(); }
+  catch { $('evBar').hidden = true; }   // régi script: nincs eseménykezelés
+}
+function rajzolEsemenySav() {
+  if (!esemenyLista.length) return;
+  $('evBar').hidden = false;
+  const sel = $('evValaszt'); sel.innerHTML = '';
+  esemenyLista.forEach(e => { const o = document.createElement('option'); o.value = e.id; o.textContent = e.nev + (e.aktiv ? ' (aktív)' : ''); sel.append(o); });
+  sel.value = esemenyId || (esemenyLista.find(e => e.aktiv) || esemenyLista[0]).id;
+  const e = esemenyLista.find(x => x.id === sel.value) || {};
+  $('evAllapot').className = 'tag ' + (e.aktiv ? 'ok' : 'gray');
+  $('evAllapot').textContent = e.aktiv ? 'a nevezési oldalon ez látszik' : 'nem nyilvános';
+  $('evAktival').hidden = !!e.aktiv;
+}
+$('evValaszt').addEventListener('change', async () => {
+  esemenyValt($('evValaszt').value);
+  msg('msgV', 'Betöltés…', 'info');
+  try { await betolt(); msg('msgV'); if (!$('t-naplo').hidden) betoltNaplo(); }
+  catch (err) { msg('msgV', err.message || 'Hálózati hiba.'); }
+});
+$('evAktival').addEventListener('click', async () => {
+  const uj = esemenyLista.find(e => e.id === $('evValaszt').value), regi = esemenyLista.find(e => e.aktiv);
+  if (!uj || !confirm(`A nevezési oldalon ezentúl a(z) „${uj.nev}” esemény látszik.` +
+      (regi ? `\n\nA(z) „${regi.nev}” nevezései megmaradnak, de oda online már nem lehet nevezni.` : '') + '\n\nFolytatod?')) return;
+  $('evAktival').disabled = true;
+  try { esemenyLista = (await api('aktivEsemeny', { id: uj.id })).esemenyek; rajzolEsemenySav(); }
+  catch (err) { alert(err.message || 'Hálózati hiba.'); }
+  finally { $('evAktival').disabled = false; }
+});
+$('evUjGomb').addEventListener('click', () => {
+  $('ujNev').value = ''; $('ujMasol').checked = true; msg('msgUj');
+  $('ujForras').textContent = (esemenyLista.find(e => e.id === $('evValaszt').value) || {}).nev || '';
+  $('ujDlg').showModal(); $('ujNev').focus();
+});
+$('ujMegse').addEventListener('click', () => $('ujDlg').close());
+$('ujForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('ujMent').disabled = true; msg('msgUj', 'Létrehozás… (néhány másodperc)', 'info');
+  try {
+    const v = await api('ujEsemeny', { nev: $('ujNev').value, diviziokMasolasa: $('ujMasol').checked });
+    esemenyLista = v.esemenyek; esemenyValt(v.uj);
+    $('ujDlg').close();
+    await betolt();
+    document.querySelector('.tab[data-tab=esemeny]').click();
+    msg('msgEv', 'Az esemény elkészült. Töltsd ki az adatait, majd tedd aktívvá, ha indulhat a nevezés.', 'ok');
+  } catch (err) { msg('msgUj', err.message || 'Hálózati hiba.'); }
+  finally { $('ujMent').disabled = false; }
+});
 function rajzolMind() { szamolHibak(); rajzolVersenyzok(); rajzolNevezesek(); rajzolDiviziok(); rajzolHelyszini(); rajzolEsemeny(); }
 
 // ---------- Belépés ----------
@@ -440,6 +540,7 @@ $('loginForm').addEventListener('submit', async e => {
     try { sessionStorage.setItem('adminJelszo', jelszo); sessionStorage.setItem('adminNev', adminNev); } catch {}
     $('jelszo').value = ''; msg('msgLogin');
     $('belepes').hidden = true; $('panel').hidden = false;
+    betoltEsemenyek();
   } catch (err) { jelszo = ''; msg('msgLogin', err.message || 'Hálózati hiba.'); }
   finally { $('belep').disabled = false; }
 });
@@ -449,7 +550,7 @@ $('loginForm').addEventListener('submit', async e => {
   try { j = sessionStorage.getItem('adminJelszo') || ''; } catch {}
   if (!j) return;
   jelszo = j;
-  try { await betolt(); $('belepes').hidden = true; $('panel').hidden = false; }
+  try { await betolt(); $('belepes').hidden = true; $('panel').hidden = false; betoltEsemenyek(); }
   catch { try { sessionStorage.removeItem('adminJelszo'); } catch {} jelszo = ''; }
 })();
 

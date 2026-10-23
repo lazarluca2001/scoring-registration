@@ -16,6 +16,11 @@
 //   "Program"   – az ütemterv: Kezdés | Program | Megjegyzés
 //   "Naplo"     – minden módosítás: Időpont | Ki | Művelet | Részletek
 //   A hiányzó lapokat és oszlopokat a script magától létrehozza.
+//
+// Több esemény: minden eseménynek saját táblázata van ugyanabban a Drive mappában, ahol ez a
+// (scriptet tartalmazó) táblázat. Az admin felületen lehet új eseményt létrehozni, és kiválasztani,
+// melyik az aktív (a nevezési oldalon élő) esemény. A lista és az aktív esemény a Script Properties-ben
+// van (ESEMENYEK, AKTIV_ESEMENY); ha nincs beállítva, ez a táblázat az aktív esemény.
 // =====================================================================
 
 const LAP_DIVIZIO = 'Diviziok';
@@ -35,42 +40,130 @@ const OSZ = { IDO: 0, WSDC: 1, KN: 2, VN: 3, DIV: 4, SZEREP: 5, REG: 6, FORRAS: 
 // Egyszer futtasd le kézzel: létrehozza a lapokat és feltölti a divíziókat
 // ---------------------------------------------------------------------
 function setup() {
-  const ss = SpreadsheetApp.getActive();
+  esemenyTablaElokeszit_(SpreadsheetApp.getActive(), null);
+}
 
-  if (!ss.getSheetByName(LAP_DIVIZIO)) {
-    const lap = ss.insertSheet(LAP_DIVIZIO);
-    const sorok = [['Divízió', 'Szerep', 'Szintek', 'Aktív']];
-    const jj = [['Newcomer', 'NEW'], ['Novice', 'NOV'], ['Intermediate', 'INT'],
-                ['Advanced', 'ADV'], ['All-Star', 'ALS'], ['Champions', 'CHMP']];
-    jj.forEach(([nev, kod]) => {
-      sorok.push([nev + ' Jack&Jill Leader', 'Leader', kod, true]);
-      sorok.push([nev + ' Jack&Jill Follower', 'Follower', kod, true]);
-    });
-    ['Leader', 'Follower'].forEach(sz => {
-      sorok.push(['Masters Jack&Jill ' + sz, sz, '', false]);
-      sorok.push(['Sophisticated Jack&Jill ' + sz, sz, '', false]);
-      sorok.push(['Juniors Jack&Jill ' + sz, sz, '', false]);
-    });
-    [['Strictly Newcomer/Novice', 'NEW,NOV'],
-     ['Strictly Novice/Intermediate', 'NOV,INT'],
-     ['Strictly Intermediate/Advanced', 'INT,ADV'],
-     ['Strictly Advanced/All-Star', 'ADV,ALS'],
-     ['Strictly Open', ''],
-     ['Strictly Battle', '']].forEach(([nev, szint]) => {
-      sorok.push([nev + ' (Leader)', 'Leader', szint, true]);
-      sorok.push([nev + ' (Follower)', 'Follower', szint, true]);
-    });
-    lap.getRange(1, 1, sorok.length, 4).setValues(sorok);
-    lap.getRange(2, 4, sorok.length - 1, 1).insertCheckboxes();
-    lap.setFrozenRows(1);
-  }
+// Egy esemény táblázatának lapjai. forras: másik esemény táblázata, ahonnan a divíziókat átveszi (vagy null)
+function esemenyTablaElokeszit_(ss, forras) {
+  const elozo = _ss; _ss = ss;
+  try {
+    if (!ss.getSheetByName(LAP_DIVIZIO)) {
+      const lap = ss.insertSheet(LAP_DIVIZIO);
+      let sorok = null;
+      const fl = forras && forras.getSheetByName(LAP_DIVIZIO);
+      if (fl && fl.getLastRow() > 1) sorok = fl.getRange(1, 1, fl.getLastRow(), 5).getValues();
+      if (!sorok) sorok = alapDiviziok_();
+      lap.getRange(1, 1, sorok.length, sorok[0].length).setValues(sorok);
+      lap.getRange(2, 4, sorok.length - 1, 1).insertCheckboxes();
+      lap.setFrozenRows(1);
+    }
+    if (!ss.getSheetByName(LAP_NEVEZES)) ss.insertSheet(LAP_NEVEZES);
+    nevezesLap_();
+    divizioLap_();
+    esemenyLap_();
+    programLap_();
+    naploLap_();
+  } finally { _ss = elozo; }
+}
 
-  if (!ss.getSheetByName(LAP_NEVEZES)) ss.insertSheet(LAP_NEVEZES);
-  nevezesLap_();
-  divizioLap_();
-  esemenyLap_();
-  programLap_();
-  naploLap_();
+function alapDiviziok_() {
+  const sorok = [['Divízió', 'Szerep', 'Szintek', 'Aktív', 'Létszámkorlát']];
+  const jj = [['Newcomer', 'NEW'], ['Novice', 'NOV'], ['Intermediate', 'INT'],
+              ['Advanced', 'ADV'], ['All-Star', 'ALS'], ['Champions', 'CHMP']];
+  jj.forEach(([nev, kod]) => {
+    sorok.push([nev + ' Jack&Jill Leader', 'Leader', kod, true, '']);
+    sorok.push([nev + ' Jack&Jill Follower', 'Follower', kod, true, '']);
+  });
+  ['Leader', 'Follower'].forEach(sz => {
+    sorok.push(['Masters Jack&Jill ' + sz, sz, '', false, '']);
+    sorok.push(['Sophisticated Jack&Jill ' + sz, sz, '', false, '']);
+    sorok.push(['Juniors Jack&Jill ' + sz, sz, '', false, '']);
+  });
+  [['Strictly Newcomer/Novice', 'NEW,NOV'],
+   ['Strictly Novice/Intermediate', 'NOV,INT'],
+   ['Strictly Intermediate/Advanced', 'INT,ADV'],
+   ['Strictly Advanced/All-Star', 'ADV,ALS'],
+   ['Strictly Open', ''],
+   ['Strictly Battle', '']].forEach(([nev, szint]) => {
+    sorok.push([nev + ' (Leader)', 'Leader', szint, true, '']);
+    sorok.push([nev + ' (Follower)', 'Follower', szint, true, '']);
+  });
+  return sorok;
+}
+
+// ---------------------------------------------------------------------
+// Események (táblázatonként egy) – melyikkel dolgozik a kérés
+// ---------------------------------------------------------------------
+let _ss = null;
+function ss_() { return _ss || (_ss = nyit_(aktivId_())); }
+function nyit_(id) {
+  const bound = SpreadsheetApp.getActive();
+  return bound && bound.getId() === id ? bound : SpreadsheetApp.openById(id);
+}
+function aktivId_() {
+  return PropertiesService.getScriptProperties().getProperty('AKTIV_ESEMENY') || SpreadsheetApp.getActive().getId();
+}
+// [{ id, nev }] – a scriptet tartalmazó táblázat mindig benne van
+function esemenyIdk_() {
+  const sp = PropertiesService.getScriptProperties();
+  let l = [];
+  try { l = JSON.parse(sp.getProperty('ESEMENYEK') || '[]'); } catch (_) { l = []; }
+  const bound = SpreadsheetApp.getActive().getId();
+  if (!l.includes(bound)) { l.unshift(bound); sp.setProperty('ESEMENYEK', JSON.stringify(l)); }
+  return l;
+}
+function valaszt_(id) {
+  id = String(id || '');
+  if (!id) return;
+  if (!esemenyIdk_().includes(id)) throw new Error('Nincs ilyen esemény.');
+  _ss = nyit_(id);
+}
+
+function esemenyek_() {
+  const aktiv = aktivId_();
+  const lista = esemenyIdk_().map(id => {
+    try {
+      const f = DriveApp.getFileById(id);
+      if (f.isTrashed()) return null;
+      return { id, nev: f.getName(), aktiv: id === aktiv, letrehozva: idoSzoveg_(f.getDateCreated()) };
+    } catch (_) { return null; }
+  }).filter(Boolean);
+  return { ok: true, esemenyek: lista, aktiv };
+}
+
+function ujEsemeny_(d) {
+  const nev = tisztit_(d.nev);
+  if (!nev) return { ok: false, hiba: 'Add meg az esemény nevét.' };
+  const bound = SpreadsheetApp.getActive();
+  const forras = d.diviziokMasolasa ? ss_() : null;
+  const uj = SpreadsheetApp.create(nev);
+  const fajl = DriveApp.getFileById(uj.getId());
+  const szulok = DriveApp.getFileById(bound.getId()).getParents();
+  if (szulok.hasNext()) fajl.moveTo(szulok.next());
+  esemenyTablaElokeszit_(uj, forras);
+  const elso = uj.getSheets().find(s => ![LAP_DIVIZIO, LAP_NEVEZES, LAP_ESEMENY, LAP_PROGRAM, LAP_NAPLO].includes(s.getName()));
+  if (elso && uj.getSheets().length > 1) uj.deleteSheet(elso);   // az üres „Munkalap1”
+  // az esemény neve az Esemeny lapra is
+  const el = uj.getSheetByName(LAP_ESEMENY);
+  el.getRange(2, 2).setValue(nev);
+  const sp = PropertiesService.getScriptProperties();
+  const l = esemenyIdk_(); l.push(uj.getId()); sp.setProperty('ESEMENYEK', JSON.stringify(l));
+  naploz_(d.ki, 'Új esemény', nev + (forras ? ' (divíziók átvéve: ' + forras.getName() + ')' : ''));
+  const elozo = _ss; _ss = uj; naploz_(d.ki, 'Esemény létrehozva', nev); _ss = elozo;
+  return Object.assign(esemenyek_(), { uj: uj.getId() });
+}
+
+function aktivEsemeny_(d) {
+  const id = String(d.id || '');
+  if (!esemenyIdk_().includes(id)) return { ok: false, hiba: 'Nincs ilyen esemény.' };
+  const regi = aktivId_();
+  PropertiesService.getScriptProperties().setProperty('AKTIV_ESEMENY', id);
+  const elozo = _ss;
+  [regi, id].filter((x, i, a) => a.indexOf(x) === i).forEach(x => {
+    try { _ss = nyit_(x); naploz_(d.ki, 'Aktív esemény', DriveApp.getFileById(id).getName() + ' lett az aktív (nyilvános) esemény'); } catch (_) {}
+  });
+  _ss = elozo;
+  return esemenyek_();
 }
 
 // Admin jelszó: írd át, futtasd le egyszer, majd töröld vissza innen
@@ -121,7 +214,11 @@ function doPost(e) {
 
   const auth = jelszoEllenor_(d.jelszo);
   if (auth) return json(auth);
+  try { valaszt_(d.esemenyId); } catch (err) { return json({ ok: false, hiba: err.message }); }
   switch (d.muvelet) {
+    case 'esemenyek':      return json(esemenyek_());
+    case 'ujEsemeny':      return zarral_(() => ujEsemeny_(d));
+    case 'aktivEsemeny':   return zarral_(() => aktivEsemeny_(d));
     case 'admin':          return json(adminAdatok_());
     case 'divizioAllit':   return zarral_(() => divizioAllit_(d));
     case 'nevezesModosit': return zarral_(() => nevezesModosit_(d));
@@ -191,7 +288,7 @@ function nyilvanosNevezes_(d) {
 // Admin műveletek
 // ---------------------------------------------------------------------
 function adminAdatok_() {
-  const ss = SpreadsheetApp.getActive();
+  const ss = ss_();
   const tz = ss.getSpreadsheetTimeZone();
   const lap = nevezesLap_();
   regszamPotlas_(lap);
@@ -216,7 +313,8 @@ function adminAdatok_() {
       checkin: fmt(r[OSZ.CHECKIN]),
       fizetve: r[OSZ.FIZ] === '' || r[OSZ.FIZ] == null ? '' : Number(r[OSZ.FIZ]) || 0
     }));
-  return { ok: true, sorok, diviziok: osszesDivizio_(), esemeny: esemeny_() };
+  return { ok: true, sorok, diviziok: osszesDivizio_(), esemeny: esemeny_(),
+           esemenyId: ss.getId(), aktivEsemeny: ss.getId() === aktivId_() };
 }
 
 // d.nev: egy divízió, vagy d.nevek: több (pl. a Leader és a Follower változat együtt kapcsolva)
@@ -405,7 +503,7 @@ function nevRegszam_(ertekek, regszam) {
 // ---------------------------------------------------------------------
 // Esemény adatai és ütemterv
 // ---------------------------------------------------------------------
-function tz_() { return SpreadsheetApp.getActive().getSpreadsheetTimeZone(); }
+function tz_() { return ss_().getSpreadsheetTimeZone(); }
 
 // Date vagy szöveg → "2027-03-05T10:00" (helyi idő)
 function idoSzoveg_(v) {
@@ -572,7 +670,7 @@ function osszesDivizio_() {
 // Nevezések száma divíziónként (függőkkel együtt)
 function letszam_() {
   const db = {};
-  const lap = SpreadsheetApp.getActive().getSheetByName(LAP_NEVEZES);
+  const lap = ss_().getSheetByName(LAP_NEVEZES);
   if (!lap || lap.getLastRow() < 2) return db;
   lap.getRange(2, OSZ.DIV + 1, lap.getLastRow() - 1, 1).getValues()
     .forEach(([v]) => { v = String(v).trim(); if (v) db[v] = (db[v] || 0) + 1; });
@@ -580,12 +678,12 @@ function letszam_() {
 }
 
 function divizioLap_() {
-  const lap = SpreadsheetApp.getActive().getSheetByName(LAP_DIVIZIO);
+  const lap = ss_().getSheetByName(LAP_DIVIZIO);
   if (String(lap.getRange(1, 5).getValue()) !== 'Létszámkorlát') lap.getRange(1, 5).setValue('Létszámkorlát');
   return lap;
 }
 function lapFejleccel_(nev, fejlec) {
-  const ss = SpreadsheetApp.getActive();
+  const ss = ss_();
   let lap = ss.getSheetByName(nev);
   if (!lap) {
     lap = ss.insertSheet(nev);
@@ -603,7 +701,7 @@ function programLap_() { return lapFejleccel_(LAP_PROGRAM, ['Kezdés', 'Program'
 function naploLap_() { return lapFejleccel_(LAP_NAPLO, ['Időpont', 'Ki', 'Művelet', 'Részletek']); }
 
 function nevezesLap_() {
-  const lap = SpreadsheetApp.getActive().getSheetByName(LAP_NEVEZES);
+  const lap = ss_().getSheetByName(LAP_NEVEZES);
   const fej = lap.getRange(1, 1, 1, FEJLEC.length).getValues()[0].map(String);
   if (fej.join('|') !== FEJLEC.join('|')) {
     lap.getRange(1, 1, 1, FEJLEC.length).setValues([FEJLEC]);
@@ -637,7 +735,7 @@ function json(obj) {
 // szintek = { Leader: Set(['NOV','INT']), Follower: Set(['NEW','NOV']) }
 // ---------------------------------------------------------------------
 function engedelyezett_(szintek) {
-  const sorok = SpreadsheetApp.getActive().getSheetByName(LAP_DIVIZIO)
+  const sorok = ss_().getSheetByName(LAP_DIVIZIO)
     .getDataRange().getValues().slice(1);
   const db = letszam_();
   const ki = [];

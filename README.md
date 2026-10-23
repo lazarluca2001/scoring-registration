@@ -20,7 +20,9 @@ exportált fájlt pedig a **Scoring_Judging** pontozó app közvetlenül be tudj
   A verseny napján jelzi, mi zajlik éppen („most”) és mi következik.
 - **Nevezés WSDC azonosítóval**: a név és a jogosult divíziók automatikusan betöltődnek a WSDC adatbázisból (szint, szerep).
 - **Nevezés azonosító nélkül**: névvel, a Newcomer és Novice divíziókba.
-- **Divízióválasztás**: divíziónként egy szerep (Leader vagy Follower). A betelt divízió nem választható.
+- **Divízióválasztás**: divíziónként egy szerep (Leader vagy Follower). A szintezett divíziókban (Newcomer, Novice,
+  Intermediate…) szerepenként csak egy szinten lehet indulni; a Masters, Sophisticated, Juniors és a Strictly kivétel.
+  A betelt divízió nem választható.
 - **Határidő**: a nevezési határidő után az űrlap helyett „A nevezés lezárult” üzenet jelenik meg.
 - **Regisztrációs kód**: a nevezés után 3 karakteres kód (pl. `K7M`) és egy kép a kóddal, névvel és divíziókkal.
   A „Kép mentése” gomb Androidon letölti a galéria Download albumába, iPhone-on a „Kép mentése” menüponttal a Fotókba kerül.
@@ -89,7 +91,9 @@ The user interface is in Hungarian.
   On competition day it marks what is happening now and what comes next.
 - **Registration with a WSDC ID**: the name and the eligible divisions are loaded automatically from the WSDC database (level, role).
 - **Registration without an ID**: by name, into the Newcomer and Novice divisions.
-- **Division choice**: one role per division (Leader or Follower). Full divisions cannot be selected.
+- **Division choice**: one role per division (Leader or Follower). In levelled divisions (Newcomer, Novice,
+  Intermediate…) a competitor can enter only one level per role; Masters, Sophisticated, Juniors and Strictly are exceptions.
+  Full divisions cannot be selected.
 - **Deadline**: after the registration deadline the form is replaced by a "registration closed" message.
 - **Registration code**: after registering, a 3-character code (e.g. `K7M`) and an image with the code, name and divisions.
   "Save image" downloads it to the gallery's Download album on Android; on iPhone it opens the system menu, where

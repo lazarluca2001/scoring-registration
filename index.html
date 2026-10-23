@@ -271,6 +271,10 @@ $('tovabb').addEventListener('click', async () => {
 });
 
 let valasztas = {}; // divízió (szerep nélkül) → kiválasztott divízió neve
+let sorElemek = {}; // divízió (szerep nélkül) → { row, seg } a kijelölés frissítéséhez
+const divAdat = nev => (adat.diviziok || []).find(d => d.nev === nev) || {};
+// Szintezett (Newcomer, Novice…): szerepenként csak egy választható. Régi script esetén a névből dönt.
+const szintezett = d => d.szintezett !== undefined ? d.szintezett : /newcomer|novice|intermediate|advanced|all-?star|champion/i.test(d.nev) && !/strictly/i.test(d.nev);
 
 function csoport(nev) {
   if (/strictly/i.test(nev)) return 'Strictly';
@@ -286,7 +290,7 @@ function rovid(alap, c) {
 function mutat2() {
   $('whoNev').textContent = adat.keresztnev + ' ' + adat.vezeteknev;
   $('whoId').textContent = adat.wsdc ? '#' + adat.wsdc : '';
-  valasztas = {};
+  valasztas = {}; sorElemek = {};
 
   // Egy sor = egy divízió, benne az elérhető szerepek
   const sorok = new Map();
@@ -323,11 +327,24 @@ function mutat2() {
           seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', 'false'));
           if (valasztas[alap]) b.setAttribute('aria-pressed', 'true');
           row.classList.toggle('sel', !!valasztas[alap]);
+          msg('msg2');
+          // ugyanabban a szerepben csak egy szintezett divízió: a korábbit leveszi
+          if (valasztas[alap] && szintezett(d) && d.szerep) {
+            Object.keys(valasztas).forEach(m => {
+              const v = valasztas[m] && divAdat(valasztas[m]);
+              if (m === alap || !v || !szintezett(v) || v.szerep !== d.szerep) return;
+              delete valasztas[m];
+              const el = sorElemek[m];
+              if (el) { el.row.classList.remove('sel'); el.seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', 'false')); }
+              msg('msg2', `${d.szerep}ként csak egy szinten indulhatsz, ezért a(z) ${rovid(m, csoport(m))} helyett a(z) ${rovid(alap, c)} lett kiválasztva.`, true);
+            });
+          }
           frissit();
         });
         seg.append(b);
       });
       row.append(n, seg); rows.append(row);
+      sorElemek[alap] = { row, seg };
     });
     g.append(h2, rows); box.append(g);
   });

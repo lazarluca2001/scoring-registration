@@ -27,7 +27,7 @@
 
   /* Űrlapelemek */
   label.f { display:block; font-size:.85rem; font-weight:500; margin-bottom:6px; }
-  input[type=text], input[type=password], input[type=search], input[type=datetime-local], select {
+  input[type=text], input[type=password], input[type=search], input[type=datetime-local], input[type=date], select {
     width:100%; height:42px; padding:0 12px; font:inherit; color:var(--ink); background:var(--card);
     border:1px solid var(--line); border-radius:6px; outline:none; }
   input:focus, select:focus { border-color:var(--accent); }
@@ -355,10 +355,14 @@
         <p class="msg" id="evRegi" style="margin-bottom:12px"></p>
         <div class="grid">
           <div class="full"><label class="f" for="evNev">Esemény neve</label><input type="text" id="evNev" placeholder="pl. TECA 2027"></div>
-          <div><label class="f" for="evDatum">Dátum</label><input type="text" id="evDatum" placeholder="pl. 2027. március 5–7."></div>
+          <div><label class="f" for="evKezdes">Első nap</label><input type="date" id="evKezdes"></div>
+          <div><label class="f" for="evVege">Utolsó nap</label><input type="date" id="evVege"></div>
+          <div><label class="f" for="evDatum">Dátum szövegesen <span style="color:var(--soft);font-weight:400">(ha eltér)</span></label><input type="text" id="evDatum" placeholder="üresen a napokból számolja"></div>
           <div><label class="f" for="evHely">Helyszín</label><input type="text" id="evHely" placeholder="pl. Budapest, …"></div>
           <div><label class="f" for="evDij">Nevezési díj (Ft)</label><input type="text" id="evDij" inputmode="numeric" placeholder="pl. 12000"></div>
           <div><label class="f" for="evHatarido">Nevezési határidő</label><input type="datetime-local" id="evHatarido"></div>
+          <div class="full"><label class="f" for="evKep">Borítókép (link) <span style="color:var(--soft);font-weight:400">– a nevezési oldal eseménykártyáján; Drive-link is jó, ha „Bárki, aki rendelkezik a linkkel” megosztású</span></label>
+            <input type="text" id="evKep" placeholder="https://…"></div>
         </div>
         <div class="bar"><h2 class="sec">Ütemterv</h2><button class="btn ghost sm" id="pUj" type="button">+ Programpont</button></div>
         <div class="prog" id="pLista"></div>
@@ -367,7 +371,7 @@
         <div class="bar"><h2 class="sec">Nyilvános oldal fülei</h2></div>
         <div class="fulvalaszto">
           <label class="chk"><input type="checkbox" id="fulNevezes"> Nevezés</label>
-          <label class="chk"><input type="checkbox" id="fulMarshalling"> Marshalling listák</label>
+          <label class="chk"><input type="checkbox" id="fulMarshalling"> Listák</label>
           <label class="chk"><input type="checkbox" id="fulEredmeny"> Eredmények</label>
         </div>
         <p class="hint" style="margin-top:4px">A Marshalling listák fülön automatikusan megjelenik a rajtlista (a véglegesített versenyzők divíziónként, bib szerint), alatta pedig az itt megadott linkek.
@@ -376,6 +380,17 @@
         <div class="bar"><h2 class="sec">Linkek</h2><button class="btn ghost sm" id="lUj" type="button">+ Link</button></div>
         <div class="linkszerk" id="lLista"></div>
         <p class="hint">Pl. a pontozó appból exportált futambeosztás vagy eredmény PDF-ként a Drive-on (megosztás: „Bárki, aki rendelkezik a linkkel”).</p>
+
+        <div class="bar"><h2 class="sec">Futambeosztás és eredmények a pontozó appból</h2></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input type="file" id="erFajl" accept=".xlsx" style="flex:1;min-width:220px">
+          <button class="btn" id="erFel" type="button" disabled>Feltöltés</button>
+          <button class="btn danger sm" id="erTorol" type="button">Feltöltöttek törlése</button>
+        </div>
+        <p class="msg" id="msgEr" role="status" style="margin-top:8px"></p>
+        <div class="hint" id="erAllapot"></div>
+        <p class="hint">A pontozó appban: Munkamenet → exportálás (XLSX). A fájlból a nevezési oldal Listák fülére a futambeosztás (bevonuló párok),
+          az Eredmények fülre a fordulók eredménye kerül. Bármikor újra feltöltheted: az eredmények frissülnek, a korábbi fordulók futambeosztása megmarad.</p>
         <p class="hint">A nevezési oldal tetején megjelenik egy kártya az esemény adataival, a nevezési határidővel és az ütemtervvel.
           A határidő után az online nevezés lezárul; a helyszíni nevezés az admin felületen továbbra is működik.</p>
       </div>
@@ -553,7 +568,7 @@ $('ujForm').addEventListener('submit', async e => {
   } catch (err) { msg('msgUj', err.message || 'Hálózati hiba.'); }
   finally { $('ujMent').disabled = false; }
 });
-function rajzolMind() { szamolHibak(); rajzolVersenyzok(); rajzolNevezesek(); rajzolDiviziok(); rajzolHelyszini(); rajzolEsemeny(); }
+function rajzolMind() { szamolHibak(); rajzolVersenyzok(); rajzolNevezesek(); rajzolDiviziok(); rajzolHelyszini(); rajzolEsemeny(); rajzolEredmenyAllapot(); }
 
 // ---------- Belépés ----------
 $('loginForm').addEventListener('submit', async e => {
@@ -1279,6 +1294,8 @@ function rajzolEsemeny() {
   if (!e || evPiszkos) return;
   $('evNev').value = e.nev || ''; $('evDatum').value = e.datum || ''; $('evHely').value = e.helyszin || '';
   $('evDij').value = e.dij || ''; $('evHatarido').value = e.hatarido || '';
+  $('evKezdes').value = e.kezdes || ''; $('evVege').value = e.vege || ''; $('evKep').value = e.kep || '';
+  ['evKezdes', 'evVege', 'evKep'].forEach(id => { $(id).disabled = !('kezdes' in e); });
   const box = $('pLista'); box.innerHTML = '';
   (e.program || []).forEach(p => box.append(programSor(p)));
   if (!(e.program || []).length) box.append(programSor());
@@ -1315,6 +1332,7 @@ $('evMent').addEventListener('click', async () => {
   }).filter(p => p.ido || p.cim || p.megj);
   const esemeny = { nev: $('evNev').value.trim(), datum: $('evDatum').value.trim(), helyszin: $('evHely').value.trim(),
                     dij: $('evDij').value.trim(), hatarido: $('evHatarido').value, program };
+  if (!$('evKezdes').disabled) Object.assign(esemeny, { kezdes: $('evKezdes').value, vege: $('evVege').value || $('evKezdes').value, kep: $('evKep').value.trim() });
   if (!$('fulNevezes').disabled) {
     ['fulNevezes', 'fulMarshalling', 'fulEredmeny'].forEach(k => { esemeny[k] = $(k).checked; });
     esemeny.linkek = [...document.querySelectorAll('#lLista .lk')].map(r => {
@@ -1329,6 +1347,114 @@ $('evMent').addEventListener('click', async () => {
     msg('msgEv', 'Mentve. A nevezési oldalon frissítés után látszik.', 'ok');
   } catch (err) { msg('msgEv', err.message || 'Hálózati hiba.'); }
   finally { $('evMent').disabled = !adat.esemeny; }
+});
+
+// ----- A pontozó app XLSX exportjának feldolgozása -----
+// Az app (ResultsExport) divíziónként két lapot ír: „<divízió> Results” – minden forduló eredménye,
+// és „<divízió> Marshalling” – a következő forduló futambeosztása. A lapnevet az app 31 karakterre vágja,
+// ezért a divíziót és a fordulót a lapon lévő címsorból olvassuk ki.
+const TIPUS = { Prelim: 'prelim', Quarterfinal: 'quarter', Semifinal: 'semi', Final: 'final' };
+const CIM_RE = / - Round (\d+) \((Prelim|Quarterfinal|Semifinal|Final)\)/;
+function appExportFeldolgoz(wb) {
+  const ki = { diviziok: {} };
+  const div = n => (ki.diviziok[n] = ki.diviziok[n] || { fordulok: [], marshalling: [] });
+  const s = v => String(v ?? '').trim();
+  const ures = r => !r || r.every(c => s(c) === '');
+  const dontes = v => typeof v === 'number' ? v : ({ 'Yes': 'Igen', 'Alt 1': 'Alt1', 'Alt 2': 'Alt2', 'Alt 3': 'Alt3', '-': 'Nem' })[s(v)] ?? s(v);
+  const birTiszta = x => s(x).replace(/ ranking$/, '').replace(/ \(HJ\)$/, '');
+  wb.SheetNames.forEach(lapnev => {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[lapnev], { header: 1, raw: true, defval: '' });
+    const elso = rows.find(r => !ures(r));
+    if (!elso) return;
+    const mm = s(elso[0]).match(/^(.*) - Round (\d+) \((Prelim|Quarterfinal|Semifinal|Final)\) - marshalling$/);
+    if (mm) {
+      const m = { sorszam: +mm[2], tipus: TIPUS[mm[3]], futamok: [], parok: [] };
+      let futam = null;
+      for (let i = rows.indexOf(elso) + 1; i < rows.length; i++) {
+        const r = rows[i], c0 = s(r[0]);
+        if (ures(r)) { futam = null; continue; }
+        const h = c0.match(/^Heat (\d+)$/);
+        if (h) { futam = []; m.futamok.push(futam); continue; }
+        if ((c0 === 'Bib' || c0 === 'Pair') && s(r[1]) === 'Leader') continue;   // fejléc
+        if (/^The /.test(c0)) continue;                                            // „The heats are not made yet” stb.
+        if (futam) futam.push({ lb: s(r[0]), ln: s(r[1]), fb: s(r[2]), fn: s(r[3]) });
+        else if (m.tipus === 'final') {
+          const v = s(r[1]).match(/^(\S+)\s+(.*)$/);                             // döntő: „Pár | 102  Név | Bib | Név”
+          const parSzam = /^\d+$/.test(c0) && v;
+          m.parok.push(parSzam ? { par: c0, lb: v[1], ln: v[2], fb: s(r[2]), fn: s(r[3]) } : { par: '', lb: c0, ln: s(r[1]), fb: s(r[2]), fn: s(r[3]) });
+        }
+      }
+      if (m.futamok.length || m.parok.length) div(s(mm[1])).marshalling.push(m);
+      return;
+    }
+    for (let i = 0; i < rows.length; i++) {
+      const t = s(rows[i][0]).match(/^(.*) - Round (\d+) \((Prelim|Quarterfinal|Semifinal|Final)\)$/);
+      if (!t) continue;
+      const f = { sorszam: +t[2], tipus: TIPUS[t[3]], lezarva: /^Closed/.test(s((rows[i + 1] || [])[0])), szerepek: [], donto: null };
+      i += 2;
+      while (i < rows.length && !CIM_RE.test(s(rows[i][0]))) {
+        const c0 = s(rows[i][0]);
+        if ((c0 === 'Leaders' || c0 === 'Followers') && rows[i + 1]) {
+          const fej = rows[i + 1].map(s), ti = fej.indexOf('Total');
+          const birak = fej.slice(3, ti).map(birTiszta), fobiro = fej.slice(3, ti).findIndex(x => / \(HJ\)$/.test(x));
+          const sorok = [];
+          for (i += 2; i < rows.length && !ures(rows[i]); i++) {
+            const r = rows[i];
+            sorok.push({ hely: Number(r[0]) || '', bib: s(r[1]), nev: s(r[2]), dontesek: r.slice(3, ti).map(dontes),
+                         osszeg: Number(r[ti]) || 0, tovabb: s(r[ti + 1]) === 'Yes' });
+          }
+          f.szerepek.push({ szerep: c0 === 'Leaders' ? 'Leader' : 'Follower', birak, fobiro, sorok });
+        } else if (c0 === 'Place' && s(rows[i][1]) === 'Pair') {
+          const fej = rows[i].map(s), birak = fej.slice(4).filter(Boolean).map(birTiszta);
+          const sorok = [];
+          for (i++; i < rows.length && !ures(rows[i]); i++) {
+            const r = rows[i];
+            sorok.push({ hely: Number(r[0]) || '', par: s(r[1]), leader: s(r[2]), follower: s(r[3]), helyezesek: r.slice(4, 4 + birak.length).map(s) });
+          }
+          f.donto = { birak, sorok };
+        } else i++;
+      }
+      i--;
+      if (f.szerepek.length || f.donto) div(s(t[1])).fordulok.push(f);
+    }
+  });
+  Object.keys(ki.diviziok).forEach(d => { const x = ki.diviziok[d]; if (!x.fordulok.length && !x.marshalling.length) delete ki.diviziok[d]; });
+  return ki;
+}
+const TIPUS_NEV = { prelim: 'Selejtező', quarter: 'Negyeddöntő', semi: 'Elődöntő', final: 'Döntő' };
+function rajzolEredmenyAllapot() {
+  const a = adat.eredmenyek;
+  $('erTorol').hidden = !a || !Object.keys(a.diviziok || {}).length;
+  if (!a) { $('erAllapot').textContent = 'Ehhez frissíteni kell a Google Scriptet.'; $('erFajl').disabled = true; return; }
+  const sorok = Object.entries(a.diviziok || {}).map(([d, x]) => d + ': ' +
+    [x.fordulok.length ? 'eredmény – ' + x.fordulok.map(f => TIPUS_NEV[f.tipus]).join(', ') : '',
+     x.marshalling.length ? 'futambeosztás – ' + x.marshalling.map(m => TIPUS_NEV[m.tipus]).join(', ') : ''].filter(Boolean).join('; '));
+  $('erAllapot').innerHTML = '';
+  if (!sorok.length) { $('erAllapot').textContent = 'Még nincs feltöltve futambeosztás vagy eredmény.'; return; }
+  const p = document.createElement('div'); p.textContent = 'Feltöltve' + (a.frissitve ? ' (' + a.frissitve.replace('T', ' ') + ')' : '') + ':'; $('erAllapot').append(p);
+  const ul = document.createElement('ul'); ul.style.margin = '4px 0 0 18px';
+  sorok.forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.append(li); }); $('erAllapot').append(ul);
+}
+$('erFajl').addEventListener('change', () => { $('erFel').disabled = !$('erFajl').files.length; msg('msgEr'); });
+$('erFel').addEventListener('click', async () => {
+  const f = $('erFajl').files[0]; if (!f) return;
+  if (!window.XLSX) return msg('msgEr', 'Az XLSX modul nem töltődött be, frissítsd az oldalt.');
+  $('erFel').disabled = true; msg('msgEr', 'Feldolgozás…', 'info');
+  try {
+    const feld = appExportFeldolgoz(XLSX.read(await f.arrayBuffer(), { type: 'array' }));
+    const divs = Object.keys(feld.diviziok);
+    if (!divs.length) throw new Error('Ebben a fájlban nem találtam futambeosztást vagy eredményt. A pontozó app XLSX exportját töltsd fel.');
+    msg('msgEr', 'Feltöltés…', 'info');
+    const v = await api('eredmenyFeltoltes', { adat: feld, fajl: f.name });
+    adat.eredmenyek = v.eredmenyek; rajzolEredmenyAllapot();
+    $('erFajl').value = '';
+    msg('msgEr', divs.length + ' divízió feltöltve. A nevezési oldalon akkor látszik, ha a Listák / Eredmények fül be van kapcsolva.', 'ok');
+  } catch (err) { msg('msgEr', /Ismeretlen művelet/.test(err.message) ? 'Ehhez frissíteni kell a Google Scriptet.' : (err.message || 'Hiba a feldolgozásban.')); $('erFel').disabled = false; }
+});
+$('erTorol').addEventListener('click', async () => {
+  if (!confirm('Törlöd az ehhez az eseményhez feltöltött összes futambeosztást és eredményt?')) return;
+  try { const v = await api('eredmenyTorles'); adat.eredmenyek = v.eredmenyek; rajzolEredmenyAllapot(); msg('msgEr', 'Törölve.', 'ok'); }
+  catch (err) { msg('msgEr', err.message || 'Hálózati hiba.'); }
 });
 
 // ======================================================================

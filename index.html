@@ -198,7 +198,7 @@
           <button class="btn" id="kepMent">Kép mentése</button>
           <button class="btn masod" id="ujra">Új nevezés</button>
         </div>
-        <p class="tipp" id="kepTipp">A „Kép mentése” letölti a képet. A képen hosszan nyomva közvetlenül a galériába is mentheted.</p>
+        <p class="tipp" id="kepTipp"></p>
       </div>
     </section>
   </div>
@@ -374,6 +374,12 @@ $('kuld').addEventListener('click', async () => {
 
 // ---------- Regisztrációs kód képként (a galériába menthető) ----------
 let kepBlob = null, kepNev = 'nevezes.png';
+const IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const ANDROID = /Android/i.test(navigator.userAgent);
+$('kepTipp').textContent = IOS
+  ? 'A megjelenő menüben válaszd a „Kép mentése” lehetőséget, így a kép a Fotókba kerül.'
+  : ANDROID ? 'A kép a galéria Letöltések (Download) albumába kerül.'
+  : 'A kép a Letöltések mappába kerül.';
 async function kepKeszit({ kod, nev, wsdc, diviziok }) {
   const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H;
   const x = c.getContext('2d');
@@ -432,7 +438,14 @@ async function kepKeszit({ kod, nev, wsdc, diviziok }) {
 
 $('kepMent').addEventListener('click', async () => {
   if (!kepBlob) return;
-  // Közvetlen letöltés (megosztás menü nélkül)
+  // iPhone/iPad: letöltéssel a kép a Fájlok appba kerülne, a Fotókba csak a rendszer menüjének
+  // „Kép mentése” parancsával juthat. Android és számítógép: közvetlen letöltés
+  // (Androidon a galéria Letöltések / Download albumába kerül).
+  const file = new File([kepBlob], kepNev, { type: 'image/png' });
+  if (IOS && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); return; }
+    catch (err) { if (err && err.name === 'AbortError') return; }
+  }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(kepBlob); a.download = kepNev;
   document.body.append(a); a.click(); a.remove();

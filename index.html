@@ -198,8 +198,7 @@
           <button class="btn" id="kepMent">Kép mentése</button>
           <button class="btn masod" id="ujra">Új nevezés</button>
         </div>
-        <p class="tipp" id="kepTipp">Telefonon a „Kép mentése” után válaszd a „Kép mentése” / „Mentés a Fotókba” lehetőséget,
-          vagy tartsd az ujjad a képen.</p>
+        <p class="tipp" id="kepTipp">A „Kép mentése” letölti a képet. A képen hosszan nyomva közvetlenül a galériába is mentheted.</p>
       </div>
     </section>
   </div>
@@ -433,12 +432,7 @@ async function kepKeszit({ kod, nev, wsdc, diviziok }) {
 
 $('kepMent').addEventListener('click', async () => {
   if (!kepBlob) return;
-  const file = new File([kepBlob], kepNev, { type: 'image/png' });
-  // Telefonon a megosztás menüből menthető a galériába („Kép mentése”, „Mentés a Fotókba”)
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'Regisztrációs kód' }); return; }
-    catch (err) { if (err && err.name === 'AbortError') return; }
-  }
+  // Közvetlen letöltés (megosztás menü nélkül)
   const a = document.createElement('a');
   a.href = URL.createObjectURL(kepBlob); a.download = kepNev;
   document.body.append(a); a.click(); a.remove();

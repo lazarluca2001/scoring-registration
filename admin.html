@@ -361,6 +361,7 @@
           <div><label class="f" for="evHely">Helyszín</label><input type="text" id="evHely" placeholder="pl. Budapest, …"></div>
           <div><label class="f" for="evDij">Nevezési díj (Ft)</label><input type="text" id="evDij" inputmode="numeric" placeholder="pl. 12000"></div>
           <div><label class="f" for="evHatarido">Nevezési határidő</label><input type="datetime-local" id="evHatarido"></div>
+          <div><label class="f" for="evRovid">Rövid név a linkben</label><input type="text" id="evRovid" placeholder="pl. teca2027"></div>
           <div class="full"><label class="f" for="evKep">Borítókép (link) <span style="color:var(--soft);font-weight:400">– a nevezési oldal eseménykártyáján; Drive-link is jó, ha „Bárki, aki rendelkezik a linkkel” megosztású</span></label>
             <input type="text" id="evKep" placeholder="https://…"></div>
         </div>
@@ -538,7 +539,8 @@ $('evNyilv').addEventListener('change', async () => {
   finally { $('evNyilv').disabled = false; rajzolEsemenySav(); }
 });
 $('evLink').addEventListener('click', async () => {
-  const u = new URL('./', location.href); u.searchParams.set('e', $('evValaszt').value);
+  const id = $('evValaszt').value, rovid = adat.esemeny && adat.esemenyId === id && adat.esemeny.rovid;
+  const u = new URL('./nevezes', location.href); u.searchParams.set('e', rovid || id);
   try { await navigator.clipboard.writeText(u.href); $('evLink').textContent = 'Link kimásolva ✓'; }
   catch { prompt('Az esemény linkje:', u.href); }
   setTimeout(() => { $('evLink').textContent = 'Link másolása'; }, 2000);
@@ -1295,6 +1297,7 @@ function rajzolEsemeny() {
   $('evNev').value = e.nev || ''; $('evDatum').value = e.datum || ''; $('evHely').value = e.helyszin || '';
   $('evDij').value = e.dij || ''; $('evHatarido').value = e.hatarido || '';
   $('evKezdes').value = e.kezdes || ''; $('evVege').value = e.vege || ''; $('evKep').value = e.kep || '';
+  $('evRovid').value = e.rovid || ''; $('evRovid').disabled = !('rovid' in e);
   ['evKezdes', 'evVege', 'evKep'].forEach(id => { $(id).disabled = !('kezdes' in e); });
   const box = $('pLista'); box.innerHTML = '';
   (e.program || []).forEach(p => box.append(programSor(p)));
@@ -1333,6 +1336,7 @@ $('evMent').addEventListener('click', async () => {
   const esemeny = { nev: $('evNev').value.trim(), datum: $('evDatum').value.trim(), helyszin: $('evHely').value.trim(),
                     dij: $('evDij').value.trim(), hatarido: $('evHatarido').value, program };
   if (!$('evKezdes').disabled) Object.assign(esemeny, { kezdes: $('evKezdes').value, vege: $('evVege').value || $('evKezdes').value, kep: $('evKep').value.trim() });
+  if (!$('evRovid').disabled) esemeny.rovid = $('evRovid').value.trim();
   if (!$('fulNevezes').disabled) {
     ['fulNevezes', 'fulMarshalling', 'fulEredmeny'].forEach(k => { esemeny[k] = $(k).checked; });
     esemeny.linkek = [...document.querySelectorAll('#lLista .lk')].map(r => {

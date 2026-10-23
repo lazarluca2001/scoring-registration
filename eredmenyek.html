@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eredmények</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/stilus.css">
+</head>
+<body>
+<header>
+  <h1 id="cim">Eredmények</h1>
+  <p class="sub" id="alcim" hidden></p>
+</header>
+
+<main>
+  <div class="card valassz" id="uzenet" hidden></div>
+  <nav class="card fulek" id="fulek" hidden></nav>
+  <section class="card" id="p-eredmeny">
+    <div class="panel">
+      <div class="panel-fej"><h2>Eredmények</h2><select id="eValaszt" aria-label="Forduló kiválasztása"></select></div>
+      <div id="eTartalom"><p class="halvany">Betöltés…</p></div>
+      <ul class="linkek" id="eLinkek" style="margin-top:18px"></ul>
+      <p class="halvany" id="eInfo" style="margin-top:14px"></p>
+    </div>
+  </section>
+</main>
+
+<script src="assets/kozos.js"></script>
+<script>
+let eredmenyek = null;
+
+// ----- Eredmények: selejtező/negyeddöntő/elődöntő (bírói döntések, összeg) és döntő (helyezések)
+function rajzolEredmenyek() {
+  const box = $('eTartalom'); box.innerHTML = '';
+  const vanLink = rajzolLinkek('eredmeny', $('eLinkek'));
+  const elemek = [];
+  Object.entries(eredmenyek ? eredmenyek.diviziok : {}).forEach(([div, x]) => (x.fordulok || []).forEach(f =>
+    elemek.push({ kulcs: korKulcs(div, f.sorszam), div, cim: div + ' – ' + TIPUS_NEV[f.tipus], f })));
+  // a legújabb forduló legyen elöl divíziónként? – a sorrend: divízió, majd forduló
+  valasztoTolt($('eValaszt'), elemek);
+  const x = elemek.find(e => e.kulcs === aktKor);
+  $('eInfo').textContent = !x && !vanLink ? 'Az eredmények hamarosan felkerülnek.' : x && !x.f.lezarva ? 'Ideiglenes eredmény – a forduló még folyamatban van.' : '';
+  if (!x) return;
+  const f = x.f;
+  const cim = el('h3', '', x.cim); box.append(Object.assign(el('div', 'blokk'), {}).appendChild(cim).parentNode);
+  if (f.donto) {
+    const d = f.donto, kett = s => { const m = String(s).match(/^(\S+)\s+(.*)$/); return m ? [m[1], m[2]] : ['', s]; };
+    box.append(tabla([['Bib', 'b'], ['Leader', 'n'], ['Follower', 'n'], ...d.birak.map(b => [monogram(b)]), ['Helyezés']],
+      d.sorok.map(s => { const [lb, ln] = kett(s.leader), [, fn] = kett(s.follower);
+        return sor([[lb, 'b'], [nevB(lb, ln), 'n'], [fn, 'n'], ...s.helyezesek.map(h => [h]), [s.hely + '.', 'hely']], s.hely === 1 ? 'elso' : ''); }), true));
+    box.append(Object.assign(el('p', 'halvany', 'Bírák: ' + d.birak.map(b => monogram(b) + ' – ' + b).join(', ')), { style: 'margin-top:8px' }));
+  }
+  f.szerepek.forEach(r => {
+    const b = el('div', 'blokk'); b.append(el('h3', '', r.szerep === 'Leader' ? 'Leaderek' : 'Followerek'));
+    b.append(tabla([['Bib', 'b'], ['Név', 'n'], ...r.birak.map((n, i) => [monogram(n) + (i === r.fobiro ? ' (FB)' : '')]), ['Σ']],
+      r.sorok.map(s => sor([[s.bib, 'b'], [nevB(s.bib, s.nev), 'n'], ...s.dontesek.map(v => [typeof v === 'number' ? v + '%' : v,
+        typeof v === 'number' ? '' : v === 'Igen' ? 'igen' : /^Alt/.test(v) ? 'alt' : v === 'Nem' ? 'nem' : '']), [s.osszeg, 'sum']], s.tovabb ? 'tovabb' : '')), true));
+    box.append(b);
+  });
+  if (f.szerepek.length) box.append(Object.assign(el('p', 'halvany', 'Zöld: továbbjutott. Bírák: ' + f.szerepek[0].birak.map((b, i) => monogram(b) + ' – ' + b + (i === f.szerepek[0].fobiro ? ' (főbíró)' : '')).join(', ')), { style: 'margin-top:10px' }));
+}
+const monogram = n => String(n).split(/\s+/).filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 3);
+$('eValaszt').addEventListener('change', () => { aktKor = $('eValaszt').value; rajzolEredmenyek(); urlR(); });
+
+(async () => {
+  if (!await esemenyOldal('eredmenyek')) { $('p-eredmeny').hidden = true; return; }
+  try { const r = await jsonGet({ eredmenyek: 1 }); if (r.ok) eredmenyek = r; } catch {}
+  rajzolEredmenyek(); urlR();
+})();
+</script>
+</body>
+</html>

@@ -615,10 +615,10 @@ async function torol(s, hova = 'msgPanel') {
 }
 
 // ---- Export ----
-// A CSV és az XLSX ugyanazt a formátumot használja. Az első négy oszlop (Rajtszám, Név,
-// Szerep, Divízió) az, amit a pontozó app beolvas; a többit az app figyelmen kívül hagyja.
+// A CSV és az XLSX ugyanazt a formátumot használja, és csak azt tartalmazza, amit a pontozó
+// app beolvas (Rajtszám, Név, Szerep, Divízió). A többi adat az admin felületen látható.
 // A Divízió a szerep nélküli név, így a Leaderek és Followerek egy divízióba kerülnek.
-const FEJLEC = ['Rajtszám', 'Név', 'Szerep', 'Divízió', 'WSDC ID', 'Reg. szám', 'Státusz', 'Forrás', 'Időpont'];
+const FEJLEC = ['Rajtszám', 'Név', 'Szerep', 'Divízió'];
 const kulcsSzo = t => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
 const APP_SZEREP = { leader: 'Leader', lead: 'Leader', l: 'Leader', vezeto: 'Leader',
                      follower: 'Follower', follow: 'Follower', f: 'Follower', koveto: 'Follower' };
@@ -655,7 +655,7 @@ function exportTabla(sorok) {
   m.forEach(l => { if (l.length > 1) gond.push(`${l[0].divizio}: a ${l[0].bib}-es bib többször szerepel (${l.map(r => r.nev).join(', ')})`); });
   return { tabla: t, gond };
 }
-const sorTomb = r => [r.bib, r.nev, r.szerep, r.divizio, r.wsdc, r.regszam, r.statusz, r.forras, r.ido];
+const sorTomb = r => [r.bib, r.nev, r.szerep, r.divizio];
 
 function csv(tabla) {
   const esc = v => { v = String(v ?? ''); return /[";\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
@@ -696,7 +696,7 @@ $('xlsxOssz').addEventListener('click', () => {
   const hasznalt = new Set();
   [...new Set(tabla.map(r => r.divizio))].forEach(div => {
     const ws = XLSX.utils.aoa_to_sheet([FEJLEC, ...tabla.filter(r => r.divizio === div).map(sorTomb)]);
-    ws['!cols'] = [{ wch: 9 }, { wch: 24 }, { wch: 10 }, { wch: 28 }, { wch: 10 }, { wch: 11 }, { wch: 10 }, { wch: 10 }, { wch: 17 }];
+    ws['!cols'] = [{ wch: 9 }, { wch: 24 }, { wch: 10 }, { wch: 28 }];
     let n = div.replace(/[\\\/\?\*\[\]:]/g, '-').slice(0, 31).trim(), k = 2;
     while (hasznalt.has(n.toLowerCase())) n = n.slice(0, 28) + ' ' + k++;
     hasznalt.add(n.toLowerCase());

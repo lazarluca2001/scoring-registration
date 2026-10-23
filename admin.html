@@ -27,7 +27,7 @@
 
   /* Űrlapelemek */
   label.f { display:block; font-size:.85rem; font-weight:500; margin-bottom:6px; }
-  input[type=text], input[type=password], input[type=search], select {
+  input[type=text], input[type=password], input[type=search], input[type=datetime-local], select {
     width:100%; height:42px; padding:0 12px; font:inherit; color:var(--ink); background:var(--card);
     border:1px solid var(--line); border-radius:6px; outline:none; }
   input:focus, select:focus { border-color:var(--accent); }
@@ -156,6 +156,39 @@
   dialog .pad { display:grid; gap:14px; }
   dialog .two { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   dialog .foot { justify-content:space-between; }
+  /* Hibák, létszám */
+  tr.hiba td { background:#fdecee; }
+  td.bibcell.hiba, .hibatxt { color:var(--err); }
+  .st.err { background:#fdecee; color:var(--err); }
+  .stats .err b { color:var(--err); }
+  .letszam { margin-bottom:26px; }
+  .letszam table { border:1px solid var(--line); border-radius:6px; }
+  .letszam td.n, .letszam th.n { text-align:right; width:1%; }
+  .letszam .warn { color:#b45309; font-weight:600; }
+  .letszam .sub { color:var(--soft); font-size:.78rem; }
+  /* Check-in, befizetés */
+  .p .ops { grid-column:1 / -1; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .p .ops .fiz { width:110px; height:32px; text-align:right; }
+  .p .ops .ft { color:var(--soft); font-size:.8rem; }
+  .btn.ci { height:32px; padding:0 12px; font-size:.8rem; background:transparent; color:var(--soft); border:1px solid var(--line); }
+  .btn.ci.on { background:#e6f4ec; color:var(--ok); border-color:#b7e0c6; }
+  .fbar select { width:auto; height:40px; }
+  /* Divízió korlát */
+  .row .korl { width:56px; height:30px; text-align:center; padding:0 6px; font-size:.82rem; }
+  .rk { display:inline-flex; align-items:center; gap:5px; font-size:.8rem; color:var(--soft); margin-left:6px; }
+  .rk b { color:var(--ink); font-weight:600; }
+  .rk.red b, .rk.red span:first-child { color:var(--err); }
+  @media (max-width:640px) { .row { flex-wrap:wrap; } .row .meta { flex-wrap:wrap; order:3; width:100%; } }
+  .tag.red { background:#fdecee; color:var(--err); }
+  /* Esemény */
+  .sec { font-size:.72rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--soft); }
+  .prog { display:flex; flex-direction:column; gap:8px; }
+  .prog .pr { display:grid; grid-template-columns:200px 1fr 1fr 30px; gap:8px; align-items:center; }
+  @media (max-width:700px) { .prog .pr { grid-template-columns:1fr 30px; } .prog .pr .cim, .prog .pr .megj { grid-column:1; } }
+  .hint { color:var(--soft); font-size:.82rem; margin-top:14px; }
+  /* Napló */
+  #t-naplo td.r { white-space:normal; min-width:280px; }
+  #t-naplo td.t { color:var(--soft); }
   @media (max-width:600px) { .pad, .tools, .stats, .divs, .foot { padding-left:16px; padding-right:16px; } dialog .two { grid-template-columns:1fr; } }
 </style>
 </head>
@@ -168,6 +201,8 @@
     <form class="pad" id="loginForm">
       <label class="f" for="jelszo">Jelszó</label>
       <input type="password" id="jelszo" autocomplete="current-password" required>
+      <label class="f" for="adminNev" style="margin-top:14px">Neved <span style="color:var(--soft);font-weight:400">(a naplóhoz, nem kötelező)</span></label>
+      <input type="text" id="adminNev" autocomplete="name">
       <button class="btn full" id="belep">Belépés</button>
       <p class="msg" id="msgLogin" role="status"></p>
     </form>
@@ -179,6 +214,8 @@
       <button class="tab" role="tab" data-tab="nevezesek" aria-selected="false">Nevezések</button>
       <button class="tab" role="tab" data-tab="diviziok" aria-selected="false">Divíziók</button>
       <button class="tab" role="tab" data-tab="helyszini" aria-selected="false">Helyszíni nevezés</button>
+      <button class="tab" role="tab" data-tab="esemeny" aria-selected="false">Esemény</button>
+      <button class="tab" role="tab" data-tab="naplo" aria-selected="false">Napló</button>
       <span class="sp"></span>
       <button class="btn ghost sm" id="kilep">Kilépés</button>
     </div>
@@ -192,6 +229,13 @@
           <button data-f="vegleges" aria-pressed="false">Végleges</button>
           <button data-f="mind" aria-pressed="false">Mind</button>
         </div>
+        <select id="vHely" aria-label="Szűrés check-in és befizetés szerint">
+          <option value="">Mindenki</option>
+          <option value="nincsitt">Még nem érkezett meg</option>
+          <option value="itt">Megérkezett</option>
+          <option value="nemfiz">Nem fizetett</option>
+          <option value="fiz">Fizetett</option>
+        </select>
         <button class="btn ghost" id="vFrissit" title="Frissítés" aria-label="Frissítés">
           <svg class="i" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
         </button>
@@ -200,6 +244,9 @@
         <div><b id="vFuggo">0</b><span>függő</span></div>
         <div><b id="vVegl">0</b><span>végleges</span></div>
         <div><b id="vKov">–</b><span>következő szabad bib</span></div>
+        <div><b id="vItt">0</b><span>megérkezett</span></div>
+        <div><b id="vFiz">0</b><span>fizetett</span></div>
+        <div><b id="vOsszeg">0 Ft</b><span>befizetve összesen</span></div>
       </div>
       <div class="people" id="people"></div>
       <p class="msg" id="msgV" role="status" style="padding:0 24px 16px"></p>
@@ -213,14 +260,16 @@
           <svg class="i" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
         </button>
         <label class="chk"><input type="checkbox" id="csakVegl" checked> Csak véglegesítettek</label>
+        <label class="chk"><input type="checkbox" id="csakHiba"> Csak hibásak</label>
+        <label class="chk" title="A verseny napján: csak a megérkezett versenyzők kerülnek az exportba"><input type="checkbox" id="csakItt"> Csak megérkezettek</label>
         <button class="btn" id="csvOssz">CSV</button>
         <button class="btn" id="xlsxOssz">XLSX</button>
-        <button class="btn" id="appExport" title="Csak a véglegesített versenyzők, a pontozó app formátumában (Rajtszám, Név, Szerep, Divízió)">App export</button>
       </div>
       <div class="stats">
         <div><b id="stNev">0</b><span>nevezés</span></div>
         <div><b id="stFo">0</b><span>versenyző</span></div>
         <div><b id="stDiv">0</b><span>divízió</span></div>
+        <div id="stHibaBox"><b id="stHiba">0</b><span>hiba</span></div>
       </div>
       <div class="divs" id="divs"></div>
       <p class="msg" id="msgPanel" role="status" style="padding:0 24px 16px"></p>
@@ -228,7 +277,10 @@
 
     <!-- DIVÍZIÓK -->
     <div id="t-diviziok" hidden>
-      <div class="pad" id="divKapcs"></div>
+      <div class="pad">
+        <div class="letszam" id="letszam"></div>
+        <div id="divKapcs"></div>
+      </div>
       <p class="msg" id="msgDiv" role="status" style="padding:0 24px 16px"></p>
     </div>
 
@@ -273,6 +325,46 @@
         <button class="btn" id="hUj">Új nevezés</button>
       </div>
     </div>
+
+    <!-- ESEMÉNY -->
+    <div id="t-esemeny" hidden>
+      <div class="pad">
+        <p class="msg" id="evRegi" style="margin-bottom:12px"></p>
+        <div class="grid">
+          <div class="full"><label class="f" for="evNev">Esemény neve</label><input type="text" id="evNev" placeholder="pl. TECA 2027"></div>
+          <div><label class="f" for="evDatum">Dátum</label><input type="text" id="evDatum" placeholder="pl. 2027. március 5–7."></div>
+          <div><label class="f" for="evHely">Helyszín</label><input type="text" id="evHely" placeholder="pl. Budapest, …"></div>
+          <div><label class="f" for="evDij">Nevezési díj (Ft)</label><input type="text" id="evDij" inputmode="numeric" placeholder="pl. 12000"></div>
+          <div><label class="f" for="evHatarido">Nevezési határidő</label><input type="datetime-local" id="evHatarido"></div>
+        </div>
+        <div class="bar"><h2 class="sec">Ütemterv</h2><button class="btn ghost sm" id="pUj" type="button">+ Programpont</button></div>
+        <div class="prog" id="pLista"></div>
+        <datalist id="pJavaslat"></datalist>
+        <p class="hint">A nevezési oldal tetején megjelenik egy kártya az esemény adataival, a nevezési határidővel és az ütemtervvel.
+          A határidő után az online nevezés lezárul; a helyszíni nevezés az admin felületen továbbra is működik.</p>
+      </div>
+      <div class="foot">
+        <p class="msg" id="msgEv" role="status"></p>
+        <button class="btn" id="evMent">Mentés</button>
+      </div>
+    </div>
+
+    <!-- NAPLÓ -->
+    <div id="t-naplo" hidden>
+      <div class="tools">
+        <input type="search" id="nKer" class="grow" placeholder="Keresés a naplóban: név, művelet, reg. szám…">
+        <button class="btn ghost" id="nFrissit" title="Frissítés" aria-label="Frissítés">
+          <svg class="i" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
+        </button>
+      </div>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Időpont</th><th>Ki</th><th>Művelet</th><th>Részletek</th></tr></thead>
+          <tbody id="nTest"></tbody>
+        </table>
+      </div>
+      <p class="msg" id="msgN" role="status" style="padding:12px 24px 16px"></p>
+    </div>
   </section>
 </main>
 
@@ -307,7 +399,7 @@
 <script>
 // ====== BEÁLLÍTÁSOK ======
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwCRpBEvibsSmcKRuPvEcv0PXr89yVJMCT66VBkpzxTXW2I5_F9EHGjLDV1qFM_niNZZg/exec';
-const CSV_ELVALASZTO = ',';   // ha Excelben egy oszlopba kerül minden, írd át ';'-re
+const CSV_ELVALASZTO = ';';   // a magyar Excel és a pontozó app is ezt olvassa jól
 const FAJL_ELOTAG = 'nevezesek';
 // =========================
 
@@ -319,6 +411,8 @@ const ICO = {
   chev: '<svg class="i chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>'
 };
 let jelszo = '';
+let adminNev = '';
+try { adminNev = sessionStorage.getItem('adminNev') || ''; } catch {}
 let adat = { sorok: [], diviziok: [] };
 const nyitott = new Set();   // nyitva hagyott divíziók újrarajzoláskor
 
@@ -327,13 +421,13 @@ async function api(muvelet, extra = {}) {
   const v = await (await fetch(SCRIPT_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ muvelet, jelszo, ...extra })
+    body: JSON.stringify({ muvelet, jelszo, ki: adminNev, ...extra })
   })).json();
   if (!v.ok) throw new Error(v.hiba || 'Ismeretlen hiba.');
   return v;
 }
 async function betolt() { adat = await api('admin'); rajzolMind(); }
-function rajzolMind() { rajzolVersenyzok(); rajzolNevezesek(); rajzolDiviziok(); rajzolHelyszini(); }
+function rajzolMind() { szamolHibak(); rajzolVersenyzok(); rajzolNevezesek(); rajzolDiviziok(); rajzolHelyszini(); rajzolEsemeny(); }
 
 // ---------- Belépés ----------
 $('loginForm').addEventListener('submit', async e => {
@@ -342,7 +436,8 @@ $('loginForm').addEventListener('submit', async e => {
   $('belep').disabled = true; msg('msgLogin', 'Belépés…', 'info');
   try {
     await betolt();
-    try { sessionStorage.setItem('adminJelszo', jelszo); } catch {}
+    adminNev = $('adminNev').value.trim();
+    try { sessionStorage.setItem('adminJelszo', jelszo); sessionStorage.setItem('adminNev', adminNev); } catch {}
     $('jelszo').value = ''; msg('msgLogin');
     $('belepes').hidden = true; $('panel').hidden = false;
   } catch (err) { jelszo = ''; msg('msgLogin', err.message || 'Hálózati hiba.'); }
@@ -367,7 +462,8 @@ $('kilep').addEventListener('click', () => {
 // ---------- Fülek ----------
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
   document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x === t ? 'true' : 'false'));
-  ['versenyzok', 'nevezesek', 'diviziok', 'helyszini'].forEach(n => $('t-' + n).hidden = n !== t.dataset.tab);
+  ['versenyzok', 'nevezesek', 'diviziok', 'helyszini', 'esemeny', 'naplo'].forEach(n => $('t-' + n).hidden = n !== t.dataset.tab);
+  if (t.dataset.tab === 'naplo') betoltNaplo();
 }));
 
 // ---------- Közös ----------
@@ -382,6 +478,41 @@ function rovid(alap, c) {
   return r.replace(/\s+/g, ' ').trim() || alap;
 }
 const emberKulcs = s => s.wsdc ? 'id' + s.wsdc : (s.keresztnev + ' ' + s.vezeteknev).toLowerCase();
+const szemely = s => s.regszam || emberKulcs(s);
+const teljesNev = s => s.vezeteknev + ' ' + s.keresztnev;
+
+// Hibák nevezésenként (amiért az app nem tudná beolvasni, vagy ami ütközést okoz).
+// Kulcs: a nevezés objektuma; érték: a hibák szövege.
+let hibaMap = new Map();
+function szamolHibak() {
+  const m = new Map();
+  const add = (s, t) => { if (!m.has(s)) m.set(s, []); if (!m.get(s).includes(t)) m.get(s).push(t); };
+  const bibSzemely = new Map();   // bib → személyek
+  const divSzemely = new Map();   // alap divízió + személy → nevezések
+  adat.sorok.forEach(s => {
+    if (!szerepOf(s)) add(s, 'nincs Leader/Follower szerep');
+    const k = alapDivizio(s) + '\u0000' + szemely(s);
+    divSzemely.set(k, [...(divSzemely.get(k) || []), s]);
+    if (!s.vegleges) return;
+    const bib = String(s.bib ?? '').trim();
+    if (!/^\d+$/.test(bib)) { add(s, `a bib „${bib}” nem szám`); return; }
+    if (!bibSzemely.has(bib)) bibSzemely.set(bib, new Map());
+    bibSzemely.get(bib).set(szemely(s), teljesNev(s));
+  });
+  adat.sorok.forEach(s => {
+    const bib = String(s.bib ?? '').trim();
+    const tobbi = s.vegleges && bibSzemely.get(bib);
+    if (tobbi && tobbi.size > 1)
+      add(s, `a ${bib}-es bib másnál is szerepel: ` + [...tobbi].filter(([k]) => k !== szemely(s)).map(([, n]) => n).join(', '));
+  });
+  divSzemely.forEach(l => { if (l.length > 1) l.forEach(s => add(s, 'kétszer nevezett ide: ' + l.map(x => x.divizio).join(' és '))); });
+  hibaMap = m;
+}
+// Melyik másik versenyzőnél van már ez a bib (véglegesítés előtti figyelmeztetéshez)
+function bibFoglalta(bib, kulcs) {
+  const s = adat.sorok.find(x => x.vegleges && String(x.bib).trim() === String(bib).trim() && szemely(x) !== kulcs);
+  return s ? teljesNev(s) : '';
+}
 
 // ======================================================================
 // VERSENYZŐK – véglegesítés bib számmal
@@ -393,6 +524,11 @@ document.querySelectorAll('#vFilt button').forEach(b => b.addEventListener('clic
   rajzolVersenyzok();
 }));
 $('vKer').addEventListener('input', rajzolVersenyzok);
+$('vHely').addEventListener('change', rajzolVersenyzok);
+const fizetett = p => p.fizetve !== undefined && p.fizetve !== '' && Number(p.fizetve) > 0;
+const ftFormat = n => Number(n || 0).toLocaleString('hu-HU') + ' Ft';
+// Helyi frissítés a mentés után (gyorsabb, mint a teljes újratöltés)
+function sorokFrissit(regszam, mezo, ertek) { adat.sorok.forEach(s => { if (s.regszam === regszam) s[mezo] = ertek; }); rajzolMind(); }
 $('vFrissit').addEventListener('click', async () => {
   msg('msgV', 'Frissítés…', 'info');
   try { await betolt(); msg('msgV'); } catch (err) { msg('msgV', err.message || 'Hálózati hiba.'); }
@@ -409,6 +545,8 @@ function versenyzok() {
     p.sorok.push(s);
     if (s.bib) p.bib = s.bib;
     if (s.ido < p.elso) p.elso = s.ido;
+    if (s.checkin) p.checkin = s.checkin;
+    if (s.fizetve !== '' && s.fizetve != null) p.fizetve = s.fizetve;
   });
   m.forEach(p => {
     p.vegl = p.sorok.filter(s => s.vegleges).length;
@@ -419,7 +557,8 @@ function versenyzok() {
 
 function kovetkezoBib() {
   const foglalt = new Set(adat.sorok.map(s => parseInt(s.bib, 10)).filter(n => !isNaN(n)));
-  let n = 1; while (foglalt.has(n)) n++;
+  // a legkisebb kiosztott bibtől keresi az első szabadot (pl. ha 101-től számoztok, 1 helyett 128-at ajánl)
+  let n = foglalt.size ? Math.min(...foglalt) : 1; while (foglalt.has(n)) n++;
   return n;
 }
 
@@ -428,11 +567,16 @@ function rajzolVersenyzok() {
   $('vFuggo').textContent = lista.filter(p => p.allapot === 'fuggo').length;
   $('vVegl').textContent = lista.filter(p => p.allapot === 'vegleges').length;
   $('vKov').textContent = kovetkezoBib();
+  $('vItt').textContent = lista.filter(p => p.checkin).length;
+  $('vFiz').textContent = lista.filter(fizetett).length;
+  $('vOsszeg').textContent = ftFormat(lista.reduce((a, p) => a + (fizetett(p) ? Number(p.fizetve) : 0), 0));
+  const hely = $('vHely').value;
 
   const q = $('vKer').value.trim().toLowerCase().replace(/-/g, '');
   const mutat = lista
     .filter(p => vSzuro === 'mind' || p.allapot === vSzuro)
     .filter(p => talal(q, p))
+    .filter(p => !hely || (hely === 'itt' ? !!p.checkin : hely === 'nincsitt' ? !p.checkin : hely === 'fiz' ? fizetett(p) : !fizetett(p)))
     .sort((a, b) => vSzuro === 'fuggo' ? a.elso.localeCompare(b.elso) : rendezo(a, b));
 
   const box = $('people'); box.innerHTML = '';
@@ -448,7 +592,10 @@ function rajzolVersenyzok() {
     st.textContent = p.allapot === 'vegleges' ? 'végleges' : (p.vegl ? 'új divízió vár' : 'függő');
     const sub = document.createElement('span'); sub.className = 'sub';
     sub.textContent = [p.regszam, p.wsdc ? 'WSDC ' + p.wsdc : ''].filter(Boolean).join(' · ');
-    nm.append(st, sub);
+    nm.append(st);
+    const ph = [...new Set(p.sorok.flatMap(s => hibaMap.get(s) || []))];
+    if (ph.length) { const e = document.createElement('span'); e.className = 'st err'; e.textContent = 'hiba'; e.title = ph.join('\n'); nm.append(e); }
+    nm.append(sub);
 
     const dv = document.createElement('div'); dv.className = 'dv';
     p.sorok.forEach(s => {
@@ -464,6 +611,9 @@ function rajzolVersenyzok() {
     const ment = async () => {
       const bib = inp.value.trim();
       if (!bib) { inp.value = p.bib || String(kovetkezoBib()); inp.focus(); inp.select(); return; }
+      if (!/^\d+$/.test(bib)) { msg('msgV', 'A bib csak szám lehet, különben a pontozó app nem tudja beolvasni.'); inp.focus(); return; }
+      const foglalt = bibFoglalta(bib, p.regszam || emberKulcs(p));
+      if (foglalt && !confirm(`A ${bib}-es bib már ${foglalt} versenyzőé. Biztosan ezt adod ${p.vezeteknev} ${p.keresztnev} versenyzőnek is?`)) return;
       ok.disabled = true; msg('msgV', 'Mentés…', 'info');
       try {
         await api('veglegesit', { regszam: p.regszam, bib });
@@ -485,7 +635,50 @@ function rajzolVersenyzok() {
       });
       fin.append(vv);
     }
-    el.append(nm, fin, dv);
+    // Check-in és befizetés
+    const ops = document.createElement('div'); ops.className = 'ops';
+    const ci = document.createElement('button'); ci.type = 'button';
+    const ciRajz = () => { ci.className = 'btn ci' + (p.checkin ? ' on' : ''); ci.textContent = p.checkin ? '✓ Megérkezett' : 'Megérkezett?';
+      ci.title = p.checkin ? 'Megérkezett: ' + p.checkin + ' (kattintás: visszavonás)' : 'Check-in'; };
+    ciRajz();
+    ci.disabled = !p.regszam;
+    ci.addEventListener('click', async () => {
+      const uj = !p.checkin;
+      if (!uj && !confirm('Visszavonod ' + p.vezeteknev + ' ' + p.keresztnev + ' check-injét?')) return;
+      ci.disabled = true; msg('msgV', 'Mentés…', 'info');
+      try { await api('checkin', { regszam: p.regszam, ertek: uj });
+            sorokFrissit(p.regszam, 'checkin', uj ? new Date().toISOString().slice(0, 16).replace('T', ' ') : '');
+            msg('msgV', p.vezeteknev + ' ' + p.keresztnev + (uj ? ' megérkezett.' : ': check-in visszavonva.'), 'ok'); }
+      catch (err) { ci.disabled = false; msg('msgV', err.message || 'Hálózati hiba.'); }
+    });
+    const fiz = document.createElement('input'); fiz.type = 'text'; fiz.className = 'fiz'; fiz.inputMode = 'numeric';
+    fiz.placeholder = 'Fizetve';
+    fiz.value = p.fizetve !== undefined && p.fizetve !== '' ? String(p.fizetve) : '';
+    fiz.setAttribute('aria-label', 'Befizetett összeg – ' + p.vezeteknev + ' ' + p.keresztnev);
+    fiz.disabled = !p.regszam;
+    const ft = document.createElement('span'); ft.className = 'ft'; ft.textContent = 'Ft';
+    const fizMent = async () => {
+      let v = fiz.value.replace(/[\s.]/g, '');
+      const regi = p.fizetve !== undefined && p.fizetve !== '' ? String(p.fizetve) : '';
+      if (v === regi || fiz.dataset.ment) return;   // Enter után a blur ne mentsen újra
+      if (v && !/^\d+$/.test(v)) { msg('msgV', 'Az összeg csak szám lehet.'); fiz.focus(); return; }
+      fiz.dataset.ment = '1'; fiz.disabled = true; msg('msgV', 'Mentés…', 'info');
+      try { await api('fizetes', { regszam: p.regszam, osszeg: v });
+            sorokFrissit(p.regszam, 'fizetve', v ? Number(v) : '');
+            msg('msgV', p.vezeteknev + ' ' + p.keresztnev + ': ' + (v ? ftFormat(v) + ' befizetve.' : 'befizetés törölve.'), 'ok'); }
+      catch (err) { delete fiz.dataset.ment; fiz.disabled = false; msg('msgV', err.message || 'Hálózati hiba.'); }
+    };
+    fiz.addEventListener('keydown', e => { if (e.key === 'Enter') fizMent(); });
+    fiz.addEventListener('blur', fizMent);
+    // Ha van nevezési díj, egy kattintással beírható
+    ops.append(ci, fiz, ft);
+    if (adat.esemeny && adat.esemeny.dij && !fizetett(p)) {
+      const dj = document.createElement('button'); dj.type = 'button'; dj.className = 'btn ghost sm';
+      dj.textContent = ftFormat(adat.esemeny.dij) + ' befizetve';
+      dj.addEventListener('click', () => { fiz.value = String(adat.esemeny.dij); fizMent(); });
+      ops.append(dj);
+    }
+    el.append(nm, fin, dv, ops);
     box.append(el);
   });
 }
@@ -495,6 +688,7 @@ function rajzolVersenyzok() {
 // ======================================================================
 $('kereses').addEventListener('input', rajzolNevezesek);
 $('csakVegl').addEventListener('change', rajzolNevezesek);
+$('csakHiba').addEventListener('change', rajzolNevezesek);
 $('frissit').addEventListener('click', async () => {
   msg('msgPanel', 'Frissítés…', 'info');
   try { await betolt(); msg('msgPanel'); } catch (err) { msg('msgPanel', err.message || 'Hálózati hiba.'); }
@@ -516,11 +710,12 @@ function rendezo(a, b) {
 }
 const talal = (q, s) => !q || [s.keresztnev + ' ' + s.vezeteknev, s.vezeteknev + ' ' + s.keresztnev, s.wsdc,
   s.regszam.replace(/-/g, ''), s.bib].join(' ').toLowerCase().includes(q);
-const exportSorok = () => adat.sorok.filter(s => !$('csakVegl').checked || s.vegleges);
+const exportSorok = () => adat.sorok.filter(s => (!$('csakVegl').checked || s.vegleges) && (!$('csakItt').checked || s.checkin));
+$('csakItt').addEventListener('change', rajzolNevezesek);
 
 function szurt() {
   const q = $('kereses').value.trim().toLowerCase().replace(/-/g, '');
-  return exportSorok().filter(s => talal(q, s));
+  return exportSorok().filter(s => talal(q, s)).filter(s => !$('csakHiba').checked || hibaMap.has(s));
 }
 
 function rajzolNevezesek() {
@@ -529,10 +724,12 @@ function rajzolNevezesek() {
   $('stNev').textContent = alap.length;
   $('stFo').textContent = new Set(alap.map(s => s.regszam || emberKulcs(s))).size;
   $('stDiv').textContent = csoportok(alap).length;
+  const hdb = alap.filter(s => hibaMap.has(s)).length;
+  $('stHiba').textContent = hdb; $('stHibaBox').className = hdb ? 'err' : '';
 
   const box = $('divs');
   box.innerHTML = '';
-  if (!cs.length) { box.innerHTML = '<p class="empty">' + ($('csakVegl').checked ? 'Nincs véglegesített nevezés.' : 'Nincs nevezés.') + '</p>'; return; }
+  if (!cs.length) { box.innerHTML = '<p class="empty">' + ($('csakHiba').checked ? 'Nincs hibás nevezés.' : $('csakVegl').checked ? 'Nincs véglegesített nevezés.' : 'Nincs nevezés.') + '</p>'; return; }
 
   cs.forEach(([div, lista]) => {
     const det = document.createElement('details');
@@ -543,7 +740,7 @@ function rajzolNevezesek() {
     const n = document.createElement('span'); n.className = 'n'; n.textContent = div;
     const b = document.createElement('span'); b.className = 'badge'; b.textContent = lista.length;
     const dl = document.createElement('button'); dl.className = 'btn ghost sm'; dl.textContent = 'CSV';
-    dl.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); letolt(csv(lista), fajlnev(div) + '.csv', 'text/csv'); });
+    dl.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); exportCsv(lista, div); });
     sum.append(n, b, dl);
 
     const wrap = document.createElement('div'); wrap.className = 'tbl';
@@ -552,11 +749,15 @@ function rajzolNevezesek() {
     const tb = document.createElement('tbody');
     lista.forEach((s, i) => {
       const tr = document.createElement('tr');
+      const hb = hibaMap.get(s);
+      if (hb) { tr.className = 'hiba'; tr.title = hb.join('\n'); }
       [s.vegleges ? s.bib : '–', s.vezeteknev + ' ' + s.keresztnev, '', s.regszam || '–', s.wsdc || '–', s.forras || '–', s.ido].forEach((v, k) => {
         const td = document.createElement('td'); td.textContent = v;
-        if (k === 0) td.className = 'bibcell';
+        if (k === 0) td.className = 'bibcell' + (hb ? ' hiba' : '');
         if (k === 2) { const st = document.createElement('span'); st.className = 'st ' + (s.vegleges ? 'ok' : 'wait');
-          st.textContent = s.vegleges ? 'végleges' : 'függő'; td.append(st); }
+          st.textContent = s.vegleges ? 'végleges' : 'függő'; td.append(st);
+          if (hb) { const e = document.createElement('span'); e.className = 'st err'; e.style.marginLeft = '6px';
+            e.textContent = hb.length > 1 ? hb.length + ' hiba' : hb[0]; td.append(e); } }
         tr.append(td);
       });
       const act = document.createElement('td'); act.className = 'act';
@@ -616,17 +817,62 @@ async function torol(s, hova = 'msgPanel') {
 }
 
 // ---- Export ----
-const FEJLEC = ['Bib', 'Vezetéknév', 'Keresztnév', 'Divízió', 'Szerep', 'WSDC ID', 'Reg. szám', 'Státusz', 'Forrás', 'Időpont'];
-const sorTomb = s => [s.vegleges ? s.bib : '', s.vezeteknev, s.keresztnev, s.divizio, s.szerep, s.wsdc, s.regszam,
-  s.vegleges ? 'végleges' : 'függő', s.forras, s.ido];
-const rendezett = sorok => csoportok(sorok).flatMap(([, l]) => l);
+// A CSV és az XLSX ugyanazt a formátumot használja, és csak azt tartalmazza, amit a pontozó
+// app beolvas (Rajtszám, Név, Szerep, Divízió). A többi adat az admin felületen látható.
+// A Divízió a szerep nélküli név, így a Leaderek és Followerek egy divízióba kerülnek.
+const FEJLEC = ['Rajtszám', 'Név', 'Szerep', 'Divízió'];
+const kulcsSzo = t => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+const APP_SZEREP = { leader: 'Leader', lead: 'Leader', l: 'Leader', vezeto: 'Leader',
+                     follower: 'Follower', follow: 'Follower', f: 'Follower', koveto: 'Follower' };
+const SZEREP_VEG = /[\s\-–(]*(leaders?|followers?|lead|follow|vezető|követő)\)?\s*$/i;
 
-function csv(sorok) {
-  const esc = v => {
-    v = String(v ?? '');
-    return /["\n\r]/.test(v) || v.includes(CSV_ELVALASZTO) ? '"' + v.replace(/"/g, '""') + '"' : v;
-  };
-  return '﻿' + [FEJLEC, ...sorok.map(sorTomb)].map(r => r.map(esc).join(CSV_ELVALASZTO)).join('\r\n');
+function alapDivizio(s) {
+  const d = adat.diviziok.find(x => x.nev === s.divizio);
+  return ((d && d.alap && d.alap !== d.nev) ? d.alap : s.divizio.replace(SZEREP_VEG, '')).trim() || s.divizio;
+}
+function szerepOf(s) {
+  const d = adat.diviziok.find(x => x.nev === s.divizio);
+  return APP_SZEREP[kulcsSzo(s.szerep || (d && d.szerep))] || '';
+}
+
+// Export sorok + amiért az app nem tudná beolvasni a fájlt.
+function exportTabla(sorok) {
+  const t = sorok.map(s => {
+    const bib = s.vegleges ? String(s.bib ?? '').trim() : '';
+    return { bib: /^\d+$/.test(bib) ? parseInt(bib, 10) : bib, nev: (s.vezeteknev + ' ' + s.keresztnev).trim(),
+             szerep: szerepOf(s) || s.szerep || '', app: !!szerepOf(s), divizio: alapDivizio(s), eredeti: s.divizio,
+             wsdc: s.wsdc || '', regszam: s.regszam || '', statusz: s.vegleges ? 'végleges' : 'függő',
+             forras: s.forras || '', ido: s.ido || '' };
+  }).sort((a, b) => a.divizio.localeCompare(b.divizio, 'hu') || (a.szerep > b.szerep ? 1 : a.szerep < b.szerep ? -1 : 0)
+                 || (typeof a.bib === 'number' && typeof b.bib === 'number' ? a.bib - b.bib : String(a.bib).localeCompare(String(b.bib)))
+                 || a.nev.localeCompare(b.nev, 'hu'));
+
+  const gond = [];
+  const fuggo = t.filter(r => r.statusz === 'függő').length;
+  if (fuggo) gond.push(fuggo + ' függő nevezés (nincs bib)');
+  t.filter(r => r.statusz === 'végleges' && typeof r.bib !== 'number').forEach(r => gond.push(`${r.nev}: a bib „${r.bib}” nem szám`));
+  t.filter(r => !r.app).forEach(r => gond.push(`${r.nev} (${r.eredeti}): nincs Leader/Follower szerep`));
+  const m = new Map();
+  t.filter(r => typeof r.bib === 'number').forEach(r => { const k = r.divizio + '\u0000' + r.bib; m.set(k, [...(m.get(k) || []), r]); });
+  m.forEach(l => { if (l.length > 1) gond.push(`${l[0].divizio}: a ${l[0].bib}-es bib többször szerepel (${l.map(r => r.nev).join(', ')})`); });
+  return { tabla: t, gond };
+}
+const sorTomb = r => [r.bib, r.nev, r.szerep, r.divizio];
+
+function csv(tabla) {
+  const esc = v => { v = String(v ?? ''); return /[";\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  return '﻿' + [FEJLEC, ...tabla.map(sorTomb)].map(r => r.map(esc).join(CSV_ELVALASZTO)).join('\r\n');
+}
+function exportUzenet(n, gond) {
+  if (!gond.length) return msg('msgPanel', n + ' nevezés exportálva, a pontozó app be tudja olvasni.', 'ok');
+  msg('msgPanel', n + ' nevezés exportálva, de a pontozó app így NEM tudja beolvasni: ' + gond.join(' | ')
+    + (gond.some(g => g.includes('függő')) ? ' – az apphoz pipáld be a „Csak véglegesítettek” jelölőt.' : ''));
+}
+function exportCsv(sorok, nev) {
+  if (!sorok.length) return msg('msgPanel', 'Nincs exportálható nevezés.');
+  const { tabla, gond } = exportTabla(sorok);
+  letolt(csv(tabla), fajlnev(nev) + '.csv', 'text/csv');
+  exportUzenet(tabla.length, gond);
 }
 function fajlnev(s) {
   const nap = new Date().toISOString().slice(0, 10);
@@ -640,102 +886,130 @@ function letolt(tartalom, nev, tipus) {
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
-$('csvOssz').addEventListener('click', () => letolt(csv(rendezett(exportSorok())), fajlnev('osszes') + '.csv', 'text/csv'));
+$('csvOssz').addEventListener('click', () => exportCsv(exportSorok(), 'osszes'));
+// XLSX: divíziónként egy lap, ugyanazokkal az oszlopokkal (mindenki csak egyszer szerepel,
+// így az app is be tudja olvasni).
 $('xlsxOssz').addEventListener('click', () => {
   if (!window.XLSX) return msg('msgPanel', 'Az XLSX modul nem töltődött be, frissítsd az oldalt.');
+  const sorok = exportSorok();
+  if (!sorok.length) return msg('msgPanel', 'Nincs exportálható nevezés.');
+  const { tabla, gond } = exportTabla(sorok);
   const wb = XLSX.utils.book_new();
-  const lap = (sorok, nev) => {
-    const ws = XLSX.utils.aoa_to_sheet([FEJLEC, ...sorok.map(sorTomb)]);
-    ws['!cols'] = [{ wch: 6 }, { wch: 18 }, { wch: 16 }, { wch: 34 }, { wch: 10 }, { wch: 10 }, { wch: 11 }, { wch: 10 }, { wch: 10 }, { wch: 17 }];
-    XLSX.utils.book_append_sheet(wb, ws, nev);
-  };
-  const forras = exportSorok();
-  lap(rendezett(forras), 'Összes');
-  const hasznalt = new Set(['összes']);
-  csoportok(forras).forEach(([div, l]) => {
+  const hasznalt = new Set();
+  [...new Set(tabla.map(r => r.divizio))].forEach(div => {
+    const ws = XLSX.utils.aoa_to_sheet([FEJLEC, ...tabla.filter(r => r.divizio === div).map(sorTomb)]);
+    ws['!cols'] = [{ wch: 9 }, { wch: 24 }, { wch: 10 }, { wch: 28 }];
     let n = div.replace(/[\\\/\?\*\[\]:]/g, '-').slice(0, 31).trim(), k = 2;
     while (hasznalt.has(n.toLowerCase())) n = n.slice(0, 28) + ' ' + k++;
     hasznalt.add(n.toLowerCase());
-    lap(l, n);
+    XLSX.utils.book_append_sheet(wb, ws, n);
   });
   XLSX.writeFile(wb, fajlnev('osszes') + '.xlsx');
-});
-
-// ---- Export a pontozó appnak ----
-// Az app csak hibátlan fájlt fogad el: minden sorban egész bib, Leader/Follower szerep,
-// a divízió neve szerep nélkül, és egy divízión belül nincs két azonos bib.
-const kulcsSzo = t => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
-const APP_SZEREP = { leader: 'Leader', lead: 'Leader', l: 'Leader', vezeto: 'Leader',
-                     follower: 'Follower', follow: 'Follower', f: 'Follower', koveto: 'Follower' };
-const SZEREP_VEG = /[\s\-–(]*(leaders?|followers?|lead|follow|vezető|követő)\)?\s*$/i;
-
-function appExportAdat() {
-  const divInfo = new Map(adat.diviziok.map(d => [d.nev, d]));
-  const sorok = [], kihagyott = [], hibak = [];
-  adat.sorok.filter(s => s.vegleges).forEach(s => {
-    const d = divInfo.get(s.divizio);
-    const nev = (s.vezeteknev + ' ' + s.keresztnev).trim();
-    const szerep = APP_SZEREP[kulcsSzo(s.szerep || (d && d.szerep))];
-    if (!szerep) { kihagyott.push(nev + ' – ' + s.divizio); return; }
-    const bib = String(s.bib ?? '').trim();
-    if (!/^\d+$/.test(bib)) { hibak.push(`${nev} (${s.divizio}): a bib „${bib}” nem szám`); return; }
-    const divizio = ((d && d.alap && d.alap !== d.nev) ? d.alap : s.divizio.replace(SZEREP_VEG, '')).trim() || s.divizio;
-    sorok.push({ bib: parseInt(bib, 10), nev, szerep, divizio });
-  });
-  const egyezes = new Map();
-  sorok.forEach(r => { const k = r.divizio + '\u0000' + r.bib; egyezes.set(k, [...(egyezes.get(k) || []), r]); });
-  egyezes.forEach(l => {
-    if (l.length > 1) hibak.push(`${l[0].divizio}: a ${l[0].bib}-es bib többször szerepel (${l.map(r => r.nev + ', ' + r.szerep).join('; ')})`);
-  });
-  sorok.sort((a, b) => a.divizio.localeCompare(b.divizio, 'hu') || a.bib - b.bib);
-  return { sorok, kihagyott, hibak };
-}
-
-function appCsv(sorok) {
-  const esc = v => { v = String(v); return /[";\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
-  return '﻿' + [['Rajtszám', 'Név', 'Szerep', 'Divízió'], ...sorok.map(r => [r.bib, r.nev, r.szerep, r.divizio])]
-    .map(r => r.map(esc).join(';')).join('\r\n');
-}
-
-$('appExport').addEventListener('click', () => {
-  const { sorok, kihagyott, hibak } = appExportAdat();
-  if (hibak.length) return msg('msgPanel', 'Az app nem tudná beolvasni, előbb javítsd: ' + hibak.join(' | '));
-  if (!sorok.length) return msg('msgPanel', 'Nincs véglegesített, bib számmal rendelkező Leader/Follower nevezés.');
-  letolt(appCsv(sorok), fajlnev('app') + '.csv', 'text/csv');
-  msg('msgPanel', sorok.length + ' nevezés exportálva.' + (kihagyott.length
-    ? ' Kihagyva, mert nincs Leader/Follower szerepük (az app nem kezeli): ' + kihagyott.join('; ') : ''),
-    kihagyott.length ? 'info' : 'ok');
+  exportUzenet(tabla.length, gond);
 });
 
 // ======================================================================
 // DIVÍZIÓK – ki/be kapcsolás
 // ======================================================================
+function rajzolLetszam() {
+  const m = new Map();
+  adat.sorok.forEach(s => {
+    const sz = szerepOf(s); if (!sz) return;
+    const d = alapDivizio(s);
+    if (!m.has(d)) m.set(d, { Leader: [0, 0], Follower: [0, 0] });
+    m.get(d)[sz][s.vegleges ? 0 : 1]++;
+  });
+  const box = $('letszam'); box.innerHTML = '';
+  if (!m.size) return;
+  const h = document.createElement('h2'); h.textContent = 'Létszám'; h.className = 'dgrp-h';
+  h.style.cssText = 'font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);margin-bottom:8px';
+  const t = document.createElement('table');
+  t.innerHTML = '<thead><tr><th>Divízió</th><th class="n">Leader</th><th class="n">Follower</th><th class="n">Eltérés</th></tr></thead>';
+  const tb = document.createElement('tbody');
+  const sorrend = d => { const i = adat.diviziok.findIndex(x => alapDivizio({ divizio: x.nev }) === d); return i < 0 ? 999 : i; };
+  [...m].sort((a, b) => sorrend(a[0]) - sorrend(b[0]) || a[0].localeCompare(b[0], 'hu')).forEach(([d, c]) => {
+    const tr = document.createElement('tr');
+    const cella = ([v, f]) => v + (f ? `<span class="sub"> +${f} függő</span>` : '');
+    const L = c.Leader[0] + c.Leader[1], F = c.Follower[0] + c.Follower[1], diff = L - F;
+    const td = document.createElement('td'); td.textContent = d; tr.append(td);
+    [cella(c.Leader), cella(c.Follower)].forEach(x => { const e = document.createElement('td'); e.className = 'n'; e.innerHTML = x; tr.append(e); });
+    const e = document.createElement('td'); e.className = 'n' + (Math.abs(diff) >= 2 ? ' warn' : '');
+    e.textContent = diff === 0 ? '0' : (diff > 0 ? '+' + diff + ' L' : '+' + (-diff) + ' F');
+    e.title = 'Összes nevezés (függőkkel együtt) alapján';
+    tr.append(e); tb.append(tr);
+  });
+  t.append(tb);
+  const w = document.createElement('div'); w.className = 'tbl'; w.append(t);
+  box.append(h, w);
+}
+
 function rajzolDiviziok() {
+  rajzolLetszam();
   const db = {};
   adat.sorok.forEach(s => db[s.divizio] = (db[s.divizio] || 0) + 1);
+  // Egy sor = egy divízió (a Leader és Follower változat együtt)
+  const sorok = new Map();
+  adat.diviziok.forEach(d => { const a = d.alap || alapDivizio({ divizio: d.nev }); if (!sorok.has(a)) sorok.set(a, []); sorok.get(a).push(d); });
   const csop = {};
-  adat.diviziok.forEach(d => (csop[csoport(d.nev)] ||= []).push(d));
+  sorok.forEach((l, a) => (csop[csoport(a)] ||= []).push([a, l]));
+  const rend = { Leader: 0, Follower: 1 };
   const box = $('divKapcs'); box.innerHTML = '';
   ['Jack & Jill', 'Strictly', 'Egyéb'].filter(c => csop[c]).forEach(c => {
     const g = document.createElement('div'); g.className = 'dgrp';
     const h = document.createElement('h2'); h.textContent = c;
     const rows = document.createElement('div'); rows.className = 'rows';
-    csop[c].forEach(d => {
-      const row = document.createElement('div'); row.className = 'row' + (d.aktiv ? '' : ' off');
-      const n = document.createElement('span'); n.className = 'n'; n.textContent = d.nev;
+    csop[c].forEach(([alap, lista]) => {
+      lista.sort((x, y) => (rend[x.szerep] ?? 2) - (rend[y.szerep] ?? 2));
+      const aktivDb = lista.filter(d => d.aktiv).length;
+      const mind = aktivDb === lista.length, resz = aktivDb > 0 && !mind;
+      const row = document.createElement('div'); row.className = 'row' + (aktivDb ? '' : ' off');
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = alap;
       const meta = document.createElement('span'); meta.className = 'meta';
-      if (d.szintek) { const t = document.createElement('span'); t.className = 'tag gray'; t.textContent = d.szintek; meta.append(t); }
-      if (db[d.nev]) { const t = document.createElement('span'); t.className = 'tag'; t.textContent = db[d.nev] + ' nevezés'; meta.append(t); }
-      const sw = document.createElement('label'); sw.className = 'sw'; sw.title = d.aktiv ? 'Aktív' : 'Inaktív';
-      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = d.aktiv;
-      cb.setAttribute('aria-label', d.nev + ' aktív');
+      const szint = lista.map(d => d.szintek).find(Boolean);
+      if (szint) { const t = document.createElement('span'); t.className = 'tag gray'; t.textContent = szint; meta.append(t); }
+      if (resz) { const t = document.createElement('span'); t.className = 'tag red'; t.textContent = 'részben aktív';
+        t.title = 'Csak ez aktív: ' + lista.filter(d => d.aktiv).map(d => d.szerep || d.nev).join(', ') + '. A kapcsolóval mindkettő bekapcsol.'; meta.append(t); }
+      // szerepenként: létszám és korlát
+      lista.forEach(d => {
+        const n0 = db[d.nev] || 0, tele = d.korlat && n0 >= d.korlat;
+        const rk = document.createElement('span'); rk.className = 'rk' + (tele ? ' red' : '');
+        rk.title = d.nev + (tele ? ' – betelt' : '');
+        const cim = document.createElement('span'); cim.textContent = (d.szerep || 'Nevezés');
+        const sz = document.createElement('b'); sz.textContent = n0;
+        rk.append(cim, sz);
+        if ('korlat' in d) {
+          const per = document.createElement('span'); per.textContent = '/';
+          const k = document.createElement('input'); k.type = 'text'; k.className = 'korl'; k.inputMode = 'numeric';
+          k.placeholder = 'max'; k.value = d.korlat || ''; k.title = 'Létszámkorlát (üres = nincs). Betelt divízióba online nem lehet nevezni.';
+          k.setAttribute('aria-label', d.nev + ' létszámkorlát');
+          const kMent = async () => {
+            const v = k.value.trim();
+            if (v === String(d.korlat || '') || k.dataset.ment) return;   // Enter után a blur ne mentsen újra
+            if (v && !/^\d+$/.test(v)) { msg('msgDiv', 'A létszámkorlát csak szám lehet.'); k.focus(); return; }
+            k.dataset.ment = '1'; k.disabled = true; msg('msgDiv', 'Mentés…', 'info');
+            try { const r = await api('divizioAllit', { nev: d.nev, korlat: v });
+                  adat.diviziok = r.diviziok; rajzolDiviziok(); rajzolHelyszini();
+                  msg('msgDiv', d.nev + ': ' + (v ? 'létszámkorlát ' + v + ' fő.' : 'nincs létszámkorlát.'), 'ok'); }
+            catch (err) { delete k.dataset.ment; k.disabled = false; msg('msgDiv', err.message || 'Hálózati hiba.'); }
+          };
+          k.addEventListener('keydown', e => { if (e.key === 'Enter') kMent(); });
+          k.addEventListener('blur', kMent);
+          rk.append(per, k);
+        }
+        meta.append(rk);
+      });
+      // egy kapcsoló az egész divízióra
+      const sw = document.createElement('label'); sw.className = 'sw'; sw.title = mind ? 'Aktív' : resz ? 'Részben aktív' : 'Inaktív';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = mind;
+      cb.setAttribute('aria-label', alap + ' aktív');
       cb.addEventListener('change', async () => {
         cb.disabled = true; msg('msgDiv', 'Mentés…', 'info');
         try {
-          const v = await api('divizioAllit', { nev: d.nev, aktiv: cb.checked });
+          const v = await api('divizioAllit', { nevek: lista.map(d => d.nev), aktiv: cb.checked });
           adat.diviziok = v.diviziok; rajzolDiviziok(); rajzolHelyszini();
-          msg('msgDiv', d.nev + (cb.checked ? ' bekapcsolva.' : ' kikapcsolva.'), 'ok');
-        } catch (err) { cb.checked = !cb.checked; cb.disabled = false; msg('msgDiv', err.message || 'Hálózati hiba.'); }
+          msg('msgDiv', alap + (cb.checked ? ' bekapcsolva.' : ' kikapcsolva.'), 'ok');
+        } catch (err) { cb.checked = !cb.checked; cb.disabled = false;
+          msg('msgDiv', /Nincs ilyen divízió/.test(err.message) ? 'Ehhez frissíteni kell a Google Scriptet (lásd apps-script/README.md).' : (err.message || 'Hálózati hiba.')); }
       });
       sw.append(cb, document.createElement('span'));
       row.append(n, meta, sw); rows.append(row);
@@ -829,6 +1103,85 @@ $('hKuld').addEventListener('click', async () => {
     betolt().catch(() => {});
   } catch (err) { msg('msgH', err.message || 'Hálózati hiba.'); $('hKuld').disabled = false; }
 });
+
+// ======================================================================
+// ESEMÉNY – adatok és ütemterv
+// ======================================================================
+let evPiszkos = false;
+function programSor(p = {}) {
+  const row = document.createElement('div'); row.className = 'pr';
+  const ido = document.createElement('input'); ido.type = 'datetime-local'; ido.value = p.ido || ''; ido.setAttribute('aria-label', 'Kezdés');
+  const cim = document.createElement('input'); cim.type = 'text'; cim.className = 'cim'; cim.value = p.cim || '';
+  cim.placeholder = 'pl. Newcomer Jack&Jill – előselejtező'; cim.setAttribute('list', 'pJavaslat'); cim.setAttribute('aria-label', 'Program');
+  const megj = document.createElement('input'); megj.type = 'text'; megj.className = 'megj'; megj.value = p.megj || '';
+  megj.placeholder = 'Megjegyzés (nem kötelező)'; megj.setAttribute('aria-label', 'Megjegyzés');
+  const del = document.createElement('button'); del.type = 'button'; del.className = 'ib del'; del.title = 'Programpont törlése'; del.innerHTML = ICO.del;
+  del.addEventListener('click', () => { row.remove(); evPiszkos = true; });
+  row.append(ido, cim, megj, del);
+  return row;
+}
+function rajzolEsemeny() {
+  const e = adat.esemeny;
+  $('evRegi').textContent = e ? '' : 'A Google Script még a régi változat: az esemény adatait csak a script frissítése után lehet menteni.';
+  $('evMent').disabled = !e;
+  // javaslatok a programpontokhoz: divíziónevek
+  const dl = $('pJavaslat'); dl.innerHTML = '';
+  [...new Set(adat.diviziok.filter(d => d.aktiv).map(d => alapDivizio({ divizio: d.nev })))].forEach(n =>
+    ['előselejtező', 'középdöntő', 'döntő'].forEach(f => { const o = document.createElement('option'); o.value = n + ' – ' + f; dl.append(o); }));
+  if (!e || evPiszkos) return;
+  $('evNev').value = e.nev || ''; $('evDatum').value = e.datum || ''; $('evHely').value = e.helyszin || '';
+  $('evDij').value = e.dij || ''; $('evHatarido').value = e.hatarido || '';
+  const box = $('pLista'); box.innerHTML = '';
+  (e.program || []).forEach(p => box.append(programSor(p)));
+  if (!(e.program || []).length) box.append(programSor());
+}
+$('t-esemeny').addEventListener('input', () => { evPiszkos = true; });
+$('pUj').addEventListener('click', () => {
+  const sorok = [...document.querySelectorAll('#pLista .pr')];
+  const utolso = sorok.length ? sorok[sorok.length - 1].querySelector('input[type=datetime-local]').value : '';
+  const r = programSor({ ido: utolso });   // az előző időpontja, hogy csak az órát kelljen átírni
+  $('pLista').append(r); r.querySelector('.cim').focus(); evPiszkos = true;
+});
+$('evMent').addEventListener('click', async () => {
+  const program = [...document.querySelectorAll('#pLista .pr')].map(r => {
+    const [ido, cim, megj] = r.querySelectorAll('input');
+    return { ido: ido.value, cim: cim.value.trim(), megj: megj.value.trim() };
+  }).filter(p => p.ido || p.cim || p.megj);
+  const esemeny = { nev: $('evNev').value.trim(), datum: $('evDatum').value.trim(), helyszin: $('evHely').value.trim(),
+                    dij: $('evDij').value.trim(), hatarido: $('evHatarido').value, program };
+  $('evMent').disabled = true; msg('msgEv', 'Mentés…', 'info');
+  try {
+    const v = await api('esemenyMentes', { esemeny });
+    adat.esemeny = v.esemeny; evPiszkos = false; rajzolEsemeny(); rajzolVersenyzok();
+    msg('msgEv', 'Mentve. A nevezési oldalon frissítés után látszik.', 'ok');
+  } catch (err) { msg('msgEv', err.message || 'Hálózati hiba.'); }
+  finally { $('evMent').disabled = !adat.esemeny; }
+});
+
+// ======================================================================
+// NAPLÓ
+// ======================================================================
+let naplo = [];
+async function betoltNaplo() {
+  msg('msgN', 'Betöltés…', 'info');
+  try { const v = await api('naplo', { db: 500 }); naplo = v.sorok; rajzolNaplo();
+        msg('msgN', v.osszes > naplo.length ? `A legutóbbi ${naplo.length} bejegyzés (összesen ${v.osszes}, a táblázat Naplo lapján mind megvan).` : '', 'info'); }
+  catch (err) { msg('msgN', /Ismeretlen művelet/.test(err.message) ? 'A naplóhoz frissíteni kell a Google Scriptet.' : (err.message || 'Hálózati hiba.')); }
+}
+function rajzolNaplo() {
+  const q = $('nKer').value.trim().toLowerCase();
+  const tb = $('nTest'); tb.innerHTML = '';
+  const l = naplo.filter(x => !q || [x.ki, x.muvelet, x.reszlet].join(' ').toLowerCase().includes(q));
+  if (!l.length) { tb.innerHTML = '<tr><td colspan="4" class="empty">' + (naplo.length ? 'Nincs találat.' : 'Még nincs bejegyzés.') + '</td></tr>'; return; }
+  l.forEach(x => {
+    const tr = document.createElement('tr');
+    [[x.ido, 't'], [x.ki, ''], [x.muvelet, ''], [x.reszlet, 'r']].forEach(([v, c]) => {
+      const td = document.createElement('td'); td.textContent = v; if (c) td.className = c; tr.append(td); });
+    tb.append(tr);
+  });
+}
+$('nKer').addEventListener('input', rajzolNaplo);
+$('nFrissit').addEventListener('click', betoltNaplo);
 
 $('hUj').addEventListener('click', () => {
   $('hWsdc').value = $('hKn').value = $('hVn').value = $('hBib').value = '';

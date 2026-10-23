@@ -118,7 +118,7 @@ header .sub { margin-top:10px; color:rgba(255,255,255,.75); font-size:.98rem; }
               fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; }
 .kereso input { width:100%; height:48px; padding:0 14px 0 42px; font:inherit; color:var(--ink); border:1px solid var(--line); border-radius:8px; outline:none; }
 .kereso input:focus { border-color:var(--accent); }
-.evracs { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap:20px; }
+.evracs { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap:20px; align-items:start; }
 .evk2 { display:flex; flex-direction:column; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden;
         box-shadow:0 10px 30px rgba(11,26,69,.08); }
 .evk2 .kep { position:relative; aspect-ratio:27 / 10; background:linear-gradient(135deg, #0b1a45 0%, #1d4ed8 100%); cursor:pointer; }

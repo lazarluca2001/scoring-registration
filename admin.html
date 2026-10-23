@@ -580,6 +580,8 @@ function rovid(alap, c) {
 }
 const emberKulcs = s => s.wsdc ? 'id' + s.wsdc : (s.keresztnev + ' ' + s.vezeteknev).toLowerCase();
 const szemely = s => s.regszam || emberKulcs(s);
+// Szintezett divízió (van szintje és nem Strictly): szerepenként csak egyben lehet indulni
+const szintezettDiv = d => d.szintezett !== undefined ? d.szintezett : !!String(d.szintek || '').trim() && !/strictly/i.test(d.nev);
 const teljesNev = s => s.vezeteknev + ' ' + s.keresztnev;
 
 // Hibák nevezésenként (amiért az app nem tudná beolvasni, vagy ami ütközést okoz).
@@ -607,6 +609,15 @@ function szamolHibak() {
       add(s, `a ${bib}-es bib másnál is szerepel: ` + [...tobbi].filter(([k]) => k !== szemely(s)).map(([, n]) => n).join(', '));
   });
   divSzemely.forEach(l => { if (l.length > 1) l.forEach(s => add(s, 'kétszer nevezett ide: ' + l.map(x => x.divizio).join(' és '))); });
+  // ugyanaz a versenyző ugyanabban a szerepben több szintezett divízióban
+  const szint = new Map();
+  adat.sorok.forEach(s => {
+    const d = adat.diviziok.find(x => x.nev === s.divizio), sz = szerepOf(s);
+    if (!d || !sz || !szintezettDiv(d)) return;
+    const k = szemely(s) + '\u0000' + sz;
+    szint.set(k, [...(szint.get(k) || []), s]);
+  });
+  szint.forEach(l => { if (l.length > 1) l.forEach(s => add(s, szerepOf(s) + 'ként több szinten: ' + l.map(x => alapDivizio(x)).join(', '))); });
   hibaMap = m;
 }
 // Melyik másik versenyzőnél van már ez a bib (véglegesítés előtti figyelmeztetéshez)
@@ -1154,6 +1165,16 @@ function rajzolHelyszini() {
         b.addEventListener('click', () => {
           hValasztas[alap] = hValasztas[alap] === d.nev ? undefined : d.nev;
           if (!hValasztas[alap]) delete hValasztas[alap];
+          msg('msgH');
+          // ugyanabban a szerepben csak egy szintezett divízió: a korábbit leveszi
+          if (hValasztas[alap] && szintezettDiv(d) && d.szerep) {
+            Object.keys(hValasztas).forEach(m => {
+              const v = adat.diviziok.find(x => x.nev === hValasztas[m]);
+              if (m === alap || !v || !szintezettDiv(v) || v.szerep !== d.szerep) return;
+              delete hValasztas[m];
+              msg('msgH', `${d.szerep}ként csak egy szinten lehet indulni: ${m} helyett ${alap}.`, 'info');
+            });
+          }
           rajzolHelyszini();
         });
         seg.append(b);

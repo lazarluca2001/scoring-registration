@@ -1,0 +1,3 @@
+# Az Apps Script backend külön van kezelve, nem kerül a repóba
+apps-script/
+*.gs

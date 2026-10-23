@@ -43,9 +43,7 @@ function kartya(x) {
   const kep = el('a', 'kep'); kep.href = fo; kep.setAttribute('aria-hidden', 'true'); kep.tabIndex = -1;
   const ph = el('div', 'ph', x.nev); kep.append(ph);
   if (x.kep) { const img = document.createElement('img'); img.alt = ''; img.loading = 'lazy'; img.src = kepUrl(x.kep);
-    img.addEventListener('error', () => img.remove()); img.addEventListener('load', () => { ph.hidden = true;
-      // a kártya a kép saját méretarányát veszi fel, így vágás nélkül, teljes egészében látszik
-      if (img.naturalWidth && img.naturalHeight) kep.style.aspectRatio = img.naturalWidth + ' / ' + img.naturalHeight; }); kep.append(img); }
+    img.addEventListener('error', () => img.remove()); img.addEventListener('load', () => { ph.hidden = true; }); kep.append(img); }
   if (elo(x)) kep.append(el('span', 'elo', 'MOST ZAJLIK'));
   const h3 = el('h3'); const a = el('a', 'cimlink', x.nev); a.href = fo; h3.append(a);
   const adat = el('div', 'adat');

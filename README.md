@@ -12,11 +12,12 @@ exportált fájlt pedig a **Scoring_Judging** pontozó app közvetlenül be tudj
 | Oldal | Tartalom |
 |---|---|
 | `index.html` | főoldal: az események kártyái ([link](https://lazarluca2001.github.io/scoring-registration/)); `?korabbi=1` a korábbi események, `?q=…` keresés |
-| `nevezes.html?e=…` | egy esemény nevezési oldala: űrlap, határidő, menetrend |
-| `listak.html?e=…` | bevonuló párok futamonként |
-| `eredmenyek.html?e=…` | a fordulók eredménye |
+| `nevezes?e=teca2027` | egy esemény nevezési oldala: űrlap, határidő, menetrend |
+| `listak?e=teca2027&r=novice-1` | bevonuló párok futamonként (`r` = divízió és forduló) |
+| `eredmenyek?e=teca2027&r=newcomer-2` | a fordulók eredménye |
 | `admin.html` | szervezőknek, jelszóval ([link](https://lazarluca2001.github.io/scoring-registration/admin.html)) |
 
+Az `e=` után az esemény rövid neve áll (alapból az esemény nevéből készül, az admin Esemény fülén átírható).
 Minden nyilvános lap tetején ugyanaz a menüsor (Versenyek, Közelgő és Korábbi események, keresés; mobilon ☰), az eseménylapokon
 alatta a Nevezés / Listák / Eredmények fülek. A közös stílus és kód az `assets/` mappában van.
 
@@ -97,11 +98,12 @@ Sheet, and the exported file can be loaded directly into the **Scoring_Judging**
 | Page | Content |
 |---|---|
 | `index.html` | home page: the event cards ([link](https://lazarluca2001.github.io/scoring-registration/)); `?korabbi=1` past events, `?q=…` search |
-| `nevezes.html?e=…` | an event's registration page: form, deadline, schedule |
-| `listak.html?e=…` | walk-in pairs per heat |
-| `eredmenyek.html?e=…` | round results |
+| `nevezes?e=teca2027` | an event's registration page: form, deadline, schedule |
+| `listak?e=teca2027&r=novice-1` | walk-in pairs per heat (`r` = division and round) |
+| `eredmenyek?e=teca2027&r=newcomer-2` | round results |
 | `admin.html` | for organizers, with password ([link](https://lazarluca2001.github.io/scoring-registration/admin.html)) |
 
+After `e=` comes the event's short name (made from the event name by default, editable on the admin Event tab).
 Every public page has the same menu bar at the top (Events, upcoming and past events, search; ☰ on mobile), and the event
 pages have the Registration / Lists / Results tabs below it. Shared styles and code live in `assets/`.
 

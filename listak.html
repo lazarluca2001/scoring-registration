@@ -38,9 +38,9 @@ function rajzolListak() {
   rajzolLinkek('marshalling', $('mLinkek'));
   const elemek = [];
   Object.entries(eredmenyek ? eredmenyek.diviziok : {}).forEach(([div, x]) => (x.marshalling || []).forEach(m =>
-    elemek.push({ kulcs: 'm:' + div + ':' + m.sorszam, div, cim: div + ' – ' + TIPUS_NEV[m.tipus], m })));
+    elemek.push({ kulcs: korKulcs(div, m.sorszam), div, cim: div + ' – ' + TIPUS_NEV[m.tipus], m })));
   const nevezettek = !elemek.length;
-  if (nevezettek) (rajtlista ? rajtlista.diviziok : []).forEach(d => elemek.push({ kulcs: 'n:' + d.divizio, div: d.divizio, cim: d.divizio + ' – nevezettek', d }));
+  if (nevezettek) (rajtlista ? rajtlista.diviziok : []).forEach(d => elemek.push({ kulcs: korKulcs(d.divizio), div: d.divizio, cim: d.divizio + ' – nevezettek', d }));
   valasztoTolt($('lValaszt'), elemek);
   const x = elemek.find(e => e.kulcs === aktKor);
   $('lCim').textContent = x ? x.cim : 'Listák';

@@ -94,7 +94,13 @@ async function jsonGet(params) {
   if (esemenyId) u.searchParams.set('e', esemenyId);
   return (await fetch(u)).json();
 }
-const lapUrl = (lap, id) => lap + (id ? '?e=' + encodeURIComponent(id) : '');
+// Rövid linkek: „nevezes?e=teca2027” (a GitHub Pages a .html nélküli címet is kiszolgálja)
+const lapUrl = (lap, id) => lap.replace(/\.html$/, '') + (id ? '?e=' + encodeURIComponent(id) : '');
+// „Technical Camp 2027” → „technical-camp-2027” (ugyanaz, mint a scriptben)
+const rovidNev = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+// forduló a linkben: „Novice Jack&Jill”, 1. forduló → „novice-1”
+const korKulcs = (div, sorszam) => rovidNev(div).replace(/-jack-jill$/, '') + (sorszam ? '-' + sorszam : '');
 
 // ----- Felső menüsor (minden lapon ugyanaz)
 function navRajzol(aktiv) {
@@ -124,6 +130,11 @@ async function esemenyOldal(lap) {
   if (!v.ok || !v.esemeny) { $('cim').textContent = VERSENY_NEV; uzenet(v.hiba || 'Az esemény nem érhető el.'); return null; }
   esemeny = v.esemeny;
   if (!esemenyId && v.esemenyId) esemenyId = v.esemenyId;
+  // a címsorban mindig a rövid név legyen (régi, hosszú linkről érkezve is)
+  if (esemeny.rovid) {
+    esemenyId = esemeny.rovid;
+    const u = new URL(location.href); u.searchParams.set('e', esemeny.rovid); history.replaceState(null, '', u);
+  }
   if (!esemeny.datum) esemeny.datum = idoszak(esemeny);
   const nev = esemeny.nev || VERSENY_NEV, cimke = (LAPOK.find(l => l[0] === lap) || [])[1];
   $('cim').textContent = nev; document.title = (cimke ? cimke + ' – ' : '') + nev;

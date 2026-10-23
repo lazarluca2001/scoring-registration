@@ -24,8 +24,8 @@
 <script>
 // Régi linkek (?e=…&f=…) → az új lapok
 if (PARAM.get('e')) {
-  const cel = { lista: 'listak.html', eredmeny: 'eredmenyek.html' }[PARAM.get('f')] || 'nevezes.html';
-  location.replace(cel + '?e=' + encodeURIComponent(PARAM.get('e')) + (PARAM.get('r') ? '&r=' + encodeURIComponent(PARAM.get('r')) : ''));
+  const cel = { lista: 'listak', eredmeny: 'eredmenyek' }[PARAM.get('f')] || 'nevezes';
+  location.replace(lapUrl(cel, PARAM.get('e')));
 }
 const q = (PARAM.get('q') || '').trim().toLowerCase();
 const korabbi = PARAM.has('korabbi');
@@ -37,7 +37,8 @@ document.title = $('cim').textContent;
 function kartya(x) {
   const lapok = [['nevezes.html', 'Nevezés', 'f', x.fulNevezes !== false && x.nyitva], ['listak.html', 'Listák', 'm', !!x.fulMarshalling],
                  ['eredmenyek.html', 'Eredmények', 's', !!x.fulEredmeny]].filter(l => l[3]);
-  const fo = lapUrl(lapok.length ? lapok[0][0] : (x.fulNevezes !== false ? 'nevezes.html' : 'eredmenyek.html'), x.id);
+  const id = x.rovid || x.id;
+  const fo = lapUrl(lapok.length ? lapok[0][0] : (x.fulNevezes !== false ? 'nevezes.html' : 'eredmenyek.html'), id);
   const k = el('article', 'evk2');
   const kep = el('a', 'kep'); kep.href = fo; kep.setAttribute('aria-hidden', 'true'); kep.tabIndex = -1;
   const ph = el('div', 'ph', x.nev); kep.append(ph);
@@ -50,7 +51,7 @@ function kartya(x) {
   sor(IKON.nap, idoszak(x)); sor(IKON.hely, x.helyszin);
   if (x.fulNevezes !== false && !x.nyitva && !elmult(x)) sor('', 'A nevezés lezárult', 'lez');
   const gs = el('div', 'gs');
-  lapok.forEach(([url, t, c]) => { const b = el('a', 'gb ' + c, t + ' »'); b.href = lapUrl(url, x.id); gs.append(b); });
+  lapok.forEach(([url, t, c]) => { const b = el('a', 'gb ' + c, t + ' »'); b.href = lapUrl(url, id); gs.append(b); });
   gs.hidden = !lapok.length;
   k.append(kep, h3, adat, gs);
   return k;
@@ -59,7 +60,7 @@ function kartya(x) {
 (async () => {
   let lista = null;
   try { const v = await jsonGet({ esemenyek: 1 }); if (v.ok && Array.isArray(v.esemenyek)) lista = v.esemenyek; } catch {}
-  if (!lista) { location.replace('nevezes.html'); return; }   // régi script: egy esemény
+  if (!lista) { location.replace('nevezes'); return; }   // régi script: egy esemény
   const l = lista
     .filter(x => q ? [x.nev, x.helyszin].join(' ').toLowerCase().includes(q) : elmult(x) === korabbi)
     .sort((a, b) => korabbi ? String(b.vege || b.kezdes).localeCompare(String(a.vege || a.kezdes))

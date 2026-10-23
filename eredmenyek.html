@@ -38,7 +38,7 @@ function rajzolEredmenyek() {
   const vanLink = rajzolLinkek('eredmeny', $('eLinkek'));
   const elemek = [];
   Object.entries(eredmenyek ? eredmenyek.diviziok : {}).forEach(([div, x]) => (x.fordulok || []).forEach(f =>
-    elemek.push({ kulcs: 'e:' + div + ':' + f.sorszam, div, cim: div + ' – ' + TIPUS_NEV[f.tipus], f })));
+    elemek.push({ kulcs: korKulcs(div, f.sorszam), div, cim: div + ' – ' + TIPUS_NEV[f.tipus], f })));
   // a legújabb forduló legyen elöl divíziónként? – a sorrend: divízió, majd forduló
   valasztoTolt($('eValaszt'), elemek);
   const x = elemek.find(e => e.kulcs === aktKor);

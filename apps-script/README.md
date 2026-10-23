@@ -15,7 +15,24 @@ frissítéskor nem kell újra beállítani.
 Az új lapokat (Esemeny, Program, Naplo) és oszlopokat (Megérkezett, Fizetve, Létszámkorlát) a script az első
 használatkor magától létrehozza.
 
-## Lapok
+A telepítéskor a Google engedélyt kér a Drive-hoz (az új események táblázatainak létrehozásához és a mappába
+helyezéséhez): az „Engedélyek áttekintése” után válaszd a fiókodat, és engedélyezd.
+
+## Több esemény
+
+Minden eseménynek saját táblázata van, ugyanabban a Drive mappában, ahol a scriptet tartalmazó táblázat.
+
+- **Új esemény**: az admin felület tetején, a „+ Új esemény” gombbal. Új táblázat készül a mappában a lapokkal együtt;
+  a divíziók (be/ki állapottal és korláttal) átvehetők a kiválasztott eseményből.
+- **Kiválasztás**: az admin felület tetején lévő listából; minden fül (nevezések, divíziók, esemény adatai, napló)
+  a kiválasztott esemény táblázatával dolgozik.
+- **Aktív esemény**: a „Legyen ez az aktív” gombbal. A nevezési oldal mindig az aktív eseményt mutatja, és oda kerülnek
+  az online nevezések. A korábbi események táblázatai és adatai megmaradnak.
+
+A script továbbra is a TECA2027-verseny táblázatban van, és onnan kezeli a többit; az események listáját és az aktív
+eseményt a Script Properties tárolja (ESEMENYEK, AKTIV_ESEMENY).
+
+## Lapok (minden esemény táblázatában)
 
 | Lap | Tartalom |
 |---|---|

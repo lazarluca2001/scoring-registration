@@ -196,6 +196,11 @@
   .evbar select { width:auto; min-width:220px; max-width:100%; font-weight:600; }
   .evbar .sp { flex:1; }
   .tag.ok { background:#e6f4ec; color:var(--ok); }
+  .evbar .nyk { display:inline-flex; align-items:center; gap:8px; font-size:.85rem; font-weight:500; }
+  .fulvalaszto { display:flex; flex-wrap:wrap; gap:18px; margin-bottom:6px; }
+  .linkszerk { display:flex; flex-direction:column; gap:8px; }
+  .linkszerk .lk { display:grid; grid-template-columns:150px 1fr 1.4fr 30px; gap:8px; align-items:center; }
+  @media (max-width:700px) { .linkszerk .lk { grid-template-columns:1fr 30px; } .linkszerk .lk > :nth-child(2), .linkszerk .lk > :nth-child(3) { grid-column:1; } }
   @media (max-width:600px) { .pad, .tools, .stats, .divs, .foot { padding-left:16px; padding-right:16px; } dialog .two { grid-template-columns:1fr; } }
 </style>
 </head>
@@ -219,8 +224,11 @@
     <div class="evbar" id="evBar" hidden>
       <label for="evValaszt">Esemény</label>
       <select id="evValaszt"></select>
+      <label class="nyk" title="Nyilvános esemény: megjelenik a nevezési oldalon, a versenyzők kiválaszthatják. Több is lehet nyilvános egyszerre.">
+        <span class="sw"><input type="checkbox" id="evNyilv"><span></span></span> Nyilvános
+      </label>
       <span class="tag" id="evAllapot"></span>
-      <button class="btn ghost sm" id="evAktival" hidden>Legyen ez az aktív</button>
+      <button class="btn ghost sm" id="evLink" title="Az esemény saját linkje a nevezési oldalon – ezzel egyenesen erre az eseményre jutnak">Link másolása</button>
       <span class="sp"></span>
       <button class="btn ghost sm" id="evUjGomb">+ Új esemény</button>
     </div>
@@ -355,6 +363,19 @@
         <div class="bar"><h2 class="sec">Ütemterv</h2><button class="btn ghost sm" id="pUj" type="button">+ Programpont</button></div>
         <div class="prog" id="pLista"></div>
         <datalist id="pJavaslat"></datalist>
+
+        <div class="bar"><h2 class="sec">Nyilvános oldal fülei</h2></div>
+        <div class="fulvalaszto">
+          <label class="chk"><input type="checkbox" id="fulNevezes"> Nevezés</label>
+          <label class="chk"><input type="checkbox" id="fulMarshalling"> Marshalling listák</label>
+          <label class="chk"><input type="checkbox" id="fulEredmeny"> Eredmények</label>
+        </div>
+        <p class="hint" style="margin-top:4px">A Marshalling listák fülön automatikusan megjelenik a rajtlista (a véglegesített versenyzők divíziónként, bib szerint), alatta pedig az itt megadott linkek.
+          Ha a Nevezés fül ki van kapcsolva, online nem lehet nevezni.</p>
+
+        <div class="bar"><h2 class="sec">Linkek</h2><button class="btn ghost sm" id="lUj" type="button">+ Link</button></div>
+        <div class="linkszerk" id="lLista"></div>
+        <p class="hint">Pl. a pontozó appból exportált futambeosztás vagy eredmény PDF-ként a Drive-on (megosztás: „Bárki, aki rendelkezik a linkkel”).</p>
         <p class="hint">A nevezési oldal tetején megjelenik egy kártya az esemény adataival, a nevezési határidővel és az ütemtervvel.
           A határidő után az online nevezés lezárul; a helyszíni nevezés az admin felületen továbbra is működik.</p>
       </div>
@@ -390,7 +411,7 @@
     <div class="pad">
       <div><label class="f" for="ujNev">Esemény neve</label><input type="text" id="ujNev" required placeholder="pl. Budapest Swing Open 2027"></div>
       <label class="chk"><input type="checkbox" id="ujMasol" checked> Divíziók átvétele innen: <b id="ujForras" style="color:var(--ink)"></b></label>
-      <p class="hint" style="margin:0">Új táblázat készül ugyanabban a Drive mappában. A nevezési oldalon csak akkor jelenik meg, ha aktívvá teszed.</p>
+      <p class="hint" style="margin:0">Új táblázat készül ugyanabban a Drive mappában. A nevezési oldalon csak akkor jelenik meg, ha nyilvánossá teszed.</p>
       <p class="msg" id="msgUj" role="status"></p>
     </div>
     <div class="foot">
@@ -486,27 +507,32 @@ function rajzolEsemenySav() {
   if (!esemenyLista.length) return;
   $('evBar').hidden = false;
   const sel = $('evValaszt'); sel.innerHTML = '';
-  esemenyLista.forEach(e => { const o = document.createElement('option'); o.value = e.id; o.textContent = e.nev + (e.aktiv ? ' (aktív)' : ''); sel.append(o); });
+  const nyilv = e => e.nyilvanos !== undefined ? e.nyilvanos : e.aktiv;
+  esemenyLista.forEach(e => { const o = document.createElement('option'); o.value = e.id; o.textContent = e.nev + (nyilv(e) ? ' (nyilvános)' : ''); sel.append(o); });
   sel.value = esemenyId || (esemenyLista.find(e => e.aktiv) || esemenyLista[0]).id;
   const e = esemenyLista.find(x => x.id === sel.value) || {};
-  $('evAllapot').className = 'tag ' + (e.aktiv ? 'ok' : 'gray');
-  $('evAllapot').textContent = e.aktiv ? 'a nevezési oldalon ez látszik' : 'nem nyilvános';
-  $('evAktival').hidden = !!e.aktiv;
+  $('evNyilv').checked = !!nyilv(e);
+  $('evAllapot').className = 'tag ' + (nyilv(e) ? 'ok' : 'gray');
+  $('evAllapot').textContent = nyilv(e) ? 'látszik a nevezési oldalon' : 'nem látszik a nevezési oldalon';
 }
+$('evNyilv').addEventListener('change', async () => {
+  const id = $('evValaszt').value, be = $('evNyilv').checked;
+  $('evNyilv').disabled = true;
+  try { esemenyLista = (await api('nyilvanosAllit', { id, nyilvanos: be })).esemenyek; }
+  catch (err) { $('evNyilv').checked = !be; alert(/Ismeretlen művelet/.test(err.message) ? 'Ehhez frissíteni kell a Google Scriptet.' : (err.message || 'Hálózati hiba.')); }
+  finally { $('evNyilv').disabled = false; rajzolEsemenySav(); }
+});
+$('evLink').addEventListener('click', async () => {
+  const u = new URL('./', location.href); u.searchParams.set('e', $('evValaszt').value);
+  try { await navigator.clipboard.writeText(u.href); $('evLink').textContent = 'Link kimásolva ✓'; }
+  catch { prompt('Az esemény linkje:', u.href); }
+  setTimeout(() => { $('evLink').textContent = 'Link másolása'; }, 2000);
+});
 $('evValaszt').addEventListener('change', async () => {
   esemenyValt($('evValaszt').value);
   msg('msgV', 'Betöltés…', 'info');
   try { await betolt(); msg('msgV'); if (!$('t-naplo').hidden) betoltNaplo(); }
   catch (err) { msg('msgV', err.message || 'Hálózati hiba.'); }
-});
-$('evAktival').addEventListener('click', async () => {
-  const uj = esemenyLista.find(e => e.id === $('evValaszt').value), regi = esemenyLista.find(e => e.aktiv);
-  if (!uj || !confirm(`A nevezési oldalon ezentúl a(z) „${uj.nev}” esemény látszik.` +
-      (regi ? `\n\nA(z) „${regi.nev}” nevezései megmaradnak, de oda online már nem lehet nevezni.` : '') + '\n\nFolytatod?')) return;
-  $('evAktival').disabled = true;
-  try { esemenyLista = (await api('aktivEsemeny', { id: uj.id })).esemenyek; rajzolEsemenySav(); }
-  catch (err) { alert(err.message || 'Hálózati hiba.'); }
-  finally { $('evAktival').disabled = false; }
 });
 $('evUjGomb').addEventListener('click', () => {
   $('ujNev').value = ''; $('ujMasol').checked = true; msg('msgUj');
@@ -523,7 +549,7 @@ $('ujForm').addEventListener('submit', async e => {
     $('ujDlg').close();
     await betolt();
     document.querySelector('.tab[data-tab=esemeny]').click();
-    msg('msgEv', 'Az esemény elkészült. Töltsd ki az adatait, majd tedd aktívvá, ha indulhat a nevezés.', 'ok');
+    msg('msgEv', 'Az esemény elkészült. Töltsd ki az adatait, majd kapcsold be fent a „Nyilvános” kapcsolót, ha indulhat a nevezés.', 'ok');
   } catch (err) { msg('msgUj', err.message || 'Hálózati hiba.'); }
   finally { $('ujMent').disabled = false; }
 });
@@ -1256,7 +1282,25 @@ function rajzolEsemeny() {
   const box = $('pLista'); box.innerHTML = '';
   (e.program || []).forEach(p => box.append(programSor(p)));
   if (!(e.program || []).length) box.append(programSor());
+  const vanFul = 'fulNevezes' in e;
+  ['fulNevezes', 'fulMarshalling', 'fulEredmeny'].forEach(k => { $(k).checked = vanFul ? !!e[k] : k === 'fulNevezes'; $(k).disabled = !vanFul; });
+  $('lUj').disabled = !vanFul;
+  const lb = $('lLista'); lb.innerHTML = '';
+  (e.linkek || []).forEach(l => lb.append(linkSor(l)));
 }
+function linkSor(l = {}) {
+  const row = document.createElement('div'); row.className = 'lk';
+  const ful = document.createElement('select'); ful.setAttribute('aria-label', 'Fül');
+  [['marshalling', 'Marshalling'], ['eredmeny', 'Eredmények']].forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; ful.append(o); });
+  ful.value = l.ful || 'marshalling';
+  const cim = document.createElement('input'); cim.type = 'text'; cim.value = l.cim || ''; cim.placeholder = 'Cím, pl. Futambeosztás – szombat'; cim.setAttribute('aria-label', 'Cím');
+  const url = document.createElement('input'); url.type = 'text'; url.value = l.url || ''; url.placeholder = 'https://…'; url.setAttribute('aria-label', 'Link');
+  const del = document.createElement('button'); del.type = 'button'; del.className = 'ib del'; del.title = 'Link törlése'; del.innerHTML = ICO.del;
+  del.addEventListener('click', () => { row.remove(); evPiszkos = true; });
+  row.append(ful, cim, url, del);
+  return row;
+}
+$('lUj').addEventListener('click', () => { const r = linkSor(); $('lLista').append(r); r.querySelector('input').focus(); evPiszkos = true; });
 $('t-esemeny').addEventListener('input', () => { evPiszkos = true; });
 $('pUj').addEventListener('click', () => {
   const sorok = [...document.querySelectorAll('#pLista .pr')];
@@ -1271,6 +1315,13 @@ $('evMent').addEventListener('click', async () => {
   }).filter(p => p.ido || p.cim || p.megj);
   const esemeny = { nev: $('evNev').value.trim(), datum: $('evDatum').value.trim(), helyszin: $('evHely').value.trim(),
                     dij: $('evDij').value.trim(), hatarido: $('evHatarido').value, program };
+  if (!$('fulNevezes').disabled) {
+    ['fulNevezes', 'fulMarshalling', 'fulEredmeny'].forEach(k => { esemeny[k] = $(k).checked; });
+    esemeny.linkek = [...document.querySelectorAll('#lLista .lk')].map(r => {
+      const [ful] = r.querySelectorAll('select'), [cim, url] = r.querySelectorAll('input');
+      return { ful: ful.value, cim: cim.value.trim(), url: url.value.trim() };
+    }).filter(l => l.cim || l.url);
+  }
   $('evMent').disabled = true; msg('msgEv', 'Mentés…', 'info');
   try {
     const v = await api('esemenyMentes', { esemeny });

@@ -84,6 +84,31 @@
   .reg-l { color:var(--soft); font-size:.85rem; }
   .note { color:var(--soft); font-size:.88rem; margin:10px 0 22px; }
 
+  /* Eseménykártya */
+  header .sub { margin-top:10px; color:rgba(255,255,255,.75); font-size:.98rem; }
+  .ev { margin-bottom:16px; }
+  .ev-dl { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:16px 24px; }
+  .ev-dl .l { font-size:.75rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--soft); }
+  .ev-dl .d { font-weight:600; font-size:1.05rem; }
+  .pill { font-size:.82rem; font-weight:600; padding:5px 12px; border-radius:999px; background:var(--sel); color:var(--accent); white-space:nowrap; }
+  .pill.soon { background:#fff4e0; color:#b45309; }
+  .pill.off { background:#fdecee; color:var(--err); }
+  .ev-prog { border-top:1px solid var(--line); padding:8px 24px 20px; }
+  .ev-prog h2 { font-size:.75rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--soft); margin:14px 0 6px; }
+  .ev-prog ol { list-style:none; padding:0; }
+  .ev-prog li { display:grid; grid-template-columns:64px 1fr auto; gap:12px; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--line); }
+  .ev-prog li:last-child { border-bottom:0; }
+  .ev-prog .t { font-weight:700; font-variant-numeric:tabular-nums; }
+  .ev-prog .c { font-weight:500; }
+  .ev-prog .m { display:block; color:var(--soft); font-size:.85rem; font-weight:400; }
+  .ev-prog li.mult .t, .ev-prog li.mult .c { color:var(--soft); font-weight:400; }
+  .ev-prog .tag { font-size:.72rem; font-weight:600; padding:2px 8px; border-radius:999px; background:var(--accent); color:var(--on-accent); }
+  .ev-prog .tag.kov { background:var(--sel); color:var(--accent); }
+  .zarva { text-align:center; padding:40px 24px; }
+  .zarva h2 { font-weight:600; margin-bottom:8px; }
+  .zarva p { color:var(--soft); }
+  .seg button:disabled { opacity:.45; cursor:not-allowed; }
+  .seg button:disabled:hover { color:var(--soft); }
   .hp { position:absolute; left:-9999px; }
   [hidden] { display:none !important; }
 </style>
@@ -91,10 +116,27 @@
 <body>
 <header>
   <h1 id="cim">Nevezés</h1>
+  <p class="sub" id="alcim" hidden></p>
 </header>
 
 <main>
-  <div class="card">
+  <!-- Eseménykártya: határidő és ütemterv (az admin Esemény fülén szerkeszthető) -->
+  <section class="card ev" id="ev" hidden>
+    <div class="ev-dl" id="evHat" hidden>
+      <div><div class="l">Nevezési határidő</div><div class="d" id="evHatIdo"></div></div>
+      <span class="pill" id="evVissza"></span>
+    </div>
+    <div class="ev-prog" id="evProg" hidden></div>
+  </section>
+
+  <div class="card" id="zarvaKartya" hidden>
+    <div class="zarva">
+      <h2>A nevezés lezárult</h2>
+      <p>Az online nevezési határidő lejárt. Helyszíni nevezésről a szervezőknél érdeklődj.</p>
+    </div>
+  </div>
+
+  <div class="card" id="urlap">
     <div class="steps" aria-hidden="true">
       <div class="s on" id="s1">1</div><div class="l"><i id="bar"></i></div><div class="s" id="s2">2</div>
     </div>
@@ -264,8 +306,9 @@ function mutat2() {
       lista.sort((a, b) => (rend[a.szerep] ?? 2) - (rend[b.szerep] ?? 2)).forEach(d => {
         const b = document.createElement('button');
         b.type = 'button';
-        b.textContent = d.szerep || 'Nevezés';
+        b.textContent = (d.szerep || 'Nevezés') + (d.betelt ? ' – betelt' : '');
         b.setAttribute('aria-pressed', 'false');
+        if (d.betelt) { b.disabled = true; b.title = 'Ebben a divízióban betelt a létszám.'; }
         b.addEventListener('click', () => {
           valasztas[alap] = valasztas[alap] === d.nev ? undefined : d.nev;
           seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', 'false'));
@@ -322,6 +365,77 @@ $('kuld').addEventListener('click', async () => {
     lepes(3);
   } catch { frissit(); msg('msg2', 'Hálózati hiba.'); }
 });
+
+// ---------- Eseménykártya ----------
+let esemeny = null;
+const helyi = s => { const [d, t = '00:00'] = String(s).split('T'); const [y, M, D] = d.split('-').map(Number); const [h, m] = t.split(':').map(Number);
+                     return new Date(y, M - 1, D, h, m); };
+const nagy = s => s.charAt(0).toUpperCase() + s.slice(1);
+const fmtTeljes = new Intl.DateTimeFormat('hu-HU', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+const fmtNap = new Intl.DateTimeFormat('hu-HU', { month: 'long', day: 'numeric', weekday: 'long' });
+const fmtOra = new Intl.DateTimeFormat('hu-HU', { hour: '2-digit', minute: '2-digit' });
+
+function visszaszamlalo(hat) {
+  const ms = hat - new Date();
+  if (ms <= 0) return ['Lezárult', 'off'];
+  const perc = Math.floor(ms / 60000), ora = Math.floor(perc / 60), nap = Math.floor(ora / 24);
+  if (nap >= 2) return ['még ' + nap + ' nap', ''];
+  if (ora >= 1) return ['még ' + ora + ' óra ' + (perc % 60) + ' perc', 'soon'];
+  return ['még ' + Math.max(perc, 1) + ' perc', 'soon'];
+}
+
+function rajzolEsemeny() {
+  const e = esemeny; if (!e) return;
+  if (e.nev) { $('cim').textContent = e.nev; document.title = 'Nevezés – ' + e.nev; }
+  const al = [e.datum, e.helyszin].filter(Boolean).join(' · ');
+  $('alcim').textContent = al; $('alcim').hidden = !al;
+
+  const hat = e.hatarido ? helyi(e.hatarido) : null;
+  $('evHat').hidden = !hat;
+  if (hat) {
+    $('evHatIdo').textContent = fmtTeljes.format(hat);
+    const [t, c] = visszaszamlalo(hat);
+    $('evVissza').textContent = t; $('evVissza').className = 'pill ' + c;
+  }
+  const lezarva = (hat && hat <= new Date()) || e.nyitva === false;
+  $('zarvaKartya').hidden = !lezarva;
+  $('urlap').hidden = lezarva;
+
+  // Ütemterv napokra bontva; az esemény napján jelzi, mi zajlik éppen és mi következik
+  const box = $('evProg'); box.innerHTML = '';
+  const prog = (e.program || []).filter(p => p.ido && p.cim).map(p => ({ ...p, d: helyi(p.ido) })).sort((a, b) => a.d - b.d);
+  box.hidden = !prog.length;
+  const most = new Date();
+  const kovI = prog.findIndex(p => p.d > most);
+  const mostI = kovI === -1 ? (prog.length && most - prog[prog.length - 1].d < 3 * 3600e3 ? prog.length - 1 : -1) : kovI - 1;
+  let nap = '', ol = null;
+  prog.forEach((p, i) => {
+    const n = p.d.toDateString();
+    if (n !== nap) {
+      nap = n;
+      const h2 = document.createElement('h2'); h2.textContent = nagy(fmtNap.format(p.d));
+      ol = document.createElement('ol'); box.append(h2, ol);
+    }
+    const li = document.createElement('li');
+    const egyNapon = mostI >= 0 && prog[mostI].d.toDateString() === p.d.toDateString();
+    if (i < mostI || (kovI === -1 && i !== mostI)) li.className = 'mult';
+    const t = document.createElement('span'); t.className = 't'; t.textContent = fmtOra.format(p.d);
+    const c = document.createElement('span'); c.className = 'c'; c.textContent = p.cim;
+    if (p.megj) { const m = document.createElement('span'); m.className = 'm'; m.textContent = p.megj; c.append(m); }
+    const tg = document.createElement('span');
+    if (i === mostI && egyNapon) { tg.className = 'tag'; tg.textContent = 'most'; }
+    else if (i === kovI && (mostI >= 0 || p.d - most < 24 * 3600e3)) { tg.className = 'tag kov'; tg.textContent = 'következik'; }
+    li.append(t, c, tg); ol.append(li);
+  });
+  $('ev').hidden = !hat && !prog.length;
+}
+
+(async () => {
+  try {
+    const v = await (await fetch(SCRIPT_URL + '?esemeny=1')).json();
+    if (v.ok && v.esemeny) { esemeny = v.esemeny; rajzolEsemeny(); setInterval(rajzolEsemeny, 30000); }
+  } catch { /* az eseménykártya nélkül is lehet nevezni */ }
+})();
 
 $('ujra').addEventListener('click', () => {
   adat = null;

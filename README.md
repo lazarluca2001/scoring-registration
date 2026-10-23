@@ -9,10 +9,16 @@
 Online nevezési felület és admin panel West Coast Swing versenyekhez. A nevezések Google Táblázatba kerülnek, az
 exportált fájlt pedig a **Scoring_Judging** pontozó app közvetlenül be tudja olvasni.
 
-| Oldal | Kinek | Cím |
-|---|---|---|
-| `index.html` | versenyzők | https://lazarluca2001.github.io/scoring-registration/ |
-| `admin.html` | szervezők (jelszóval) | https://lazarluca2001.github.io/scoring-registration/admin.html |
+| Oldal | Tartalom |
+|---|---|
+| `index.html` | főoldal: az események kártyái ([link](https://lazarluca2001.github.io/scoring-registration/)); `?korabbi=1` a korábbi események, `?q=…` keresés |
+| `nevezes.html?e=…` | egy esemény nevezési oldala: űrlap, határidő, menetrend |
+| `listak.html?e=…` | bevonuló párok futamonként |
+| `eredmenyek.html?e=…` | a fordulók eredménye |
+| `admin.html` | szervezőknek, jelszóval ([link](https://lazarluca2001.github.io/scoring-registration/admin.html)) |
+
+Minden nyilvános lap tetején ugyanaz a menüsor (Versenyek, Közelgő és Korábbi események, keresés; mobilon ☰), az eseménylapokon
+alatta a Nevezés / Listák / Eredmények fülek. A közös stílus és kód az `assets/` mappában van.
 
 ### Nevezési oldal
 
@@ -76,9 +82,9 @@ egy lap van. Ha a fájlt az app nem tudná beolvasni (pl. függő nevezés, ism�
 
 ### Felépítés
 
-- Két statikus HTML oldal, GitHub Pages-en futnak, nincs build lépés.
+- Statikus HTML oldalak (közös `assets/stilus.css` és `assets/kozos.js`), GitHub Pages-en futnak, nincs build lépés.
 - A háttér egy Google Apps Script webalkalmazás egy Google Táblázathoz kötve; ez nem része ennek a repónak.
-  Az oldalak a `SCRIPT_URL` konstanson keresztül érik el (az `index.html` és az `admin.html` elején).
+  Az oldalak a `SCRIPT_URL` konstanson keresztül érik el (az `assets/kozos.js` és az `admin.html` elején).
 - Az admin jelszót az Apps Script tárolja, a repóban nincs.
 
 ---
@@ -88,10 +94,16 @@ egy lap van. Ha a fájlt az app nem tudná beolvasni (pl. függő nevezés, ism�
 Online registration page and admin panel for West Coast Swing competitions. Registrations are stored in a Google
 Sheet, and the exported file can be loaded directly into the **Scoring_Judging** app.
 
-| Page | For | URL |
-|---|---|---|
-| `index.html` | competitors | https://lazarluca2001.github.io/scoring-registration/ |
-| `admin.html` | organizers (password) | https://lazarluca2001.github.io/scoring-registration/admin.html |
+| Page | Content |
+|---|---|
+| `index.html` | home page: the event cards ([link](https://lazarluca2001.github.io/scoring-registration/)); `?korabbi=1` past events, `?q=…` search |
+| `nevezes.html?e=…` | an event's registration page: form, deadline, schedule |
+| `listak.html?e=…` | walk-in pairs per heat |
+| `eredmenyek.html?e=…` | round results |
+| `admin.html` | for organizers, with password ([link](https://lazarluca2001.github.io/scoring-registration/admin.html)) |
+
+Every public page has the same menu bar at the top (Events, upcoming and past events, search; ☰ on mobile), and the event
+pages have the Registration / Lists / Results tabs below it. Shared styles and code live in `assets/`.
 
 The user interface is in Hungarian.
 
@@ -158,7 +170,7 @@ bibs), the admin panel says so when exporting.
 
 ### Architecture
 
-- Two static HTML pages served by GitHub Pages, no build step.
+- Static HTML pages (shared `assets/stilus.css` and `assets/kozos.js`) served by GitHub Pages, no build step.
 - The backend is a Google Apps Script web app bound to a Google Sheet; it is not part of this repository.
-  The pages reach it through the `SCRIPT_URL` constant (at the top of `index.html` and `admin.html`).
+  The pages reach it through the `SCRIPT_URL` constant (at the top of `assets/kozos.js` and `admin.html`).
 - The admin password is stored by the Apps Script, not in this repository.

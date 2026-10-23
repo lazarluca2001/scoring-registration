@@ -538,7 +538,7 @@ $('evNyilv').addEventListener('change', async () => {
   finally { $('evNyilv').disabled = false; rajzolEsemenySav(); }
 });
 $('evLink').addEventListener('click', async () => {
-  const u = new URL('./', location.href); u.searchParams.set('e', $('evValaszt').value);
+  const u = new URL('./nevezes.html', location.href); u.searchParams.set('e', $('evValaszt').value);
   try { await navigator.clipboard.writeText(u.href); $('evLink').textContent = 'Link kimásolva ✓'; }
   catch { prompt('Az esemény linkje:', u.href); }
   setTimeout(() => { $('evLink').textContent = 'Link másolása'; }, 2000);

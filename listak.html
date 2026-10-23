@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Listák</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/stilus.css">
+</head>
+<body>
+<header>
+  <h1 id="cim">Listák</h1>
+  <p class="sub" id="alcim" hidden></p>
+</header>
+
+<main>
+  <div class="card valassz" id="uzenet" hidden></div>
+  <nav class="card fulek" id="fulek" hidden></nav>
+  <section class="card" id="p-lista">
+    <div class="panel">
+      <div class="panel-fej"><h2 id="lCim">Listák</h2><select id="lValaszt" aria-label="Forduló kiválasztása"></select></div>
+      <div id="lTartalom"><p class="halvany">Betöltés…</p></div>
+      <ul class="linkek" id="mLinkek" style="margin-top:18px"></ul>
+      <p class="halvany" id="lInfo" style="margin-top:14px"></p>
+    </div>
+  </section>
+</main>
+
+<script src="assets/kozos.js"></script>
+<script>
+let eredmenyek = null, rajtlista = null;
+
+// ----- Listák: bevonuló párok futamonként (vagy a nevezettek listája, amíg nincs futambeosztás)
+function rajzolListak() {
+  const box = $('lTartalom'); box.innerHTML = '';
+  rajzolLinkek('marshalling', $('mLinkek'));
+  const elemek = [];
+  Object.entries(eredmenyek ? eredmenyek.diviziok : {}).forEach(([div, x]) => (x.marshalling || []).forEach(m =>
+    elemek.push({ kulcs: 'm:' + div + ':' + m.sorszam, div, cim: div + ' – ' + TIPUS_NEV[m.tipus], m })));
+  const nevezettek = !elemek.length;
+  if (nevezettek) (rajtlista ? rajtlista.diviziok : []).forEach(d => elemek.push({ kulcs: 'n:' + d.divizio, div: d.divizio, cim: d.divizio + ' – nevezettek', d }));
+  valasztoTolt($('lValaszt'), elemek);
+  const x = elemek.find(e => e.kulcs === aktKor);
+  $('lCim').textContent = x ? x.cim : 'Listák';
+  $('lInfo').textContent = !x ? 'A listák hamarosan felkerülnek.' : nevezettek ? 'A futambeosztás még nem készült el – addig a véglegesített nevezettek láthatók.'
+    : eredmenyek.frissitve ? 'Frissítve: ' + fmtTeljes.format(helyi(eredmenyek.frissitve)) : '';
+  if (!x) return;
+  if (x.m) {
+    const m = x.m;
+    if (m.futamok.length) m.futamok.forEach((f, i) => {
+      const b = el('div', 'blokk'), h3 = el('h3', '', (i + 1) + '. futam'); h3.append(el('small', '', '/ ' + m.futamok.length)); b.append(h3);
+      b.append(tabla([['Bib', 'b'], ['Leader', 'n'], ['#'], ['Bib', 'b elv'], ['Follower', 'n']],
+        f.map((p, j) => sor([['#' + p.lb, 'b'], [nevB(p.lb, p.ln), 'n'], [j + 1, 'sor'], ['#' + p.fb, 'b elv'], [nevB(p.fb, p.fn), 'n']])), true));
+      box.append(b);
+    });
+    else box.append(tabla([['Pár'], ['Bib', 'b'], ['Leader', 'n'], ['Bib', 'b elv'], ['Follower', 'n']],
+      m.parok.map(p => sor([[p.par, 'sor'], ['#' + p.lb, 'b'], [nevB(p.lb, p.ln), 'n'], ['#' + p.fb, 'b elv'], [nevB(p.fb, p.fn), 'n']])), true));
+  } else {
+    const d = x.d, n = Math.max(d.leader.length, d.follower.length), sorok = [];
+    for (let i = 0; i < n; i++) { const L = d.leader[i], F = d.follower[i];
+      sorok.push(sor([[L ? '#' + L.bib : '', 'b'], [L ? nevB(L.bib, L.nev) : '', 'n'], [F ? '#' + F.bib : '', 'b elv'], [F ? nevB(F.bib, F.nev) : '', 'n']])); }
+    d.egyeb.forEach(e => sorok.push(sor([['#' + e.bib, 'b'], [nevB(e.bib, e.nev), 'n'], ['', 'b elv'], ['', 'n']])));
+    box.append(tabla([['Bib', 'b'], ['Leader', 'n'], ['Bib', 'b elv'], ['Follower', 'n']], sorok, true));
+  }
+}
+$('lValaszt').addEventListener('change', () => { aktKor = $('lValaszt').value; rajzolListak(); urlR(); });
+
+(async () => {
+  if (!await esemenyOldal('listak')) { $('p-lista').hidden = true; return; }
+  await Promise.all([
+    jsonGet({ eredmenyek: 1 }).then(r => { if (r.ok) eredmenyek = r; }).catch(() => {}),
+    jsonGet({ rajtlista: 1 }).then(r => { if (r.ok) rajtlista = r; }).catch(() => {}),
+  ]);
+  rajzolListak(); urlR();
+})();
+</script>
+</body>
+</html>

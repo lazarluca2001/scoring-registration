@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nevezés</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/stilus.css">
+</head>
+<body>
+<header>
+  <h1 id="cim">Nevezés</h1>
+  <p class="sub" id="alcim" hidden></p>
+</header>
+
+<main>
+  <div class="card valassz" id="uzenet" hidden></div>
+  <nav class="card fulek" id="fulek" hidden></nav>
+  <div id="p-nevezes">
+  <!-- nevezési határidő és ütemterv (az admin Esemény fülén szerkeszthető) -->
+  <section class="card ev" id="ev" hidden>
+    <div class="ev-dl" id="evHat" hidden>
+      <div><div class="l">Nevezési határidő</div><div class="d" id="evHatIdo"></div></div>
+      <span class="pill" id="evVissza"></span>
+    </div>
+    <div class="ev-prog" id="evProg" hidden></div>
+  </section>
+  <div class="card" id="zarvaKartya" hidden>
+    <div class="zarva">
+      <h2>A nevezés lezárult</h2>
+      <p>Az online nevezési határidő lejárt. Helyszíni nevezésről a szervezőknél érdeklődj.</p>
+    </div>
+  </div>
+
+  <div class="card" id="urlap">
+    <div class="steps" aria-hidden="true">
+      <div class="s on" id="s1">1</div><div class="l"><i id="bar"></i></div><div class="s" id="s2">2</div>
+    </div>
+
+    <!-- 1. lépés -->
+    <section id="lepes1">
+      <div class="body">
+        <div class="grid">
+          <div>
+            <label class="f" for="wsdc">WSDC azonosító</label>
+            <input type="text" id="wsdc" inputmode="numeric" placeholder="WSDC azonosító" autocomplete="off">
+            <label class="chk"><input type="checkbox" id="nincs"> Nincs WSDC azonosítóm</label>
+          </div>
+          <div>
+            <label class="f" for="kn">Keresztnév</label>
+            <input type="text" id="kn" placeholder="Keresztnév" autocomplete="given-name" disabled>
+          </div>
+          <div>
+            <label class="f" for="vn">Vezetéknév</label>
+            <input type="text" id="vn" placeholder="Vezetéknév" autocomplete="family-name" disabled>
+          </div>
+        </div>
+        <input type="text" id="web" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+      </div>
+      <footer class="act">
+        <p class="msg" id="msg1" role="status"></p>
+        <button class="btn" id="tovabb">Következő</button>
+      </footer>
+    </section>
+
+    <!-- 2. lépés -->
+    <section id="lepes2" hidden>
+      <div class="body">
+        <p class="who"><b id="whoNev"></b><span id="whoId"></span></p>
+        <div id="divlist"></div>
+      </div>
+      <footer class="act">
+        <button class="ghost" id="vissza" aria-label="Vissza"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <p class="msg" id="msg2" role="status"></p>
+        <button class="btn" id="kuld" disabled>Regisztráció befejezése</button>
+      </footer>
+    </section>
+
+    <!-- Kész -->
+    <section id="kesz" hidden>
+      <div class="done">
+        <div class="ok"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div>
+        <h2>Sikeres nevezés</h2>
+        <div class="reg-l">Regisztrációs kódod</div>
+        <div class="reg" id="regszam"></div>
+        <p class="note">Mentsd el ezt a képet, és mutasd meg a regisztrációnál.<br>A nevezésed a szervezők véglegesítése után válik hivatalossá.</p>
+        <img id="regKep" class="regkep" alt="">
+        <div class="gombok">
+          <button class="btn" id="kepMent">Kép mentése</button>
+          <button class="btn masod" id="ujra">Új nevezés</button>
+        </div>
+        <p class="tipp" id="kepTipp"></p>
+      </div>
+    </section>
+  </div>
+  </div>
+</main>
+
+<script src="assets/kozos.js"></script>
+<script>
+let adat = null; // { wsdc, keresztnev, vezeteknev, diviziok }
+
+// Nincs azonosító → névmezők nyitva
+$('nincs').addEventListener('change', () => {
+  const n = $('nincs').checked;
+  $('wsdc').disabled = n; if (n) $('wsdc').value = '';
+  $('kn').disabled = $('vn').disabled = !n;
+  $('kn').value = $('vn').value = '';
+  adat = null; msg('msg1');
+  if (n) $('kn').focus();
+});
+
+// ID → név automatikusan
+let idoz;
+$('wsdc').addEventListener('input', () => {
+  $('wsdc').value = $('wsdc').value.replace(/\D/g, '');
+  clearTimeout(idoz);
+  adat = null; $('kn').value = $('vn').value = ''; msg('msg1');
+  const id = $('wsdc').value;
+  if (id) idoz = setTimeout(() => lekerdez(id), 500);
+});
+['wsdc', 'vn'].forEach(i => $(i).addEventListener('keydown', e => { if (e.key === 'Enter') $('tovabb').click(); }));
+
+async function lekerdez(id) {
+  msg('msg1', 'Keresés…', true);
+  try {
+    const v = await (await fetch(SCRIPT_URL + '?wsdc=' + encodeURIComponent(id) + eParam('&'))).json();
+    if ($('wsdc').value !== id) return;
+    if (!v.ok) { adat = null; return msg('msg1', v.hiba); }
+    $('kn').value = v.keresztnev; $('vn').value = v.vezeteknev;
+    adat = { wsdc: id, keresztnev: v.keresztnev, vezeteknev: v.vezeteknev, diviziok: v.diviziok };
+    msg('msg1');
+  } catch { msg('msg1', 'Hálózati hiba.'); }
+}
+
+$('tovabb').addEventListener('click', async () => {
+  if ($('nincs').checked) {
+    const kn = $('kn').value.trim(), vn = $('vn').value.trim();
+    if (!kn || !vn) return msg('msg1', 'Add meg a neved.');
+    $('tovabb').disabled = true; msg('msg1', 'Betöltés…', true);
+    try {
+      const v = await (await fetch(SCRIPT_URL + eParam('?'))).json();
+      if (!v.ok) return msg('msg1', v.hiba);
+      adat = { wsdc: '', keresztnev: kn, vezeteknev: vn, diviziok: v.diviziok };
+    } catch { return msg('msg1', 'Hálózati hiba.'); }
+    finally { $('tovabb').disabled = false; }
+  } else {
+    const id = $('wsdc').value;
+    if (!id) return msg('msg1', 'Add meg a WSDC azonosítód.');
+    if (!adat || adat.wsdc !== id) { clearTimeout(idoz); await lekerdez(id); if (!adat) return; }
+  }
+  msg('msg1');
+  mutat2();
+});
+
+let valasztas = {}; // divízió (szerep nélkül) → kiválasztott divízió neve
+let sorElemek = {}; // divízió (szerep nélkül) → { row, seg } a kijelölés frissítéséhez
+const divAdat = nev => (adat.diviziok || []).find(d => d.nev === nev) || {};
+// Szintezett (Newcomer, Novice…): szerepenként csak egy választható. Régi script esetén a névből dönt.
+const szintezett = d => d.szintezett !== undefined ? d.szintezett : /newcomer|novice|intermediate|advanced|all-?star|champion/i.test(d.nev) && !/strictly/i.test(d.nev);
+
+function csoport(nev) {
+  if (/strictly/i.test(nev)) return 'Strictly';
+  if (/jack\s*&?\s*jill|j&j/i.test(nev)) return 'Jack & Jill';
+  return 'Egyéb';
+}
+function rovid(alap, c) {
+  const r = c === 'Strictly' ? alap.replace(/strictly/i, '')
+          : c === 'Jack & Jill' ? alap.replace(/jack\s*&?\s*jill|j&j/i, '') : alap;
+  return r.replace(/\s+/g, ' ').trim() || alap;
+}
+
+function mutat2() {
+  $('whoNev').textContent = adat.keresztnev + ' ' + adat.vezeteknev;
+  $('whoId').textContent = adat.wsdc ? '#' + adat.wsdc : '';
+  valasztas = {}; sorElemek = {};
+
+  // Egy sor = egy divízió, benne az elérhető szerepek
+  const sorok = new Map();
+  adat.diviziok.forEach(d => {
+    const alap = d.alap || d.nev;
+    if (!sorok.has(alap)) sorok.set(alap, []);
+    sorok.get(alap).push(d);
+  });
+  const csop = {};
+  sorok.forEach((lista, alap) => (csop[csoport(alap)] ||= []).push([alap, lista]));
+
+  const box = $('divlist');
+  box.innerHTML = '';
+  if (!sorok.size) box.innerHTML = '<p class="empty">Nincs elérhető divízió.</p>';
+
+  const rend = { Leader: 0, Follower: 1 };
+  ['Jack & Jill', 'Strictly', 'Egyéb'].filter(c => csop[c]).forEach(c => {
+    const g = document.createElement('div'); g.className = 'grp';
+    const h2 = document.createElement('h2'); h2.textContent = c;
+    const rows = document.createElement('div'); rows.className = 'rows';
+    csop[c].forEach(([alap, lista]) => {
+      const row = document.createElement('div'); row.className = 'row';
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = rovid(alap, c);
+      const seg = document.createElement('div'); seg.className = 'seg';
+      seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', alap);
+      lista.sort((a, b) => (rend[a.szerep] ?? 2) - (rend[b.szerep] ?? 2)).forEach(d => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = (d.szerep || 'Nevezés') + (d.betelt ? ' – betelt' : '');
+        b.setAttribute('aria-pressed', 'false');
+        if (d.betelt) { b.disabled = true; b.title = 'Ebben a divízióban betelt a létszám.'; }
+        b.addEventListener('click', () => {
+          valasztas[alap] = valasztas[alap] === d.nev ? undefined : d.nev;
+          seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', 'false'));
+          if (valasztas[alap]) b.setAttribute('aria-pressed', 'true');
+          row.classList.toggle('sel', !!valasztas[alap]);
+          msg('msg2');
+          // ugyanabban a szerepben csak egy szintezett divízió: a korábbit leveszi
+          if (valasztas[alap] && szintezett(d) && d.szerep) {
+            Object.keys(valasztas).forEach(m => {
+              const v = valasztas[m] && divAdat(valasztas[m]);
+              if (m === alap || !v || !szintezett(v) || v.szerep !== d.szerep) return;
+              delete valasztas[m];
+              const el = sorElemek[m];
+              if (el) { el.row.classList.remove('sel'); el.seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', 'false')); }
+              msg('msg2', `${d.szerep}ként csak egy szinten indulhatsz, ezért a(z) ${rovid(m, csoport(m))} helyett a(z) ${rovid(alap, c)} lett kiválasztva.`, true);
+            });
+          }
+          frissit();
+        });
+        seg.append(b);
+      });
+      row.append(n, seg); rows.append(row);
+      sorElemek[alap] = { row, seg };
+    });
+    g.append(h2, rows); box.append(g);
+  });
+  frissit();
+  lepes(2);
+}
+
+function kivalasztott() { return Object.values(valasztas).filter(Boolean); }
+
+function frissit() {
+  $('kuld').disabled = !kivalasztott().length;
+}
+
+function lepes(n) {
+  $('lepes1').hidden = n !== 1;
+  $('lepes2').hidden = n !== 2;
+  $('kesz').hidden = n !== 3;
+  $('s1').className = 's ' + (n === 1 ? 'on' : 'past');
+  $('s2').className = 's ' + (n === 2 ? 'on' : n === 3 ? 'past' : '');
+  $('bar').style.transform = `scaleX(${n === 1 ? 0 : 1})`;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+$('vissza').addEventListener('click', () => { msg('msg2'); lepes(1); });
+
+$('kuld').addEventListener('click', async () => {
+  if ($('web').value) return; // spam-csapda
+  const diviziok = kivalasztott();
+  $('kuld').disabled = true; msg('msg2', 'Küldés…', true);
+  try {
+    const v = await (await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ wsdc: adat.wsdc, keresztnev: adat.keresztnev, vezeteknev: adat.vezeteknev, diviziok,
+                             ...(esemenyId ? { esemenyId } : {}) })
+    })).json();
+    if (!v.ok) { frissit(); return msg('msg2', v.hiba); }
+    $('regszam').textContent = v.regszam;
+    await kepKeszit({ kod: v.regszam, nev: adat.vezeteknev + ' ' + adat.keresztnev, wsdc: adat.wsdc,
+                      diviziok: v.osszes || [...v.hozzaadva, ...v.marNevezett] });
+    msg('msg2');
+    lepes(3);
+  } catch { frissit(); msg('msg2', 'Hálózati hiba.'); }
+});
+
+// ---------- Regisztrációs kód képként (a galériába menthető) ----------
+let kepBlob = null, kepNev = 'nevezes.png';
+const IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const ANDROID = /Android/i.test(navigator.userAgent);
+$('kepTipp').textContent = IOS
+  ? 'A megjelenő menüben válaszd a „Kép mentése” lehetőséget, így a kép a Fotókba kerül.'
+  : ANDROID ? 'A kép a galéria Letöltések (Download) albumába kerül.'
+  : 'A kép a Letöltések mappába kerül.';
+async function kepKeszit({ kod, nev, wsdc, diviziok }) {
+  const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  try { await Promise.all(['400 40px Inter', '600 40px Inter', '700 40px Inter'].map(f => document.fonts.load(f))); } catch {}
+  const F = (w, s) => `${w} ${s}px Inter, system-ui, sans-serif`;
+  const MONO = s => `700 ${s}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+  const kozep = (t, y) => x.fillText(t, W / 2, y);
+  const vag = (t, max) => { if (x.measureText(t).width <= max) return t; while (t.length > 1 && x.measureText(t + '…').width > max) t = t.slice(0, -1); return t + '…'; };
+  const kerek = (x0, y0, w, h, r) => { x.beginPath(); x.roundRect ? x.roundRect(x0, y0, w, h, r) : x.rect(x0, y0, w, h); };
+  const e = esemeny || {};
+
+  // háttér és fejléc
+  x.fillStyle = '#eef1f6'; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#0b1a45'; x.fillRect(0, 0, W, 420);
+  x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+  x.fillStyle = '#ffffff'; x.font = F(700, 68); kozep(vag(e.nev || VERSENY_NEV, W - 120), 150);
+  const al = [e.datum, e.helyszin].filter(Boolean).join(' · ');
+  if (al) { x.fillStyle = 'rgba(255,255,255,.75)'; x.font = F(400, 38); kozep(vag(al, W - 120), 215); }
+
+  // kártya
+  x.fillStyle = '#ffffff'; x.shadowColor = 'rgba(11,26,69,.12)'; x.shadowBlur = 40; x.shadowOffsetY = 12;
+  kerek(60, 290, W - 120, H - 350, 28); x.fill();
+  x.shadowColor = 'transparent';
+  x.fillStyle = '#7a849b'; x.font = F(600, 32);
+  x.letterSpacing = '6px'; kozep('REGISZTRÁCIÓS KÓD', 400); x.letterSpacing = '0px';
+
+  // a kód
+  x.font = MONO(230);
+  const kw = Math.max(x.measureText(kod).width + 120, 520);
+  x.strokeStyle = '#1d4ed8'; x.lineWidth = 6; x.setLineDash([22, 14]);
+  kerek((W - kw) / 2, 450, kw, 290, 30); x.stroke(); x.setLineDash([]);
+  x.fillStyle = '#1d4ed8'; x.letterSpacing = '18px'; kozep(kod, 680); x.letterSpacing = '0px';
+
+  // név, WSDC, divíziók
+  x.fillStyle = '#111a33'; x.font = F(700, 60); kozep(vag(nev, W - 200), 850);
+  let y = 850;
+  if (wsdc) { x.fillStyle = '#7a849b'; x.font = F(400, 36); kozep('WSDC #' + wsdc, y += 60); }
+  x.strokeStyle = '#dfe3ec'; x.lineWidth = 2; x.beginPath(); x.moveTo(140, y + 45); x.lineTo(W - 140, y + 45); x.stroke();
+  y += 105;
+  x.fillStyle = '#111a33'; x.font = F(500, 38);
+  const lista = diviziok.slice(0, 5);
+  lista.forEach(d => { kozep(vag(d, W - 220), y); y += 56; });
+  if (diviziok.length > lista.length) { x.fillStyle = '#7a849b'; kozep('+ ' + (diviziok.length - lista.length) + ' további', y); }
+
+  // lábléc
+  x.fillStyle = '#7a849b'; x.font = F(400, 30);
+  kozep('Mutasd meg ezt a képet a regisztrációnál.', H - 130);
+  kozep('Nevezés: ' + new Intl.DateTimeFormat('hu-HU', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date()), H - 88);
+
+  kepNev = 'nevezes-' + kod + '.png';
+  kepBlob = await new Promise(r => c.toBlob(r, 'image/png'));
+  const img = $('regKep');
+  img.src = URL.createObjectURL(kepBlob);
+  img.alt = 'Regisztrációs kód: ' + kod + ' – ' + nev;
+}
+
+$('kepMent').addEventListener('click', async () => {
+  if (!kepBlob) return;
+  // iPhone/iPad: letöltéssel a kép a Fájlok appba kerülne, a Fotókba csak a rendszer menüjének
+  // „Kép mentése” parancsával juthat. Android és számítógép: közvetlen letöltés
+  // (Androidon a galéria Letöltések / Download albumába kerül).
+  const file = new File([kepBlob], kepNev, { type: 'image/png' });
+  if (IOS && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); return; }
+    catch (err) { if (err && err.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(kepBlob); a.download = kepNev;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+
+
+// ---------- Nevezési határidő és ütemterv ----------
+function visszaszamlalo(hat) {
+  const ms = hat - new Date();
+  if (ms <= 0) return ['Lezárult', 'off'];
+  const perc = Math.floor(ms / 60000), ora = Math.floor(perc / 60), nap = Math.floor(ora / 24);
+  if (nap >= 2) return ['még ' + nap + ' nap', ''];
+  if (ora >= 1) return ['még ' + ora + ' óra ' + (perc % 60) + ' perc', 'soon'];
+  return ['még ' + Math.max(perc, 1) + ' perc', 'soon'];
+}
+
+function rajzolEsemeny() {
+  const e = esemeny; if (!e) return;
+
+  const hat = e.hatarido ? helyi(e.hatarido) : null;
+  const nevezesFul = e.fulNevezes !== false;
+  $('evHat').hidden = !hat || !nevezesFul;
+  if (hat) {
+    $('evHatIdo').textContent = fmtTeljes.format(hat);
+    const [t, c] = visszaszamlalo(hat);
+    $('evVissza').textContent = t; $('evVissza').className = 'pill ' + c;
+  }
+  const lezarva = (hat && hat <= new Date()) || e.nyitva === false;
+  $('zarvaKartya').hidden = !lezarva;
+  $('urlap').hidden = lezarva;
+
+  // Ütemterv napokra bontva; az esemény napján jelzi, mi zajlik éppen és mi következik
+  const box = $('evProg'); box.innerHTML = '';
+  const prog = (e.program || []).filter(p => p.ido && p.cim).map(p => ({ ...p, d: helyi(p.ido) })).sort((a, b) => a.d - b.d);
+  box.hidden = !prog.length;
+  const most = new Date();
+  const kovI = prog.findIndex(p => p.d > most);
+  const mostI = kovI === -1 ? (prog.length && most - prog[prog.length - 1].d < 3 * 3600e3 ? prog.length - 1 : -1) : kovI - 1;
+  let nap = '', ol = null;
+  prog.forEach((p, i) => {
+    const n = p.d.toDateString();
+    if (n !== nap) {
+      nap = n;
+      const h2 = document.createElement('h2'); h2.textContent = nagy(fmtNap.format(p.d));
+      ol = document.createElement('ol'); box.append(h2, ol);
+    }
+    const li = document.createElement('li');
+    const egyNapon = mostI >= 0 && prog[mostI].d.toDateString() === p.d.toDateString();
+    if (i < mostI || (kovI === -1 && i !== mostI)) li.className = 'mult';
+    const t = document.createElement('span'); t.className = 't'; t.textContent = fmtOra.format(p.d);
+    const c = document.createElement('span'); c.className = 'c'; c.textContent = p.cim;
+    if (p.megj) { const m = document.createElement('span'); m.className = 'm'; m.textContent = p.megj; c.append(m); }
+    const tg = document.createElement('span');
+    if (i === mostI && egyNapon) { tg.className = 'tag'; tg.textContent = 'most'; }
+    else if (i === kovI && (mostI >= 0 || p.d - most < 24 * 3600e3)) { tg.className = 'tag kov'; tg.textContent = 'következik'; }
+    li.append(t, c, tg); ol.append(li);
+  });
+  $('ev').hidden = (!hat || !nevezesFul) && !prog.length;
+}
+
+
+$('ujra').addEventListener('click', () => {
+  adat = null;
+  $('wsdc').value = $('kn').value = $('vn').value = '';
+  $('nincs').checked = false;
+  $('nincs').dispatchEvent(new Event('change'));
+  lepes(1);
+});
+
+(async () => {
+  if (!await esemenyOldal('nevezes')) { $('urlap').hidden = true; return; }
+  rajzolEsemeny();
+  setInterval(rajzolEsemeny, 30000);
+})();
+</script>
+</body>
+</html>

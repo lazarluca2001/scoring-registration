@@ -336,6 +336,7 @@
           <div id="hDivs"></div>
         </div>
         <div class="foot">
+          <label class="chk"><input type="checkbox" id="hHozz"> A versenyző hozzájárult az adatkezeléshez</label>
           <p class="msg" id="msgH" role="status"></p>
           <button class="btn" id="hKuld" disabled>Nevezés rögzítése</button>
         </div>
@@ -364,6 +365,8 @@
           <div><label class="f" for="evRovid">Rövid név a linkben</label><input type="text" id="evRovid" placeholder="pl. teca2027"></div>
           <div class="full"><label class="f" for="evKep">Borítókép (link) <span style="color:var(--soft);font-weight:400">– a főoldali kártyán 16:9 arányban jelenik meg (ajánlott: 1920×1080); Drive-link is jó, ha „Bárki, aki rendelkezik a linkkel” megosztású</span></label>
             <input type="text" id="evKep" placeholder="https://…"></div>
+          <div class="full"><label class="f" for="evAdatk">Adatkezelési tájékoztató (link) <span style="color:var(--soft);font-weight:400">– a nevezési űrlap hozzájárulás-jelölőnégyzeténél jelenik meg</span></label>
+            <input type="text" id="evAdatk" placeholder="https://…"></div>
         </div>
         <div class="bar"><h2 class="sec">Ütemterv</h2><button class="btn ghost sm" id="pUj" type="button">+ Programpont</button></div>
         <div class="prog" id="pLista"></div>
@@ -1227,7 +1230,7 @@ function rajzolHelyszini() {
     g.append(h, rows); box.append(g);
   });
   if (!sorok.size) box.innerHTML = '<p class="empty">Nincs aktív divízió.</p>';
-  $('hKuld').disabled = !Object.keys(hValasztas).length;
+  $('hKuld').disabled = !Object.keys(hValasztas).length || !$('hHozz').checked;
 }
 $('hInaktiv').addEventListener('change', rajzolHelyszini);
 
@@ -1252,13 +1255,15 @@ $('hWsdc').addEventListener('input', () => {
   }, 500);
 });
 
+$('hHozz').addEventListener('change', () => { $('hKuld').disabled = !Object.keys(hValasztas).length || !$('hHozz').checked; });
 $('hKuld').addEventListener('click', async () => {
   const kn = $('hKn').value.trim(), vn = $('hVn').value.trim();
   if (!kn || !vn) return msg('msgH', 'Add meg a teljes nevet.');
   $('hKuld').disabled = true; msg('msgH', 'Rögzítés…', 'info');
   try {
     const v = await api('kezi', { wsdc: $('hWsdc').value, keresztnev: kn, vezeteknev: vn,
-                                  bib: $('hBib').value.trim(), diviziok: Object.values(hValasztas) });
+                                  bib: $('hBib').value.trim(), diviziok: Object.values(hValasztas),
+                                  hozzajarulas: $('hHozz').checked });
     $('hKeszNev').textContent = v.nev + (v.bib ? ' · Bib ' + v.bib : ' · függő');
     $('hReg').textContent = v.regszam;
     $('hKeszLista').innerHTML = '';
@@ -1298,6 +1303,7 @@ function rajzolEsemeny() {
   $('evDij').value = e.dij || ''; $('evHatarido').value = e.hatarido || '';
   $('evKezdes').value = e.kezdes || ''; $('evVege').value = e.vege || ''; $('evKep').value = e.kep || '';
   $('evRovid').value = e.rovid || ''; $('evRovid').disabled = !('rovid' in e);
+  $('evAdatk').value = e.adatkezeles || ''; $('evAdatk').disabled = !('adatkezeles' in e);
   ['evKezdes', 'evVege', 'evKep'].forEach(id => { $(id).disabled = !('kezdes' in e); });
   const box = $('pLista'); box.innerHTML = '';
   (e.program || []).forEach(p => box.append(programSor(p)));
@@ -1337,6 +1343,7 @@ $('evMent').addEventListener('click', async () => {
                     dij: $('evDij').value.trim(), hatarido: $('evHatarido').value, program };
   if (!$('evKezdes').disabled) Object.assign(esemeny, { kezdes: $('evKezdes').value, vege: $('evVege').value || $('evKezdes').value, kep: $('evKep').value.trim() });
   if (!$('evRovid').disabled) esemeny.rovid = $('evRovid').value.trim();
+  if (!$('evAdatk').disabled) esemeny.adatkezeles = $('evAdatk').value.trim();
   if (!$('fulNevezes').disabled) {
     ['fulNevezes', 'fulMarshalling', 'fulEredmeny'].forEach(k => { esemeny[k] = $(k).checked; });
     esemeny.linkek = [...document.querySelectorAll('#lLista .lk')].map(r => {
@@ -1488,6 +1495,7 @@ $('nFrissit').addEventListener('click', betoltNaplo);
 
 $('hUj').addEventListener('click', () => {
   $('hWsdc').value = $('hKn').value = $('hVn').value = $('hBib').value = '';
+  $('hHozz').checked = false;
   hValasztas = {}; hJogosult = null; msg('hInfo', '', 'info');
   $('hKesz').hidden = true; $('hForm').hidden = false;
   rajzolHelyszini();

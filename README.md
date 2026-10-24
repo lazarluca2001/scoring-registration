@@ -13,6 +13,7 @@ exportált fájlt pedig a **Scoring_Judging** pontozó app közvetlenül be tudj
 |---|---|
 | `index.html` | főoldal: az események kártyái ([link](https://lazarluca2001.github.io/scoring-registration/)); `?korabbi=1` a korábbi események, `?q=…` keresés |
 | `nevezes?e=teca2027` | egy esemény nevezési oldala: űrlap, határidő, menetrend |
+| `nevezesem?e=teca2027` | a versenyző saját nevezése: megtekintés és lemondás a regisztrációs kóddal |
 | `listak?e=teca2027&r=novice-1` | bevonuló párok futamonként (`r` = divízió és forduló) |
 | `eredmenyek?e=teca2027&r=newcomer-2` | a fordulók eredménye |
 | `admin.html` | szervezőknek, jelszóval ([link](https://lazarluca2001.github.io/scoring-registration/admin.html)) |
@@ -41,6 +42,12 @@ alatta a Nevezés / Listák / Eredmények fülek. A közös stílus és kód az 
 - **Regisztrációs kód**: a nevezés után 3 karakteres kód (pl. `K7M`) és egy kép a kóddal, névvel és divíziókkal.
   A „Kép mentése” gomb Androidon letölti a galéria Download albumába, iPhone-on a „Kép mentése” menüponttal a Fotókba kerül.
   A versenyző ezt a képet mutatja meg a helyszíni regisztrációnál.
+- **Adatkezelési hozzájárulás**: a nevezés csak a hozzájárulás bejelölésével küldhető el; az időpontja a táblázat
+  „Hozzájárulás” oszlopába kerül. Az adatkezelési tájékoztató linkje az admin Esemény fülén adható meg.
+- **Nevezésem** (`nevezesem?e=…`): a regisztrációs kóddal és a vezetéknévvel a versenyző megnézheti a nevezéseit
+  (függő / véglegesített), és **lemondhatja a még függő nevezést**. A véglegesítettet itt nem lehet lemondani, azt a szervező
+  kezeli. A lemondás a naplóba kerül. A sikeres nevezés képernyőjéről és a nevezési oldal aljáról is elérhető.
+  A hibás próbálkozások száma korlátozott.
 
 ### Admin panel
 
@@ -55,8 +62,8 @@ Minden eseménynek saját táblázata van ugyanabban a Drive mappában.
 | **Versenyzők** | Véglegesítés bib számmal (a következő szabad bibet javasolja, foglalt vagy nem szám bibre figyelmeztet). Check-in („Megérkezett”), befizetett összeg (egy kattintással a nevezési díj). Szűrők: függő / végleges, megérkezett / nem, fizetett / nem. Összesítő: függők, véglegesek, megérkezettek, befizetett összeg. Keresés névre, WSDC ID-ra, regisztrációs kódra, bibre. |
 | **Nevezések** | Divíziónként csoportosítva, szerkesztés és törlés. Hibák pirossal: nem szám bib, ugyanaz a bib két versenyzőnél, hiányzó szerep, dupla nevezés („Csak hibásak” szűrő). Export CSV és XLSX formátumban a pontozó appnak, szűrhető a véglegesítettekre és a verseny napján a megérkezettekre. |
 | **Divíziók** | Létszám divíziónként (Leader / Follower, függők, eltérés). Divíziónként egy kapcsoló (a Leader és Follower változat együtt), létszámkorlát szerepenként. |
-| **Helyszíni nevezés** | Nevezés a helyszínen bármely divízióba (a betelt divízióba is), bib megadásával azonnal véglegesít. |
-| **Esemény** | Az esemény neve, első és utolsó napja, helyszíne, borítóképe, nevezési díja, határideje és az ütemterv. A nyilvános oldal gombjai (Nevezés, Listák, Eredmények), linkek, és a **pontozó app XLSX exportjának feltöltése** (futambeosztás és eredmények). |
+| **Helyszíni nevezés** | Nevezés a helyszínen bármely divízióba (a betelt divízióba is), bib megadásával azonnal véglegesít. A versenyző hozzájárulását be kell jelölni. |
+| **Esemény** | Az esemény neve, első és utolsó napja, helyszíne, borítóképe, adatkezelési tájékoztatója, nevezési díja, határideje és az ütemterv. A nyilvános oldal gombjai (Nevezés, Listák, Eredmények), linkek, és a **pontozó app XLSX exportjának feltöltése** (futambeosztás és eredmények). |
 | **Napló** | Minden módosítás: ki, mikor, mit csinált (véglegesítés, check-in, befizetés, szerkesztés, törlés, beállítások). |
 
 ### Export a pontozó appnak
@@ -99,6 +106,7 @@ Sheet, and the exported file can be loaded directly into the **Scoring_Judging**
 |---|---|
 | `index.html` | home page: the event cards ([link](https://lazarluca2001.github.io/scoring-registration/)); `?korabbi=1` past events, `?q=…` search |
 | `nevezes?e=teca2027` | an event's registration page: form, deadline, schedule |
+| `nevezesem?e=teca2027` | the competitor's own registration: view and cancel with the registration code |
 | `listak?e=teca2027&r=novice-1` | walk-in pairs per heat (`r` = division and round) |
 | `eredmenyek?e=teca2027&r=newcomer-2` | round results |
 | `admin.html` | for organizers, with password ([link](https://lazarluca2001.github.io/scoring-registration/admin.html)) |
@@ -129,6 +137,12 @@ The user interface is in Hungarian.
 - **Registration code**: after registering, a 3-character code (e.g. `K7M`) and an image with the code, name and divisions.
   "Save image" downloads it to the gallery's Download album on Android; on iPhone it opens the system menu, where
   "Save Image" puts it in Photos. Competitors show this image at check-in.
+- **Privacy consent**: the form can only be sent with the consent box ticked; the time of consent is stored in the
+  sheet's "Hozzájárulás" column. The privacy notice link is set on the admin Event tab.
+- **My registration** (`nevezesem?e=…`): with the registration code and last name, competitors can see their entries
+  (pending / confirmed) and **cancel entries that are still pending**. Confirmed entries cannot be cancelled here; the
+  organizers handle those. Cancellations are logged. Linked from the success screen and the bottom of the registration page.
+  Failed attempts are rate-limited.
 
 ### Admin panel
 
@@ -143,8 +157,8 @@ Each event has its own spreadsheet in the same Drive folder.
 | **Versenyzők** (Competitors) | Confirm with a bib number (suggests the next free bib, warns about taken or non-numeric bibs). Check-in, amount paid (one click for the entry fee). Filters: pending / confirmed, arrived / not, paid / not. Totals: pending, confirmed, arrived, amount paid. Search by name, WSDC ID, registration code or bib. |
 | **Nevezések** (Registrations) | Grouped by division, edit and delete. Errors highlighted in red: non-numeric bib, same bib for two competitors, missing role, duplicate entry ("errors only" filter). Export to CSV and XLSX for the scoring app, filtered to confirmed and, on competition day, to arrived competitors. |
 | **Divíziók** (Divisions) | Head count per division (Leader / Follower, pending, difference). One switch per division (Leader and Follower together), entry limit per role. |
-| **Helyszíni nevezés** (On-site registration) | Register on site into any division (full ones too); entering a bib confirms immediately. |
-| **Esemény** (Event) | Event name, first and last day, venue, cover image, entry fee, deadline and schedule. The public page buttons (Registration, Lists, Results), links, and **upload of the scoring app's XLSX export** (heats and results). |
+| **Helyszíni nevezés** (On-site registration) | Register on site into any division (full ones too); entering a bib confirms immediately. The competitor's consent must be ticked. |
+| **Esemény** (Event) | Event name, first and last day, venue, cover image, privacy notice link, entry fee, deadline and schedule. The public page buttons (Registration, Lists, Results), links, and **upload of the scoring app's XLSX export** (heats and results). |
 | **Napló** (Log) | Every change: who did what and when (confirmations, check-in, payments, edits, deletions, settings). |
 
 ### Export for the scoring app

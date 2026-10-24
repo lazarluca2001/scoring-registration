@@ -136,7 +136,9 @@ async function esemenyOldal(lap) {
     const u = new URL(location.href); u.searchParams.set('e', esemeny.rovid); history.replaceState(null, '', u);
   }
   if (!esemeny.datum) esemeny.datum = idoszak(esemeny);
-  const nev = esemeny.nev || VERSENY_NEV, cimke = (LAPOK.find(l => l[0] === lap) || [])[1];
+  // a Nevezésem lap a Nevezés fülhöz tartozik, és mindig elérhető (lemondani a határidő után is lehet)
+  const fo = lap === 'nevezesem' ? 'nevezes' : lap;
+  const nev = esemeny.nev || VERSENY_NEV, cimke = lap === 'nevezesem' ? 'Nevezésem' : (LAPOK.find(l => l[0] === lap) || [])[1];
   $('cim').textContent = nev; document.title = (cimke ? cimke + ' – ' : '') + nev;
   const al = [esemeny.datum, esemeny.helyszin].filter(Boolean).join(' · ');
   $('alcim').textContent = al; $('alcim').hidden = !al;
@@ -145,10 +147,10 @@ async function esemenyOldal(lap) {
   const lapok = LAPOK.filter(be);
   const nav = $('fulek'); nav.innerHTML = '';
   lapok.forEach(([k, t, , url]) => { const a = document.createElement('a'); a.className = 'ful'; a.href = lapUrl(url, esemenyId); a.textContent = t;
-    if (k === lap) a.setAttribute('aria-selected', 'true'); nav.append(a); });
-  nav.hidden = lapok.length < 2 && lapok.some(l => l[0] === lap);
+    if (k === fo) a.setAttribute('aria-selected', 'true'); nav.append(a); });
+  nav.hidden = lapok.length < 2 && lapok.some(l => l[0] === fo);
   document.body.classList.toggle('vanful', !nav.hidden);
-  if (!lapok.some(l => l[0] === lap)) {
+  if (lap !== 'nevezesem' && !lapok.some(l => l[0] === lap)) {
     uzenet(lap === 'nevezes' ? 'Erre az eseményre jelenleg nem lehet nevezni.' : 'Ez az oldal ennél az eseménynél még nem elérhető.');
     return null;
   }

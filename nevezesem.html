@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nevezésem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/stilus.css">
+</head>
+<body>
+<header>
+  <h1 id="cim">Nevezésem</h1>
+  <p class="sub" id="alcim" hidden></p>
+</header>
+
+<main>
+  <div class="card valassz" id="uzenet" hidden></div>
+  <nav class="card fulek" id="fulek" hidden></nav>
+
+  <!-- Belépés: regisztrációs kód + vezetéknév -->
+  <div class="card" id="belepes" hidden>
+    <div class="body">
+      <h2 class="cim2">Nevezésem megtekintése</h2>
+      <p class="note" style="margin-top:4px">Add meg a nevezéskor kapott regisztrációs kódot és a vezetékneved.</p>
+      <div class="grid">
+        <div>
+          <label class="f" for="kod">Regisztrációs kód</label>
+          <input type="text" id="kod" placeholder="pl. K7P" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false">
+        </div>
+        <div>
+          <label class="f" for="vn">Vezetéknév</label>
+          <input type="text" id="vn" placeholder="Vezetéknév" autocomplete="family-name">
+        </div>
+      </div>
+    </div>
+    <footer class="act">
+      <p class="msg" id="msg1" role="status"></p>
+      <button class="btn" id="megnyit">Megnyitás</button>
+    </footer>
+  </div>
+
+  <!-- A versenyző nevezései -->
+  <div class="card sajat" id="adatok" hidden>
+    <div class="body">
+      <div class="fej">
+        <div><div class="reg-l">Versenyző</div><b id="nev"></b><span class="sz" id="bib"></span></div>
+        <div class="reg" id="regszam"></div>
+      </div>
+      <div class="rows" id="lista"></div>
+      <p class="megj" id="megj"></p>
+    </div>
+    <footer class="act">
+      <button class="ghost" id="kilep" aria-label="Másik nevezés"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <p class="msg" id="msg2" role="status"></p>
+      <button class="btn veszely" id="lemond" disabled>Lemondás</button>
+    </footer>
+  </div>
+  <p class="lablink" id="ujLink" hidden><a id="nevezLink" href="nevezes">Új nevezés »</a></p>
+</main>
+
+<script src="assets/kozos.js"></script>
+<script>
+let belepve = null;   // { regszam, vezeteknev }
+
+async function post(adat) {
+  const r = await fetch(SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ ...adat, ...(esemenyId ? { esemenyId } : {}) }) });
+  return r.json();
+}
+
+$('kod').addEventListener('input', () => { $('kod').value = $('kod').value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
+['kod', 'vn'].forEach(i => $(i).addEventListener('keydown', e => { if (e.key === 'Enter') $('megnyit').click(); }));
+
+$('megnyit').addEventListener('click', async () => {
+  const regszam = $('kod').value.trim(), vezeteknev = $('vn').value.trim();
+  if (!regszam || !vezeteknev) return msg('msg1', 'Add meg a kódot és a vezetékneved.');
+  $('megnyit').disabled = true; msg('msg1', 'Keresés…', true);
+  try {
+    const v = await post({ muvelet: 'sajat', regszam, vezeteknev });
+    if (!v.ok) return msg('msg1', v.hiba);
+    belepve = { regszam, vezeteknev };
+    msg('msg1'); mutat(v);
+  } catch { msg('msg1', 'Hálózati hiba.'); }
+  finally { $('megnyit').disabled = false; }
+});
+
+function mutat(v) {
+  $('belepes').hidden = true; $('adatok').hidden = false;
+  $('nev').textContent = v.nev || '';
+  $('bib').textContent = v.bib ? ' · rajtszám: ' + v.bib : '';
+  $('regszam').textContent = v.regszam;
+  const box = $('lista'); box.innerHTML = '';
+  if (!v.nevezesek.length) box.innerHTML = '<div class="row"><span class="empty">Nincs több nevezésed ennél az eseménynél.</span></div>';
+  let fuggo = 0;
+  v.nevezesek.forEach(n => {
+    const row = el('div', 'row');
+    const lab = el('label');
+    if (n.vegleges) {
+      lab.append(n.div);
+      row.append(lab, el('span', 'pill ok', 'Véglegesítve'));
+    } else {
+      fuggo++;
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = n.div;
+      cb.addEventListener('change', () => { row.classList.toggle('sel', cb.checked); frissit(); });
+      lab.append(cb, n.div);
+      row.append(lab, el('span', 'pill', 'Függőben'));
+    }
+    box.append(row);
+  });
+  const vegl = v.nevezesek.length - fuggo;
+  $('megj').textContent = !v.nevezesek.length ? ''
+    : fuggo ? 'Jelöld be, amelyik függőben lévő nevezésedet le szeretnéd mondani.' + (vegl ? ' A véglegesített nevezés lemondásához keresd a szervezőket.' : '')
+    : 'Minden nevezésed véglegesítve van. Lemondáshoz keresd a szervezőket.';
+  $('lemond').hidden = !fuggo;
+  frissit();
+}
+
+const bejelolt = () => [...$('lista').querySelectorAll('input:checked')].map(x => x.value);
+function frissit() { $('lemond').disabled = !bejelolt().length; }
+
+$('lemond').addEventListener('click', async () => {
+  const diviziok = bejelolt();
+  if (!diviziok.length || !belepve) return;
+  if (!confirm('Biztosan lemondod?\n\n' + diviziok.join('\n'))) return;
+  $('lemond').disabled = true; msg('msg2', 'Lemondás…', true);
+  try {
+    const v = await post({ muvelet: 'lemond', ...belepve, diviziok });
+    if (!v.ok) { frissit(); return msg('msg2', v.hiba); }
+    mutat(v);
+    msg('msg2', 'Lemondva: ' + (v.lemondva || diviziok).join(', ') + '.', true);
+  } catch { frissit(); msg('msg2', 'Hálózati hiba.'); }
+});
+
+$('kilep').addEventListener('click', () => {
+  belepve = null; $('adatok').hidden = true; $('belepes').hidden = false; msg('msg2');
+  $('kod').value = ''; $('vn').value = ''; $('kod').focus();
+});
+
+(async () => {
+  if (!await esemenyOldal('nevezesem')) return;
+  $('belepes').hidden = false; $('ujLink').hidden = esemeny.nyitva === false || esemeny.fulNevezes === false;
+  $('nevezLink').href = lapUrl('nevezes', esemenyId);
+  const k = (PARAM.get('k') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+  if (k) { $('kod').value = k; $('vn').focus(); } else $('kod').focus();
+  // a kódot ne hagyjuk a címsorban (pl. képernyőképen vagy megosztott linkben)
+  if (PARAM.has('k')) { const u = new URL(location.href); u.searchParams.delete('k'); history.replaceState(null, '', u); }
+})();
+</script>
+</body>
+</html>

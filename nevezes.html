@@ -70,6 +70,9 @@
       <div class="body">
         <p class="who"><b id="whoNev"></b><span id="whoId"></span></p>
         <div id="divlist"></div>
+        <label class="chk hozz"><input type="checkbox" id="hozz">
+          <span>Elfogadom az <span id="hozzTaj">adatkezelési tájékoztatót</span>, és hozzájárulok, hogy a szervezők a nevemet,
+          WSDC azonosítómat és nevezésemet a verseny lebonyolításához kezeljék, és a rajt- és eredménylistákon közzétegyék.</span></label>
       </div>
       <footer class="act">
         <button class="ghost" id="vissza" aria-label="Vissza"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
@@ -86,6 +89,7 @@
         <div class="reg-l">Regisztrációs kódod</div>
         <div class="reg" id="regszam"></div>
         <p class="note">Mentsd el ezt a képet, és mutasd meg a regisztrációnál.<br>A nevezésed a szervezők véglegesítése után válik hivatalossá.</p>
+        <p class="note"><a id="sajatLink" href="nevezesem">Nevezésem megtekintése vagy lemondása »</a></p>
         <img id="regKep" class="regkep" alt="">
         <div class="gombok">
           <button class="btn" id="kepMent">Kép mentése</button>
@@ -95,6 +99,7 @@
       </div>
     </section>
   </div>
+  <p class="lablink" id="sajatKartya" hidden>Már neveztél? <a id="sajatLink2" href="nevezesem">Nevezésed megtekintése vagy lemondása »</a></p>
   </div>
 </main>
 
@@ -240,8 +245,9 @@ function mutat2() {
 function kivalasztott() { return Object.values(valasztas).filter(Boolean); }
 
 function frissit() {
-  $('kuld').disabled = !kivalasztott().length;
+  $('kuld').disabled = !kivalasztott().length || !$('hozz').checked;
 }
+$('hozz').addEventListener('change', () => { msg('msg2'); frissit(); });
 
 function lepes(n) {
   $('lepes1').hidden = n !== 1;
@@ -258,16 +264,18 @@ $('vissza').addEventListener('click', () => { msg('msg2'); lepes(1); });
 $('kuld').addEventListener('click', async () => {
   if ($('web').value) return; // spam-csapda
   const diviziok = kivalasztott();
+  if (!$('hozz').checked) return msg('msg2', 'A nevezéshez fogadd el az adatkezelési tájékoztatót.');
   $('kuld').disabled = true; msg('msg2', 'Küldés…', true);
   try {
     const v = await (await fetch(SCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ wsdc: adat.wsdc, keresztnev: adat.keresztnev, vezeteknev: adat.vezeteknev, diviziok,
+      body: JSON.stringify({ wsdc: adat.wsdc, keresztnev: adat.keresztnev, vezeteknev: adat.vezeteknev, diviziok, hozzajarulas: true,
                              ...(esemenyId ? { esemenyId } : {}) })
     })).json();
     if (!v.ok) { frissit(); return msg('msg2', v.hiba); }
     $('regszam').textContent = v.regszam;
+    $('sajatLink').href = lapUrl('nevezesem', esemenyId) + (esemenyId ? '&' : '?') + 'k=' + encodeURIComponent(v.regszam);
     await kepKeszit({ kod: v.regszam, nev: adat.vezeteknev + ' ' + adat.keresztnev, wsdc: adat.wsdc,
                       diviziok: v.osszes || [...v.hozzaadva, ...v.marNevezett] });
     msg('msg2');
@@ -421,6 +429,13 @@ $('ujra').addEventListener('click', () => {
 
 (async () => {
   if (!await esemenyOldal('nevezes')) { $('urlap').hidden = true; return; }
+  // adatkezelési tájékoztató linkje (az admin Esemény fülén állítható)
+  if (/^https?:\/\//i.test(esemeny.adatkezeles || '')) {
+    const a = document.createElement('a'); a.href = esemeny.adatkezeles; a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = 'adatkezelési tájékoztatót'; $('hozzTaj').replaceWith(a);
+  }
+  $('sajatLink2').href = lapUrl('nevezesem', esemenyId);
+  $('sajatKartya').hidden = false;
   rajzolEsemeny();
   setInterval(rajzolEsemeny, 30000);
 })();

@@ -51,7 +51,17 @@ alatta a Nevezés / Listák / Eredmények fülek. A közös stílus és kód az 
 
 ### Admin panel
 
-Belépés jelszóval. A név megadása nem kötelező, de az kerül a naplóba.
+Belépéskor kétféle hozzáférés közül választhatsz, mindkettőhöz külön jelszó tartozik. A név megadása nem kötelező, de az kerül a naplóba.
+
+- **Staff** – teljes hozzáférés: minden fül, minden beállítás, minden esemény.
+- **Check-in** – a verseny napi érkeztetéshez: csak a Versenyzők fül (keresés, „Megérkezett”, befizetés). Nem véglegesíthet,
+  nem szerkeszthet, nem törölhet, a beállításokat nem látja. A naplóban a neve mellett „[check-in]” jelenik meg.
+  A check-in jelszót a staff állítja be vagy törli a **Hozzáférések** gombbal; minden eseménynél érvényes.
+
+**Új esemény létrehozása** (gomb felül): egy ablakban három lépés – alapadatok (név, rövid név a linkhez előnézettel, első és
+utolsó nap, helyszín, nevezési határidő), divíziók (átvétel egy meglévő eseményből vagy az alap divíziók), közzététel
+(azonnal nyilvános-e). Utána megjelenik az esemény linkje másolás gombbal és a következő lépések (Divíziók fül, Esemény fül,
+nyilvánossá tétel).
 
 **Esemény választó** (felül): melyik eseményt kezeled, új esemény létrehozása, a **Nyilvános** kapcsoló (megjelenjen-e
 a nevezési oldalon – több esemény is lehet nyilvános egyszerre) és a **Link másolása** gomb (az esemény saját linkje).
@@ -146,7 +156,17 @@ The user interface is in Hungarian.
 
 ### Admin panel
 
-Sign in with the password. Entering a name is optional; it is recorded in the log.
+At sign-in you choose between two access levels, each with its own password. Entering a name is optional; it is recorded in the log.
+
+- **Staff** – full access: every tab, every setting, every event.
+- **Check-in** – for competition-day arrivals: only the Competitors tab (search, "arrived", payment). Cannot confirm, edit,
+  delete or see settings. Log entries show "[check-in]" next to the name. Staff set or remove the check-in password with the
+  **Hozzáférések** (Access) button; it is valid for every event.
+
+**Create new event** (button at the top): one dialog with three steps – basics (name, short link name with preview, first and
+last day, venue, registration deadline), divisions (copy from an existing event or use the default divisions), publishing
+(public right away or not). Afterwards it shows the event link with a copy button and the next steps (Divisions tab,
+Event tab, make public).
 
 **Event selector** (top): which event you are managing, create a new event, the **Public** switch (whether it appears on
 the registration page – several events can be public at once) and **Copy link** (the event's own link).

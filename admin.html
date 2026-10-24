@@ -55,6 +55,31 @@
   .login { max-width:380px; margin:0 auto; }
   .login .btn { margin-top:14px; }
   .login .msg { margin-top:10px; }
+  .szerep { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:18px; }
+  .szerep label { cursor:pointer; position:relative; }
+  .szerep input { position:absolute; opacity:0; pointer-events:none; }
+  .szerep span { display:block; border:1px solid var(--line); border-radius:8px; padding:10px 12px; text-align:center; transition:.15s; }
+  .szerep b { display:block; font-size:.95rem; }
+  .szerep small { color:var(--soft); font-size:.75rem; }
+  .szerep input:checked + span { border-color:var(--accent); background:var(--sel); box-shadow:0 0 0 1px var(--accent); }
+  .szerep input:focus-visible + span { outline:2px solid var(--accent); outline-offset:2px; }
+  body.checkin .csakstaff { display:none !important; }
+  .bibro { font-weight:600; font-variant-numeric:tabular-nums; }
+  .bibro.nincs { color:var(--soft); font-weight:400; }
+  /* Új esemény párbeszéd */
+  .szakasz { display:flex; align-items:center; gap:10px; font-size:.75rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--soft); margin-top:4px; }
+  .szakasz span { width:22px; height:22px; border-radius:50%; background:var(--accent); color:var(--on-accent); display:grid; place-items:center; letter-spacing:0; font-size:.75rem; }
+  .szakasz::after { content:''; flex:1; height:1px; background:var(--line); }
+  .linkelo { color:var(--soft); font-size:.8rem; margin-top:6px; word-break:break-all; }
+  .linkelo b { color:var(--ink); font-weight:600; }
+  .kesz .okjel { width:48px; height:48px; border-radius:50%; background:var(--ok); color:#fff; display:grid; place-items:center; font-size:1.5rem; margin:0 auto; }
+  .kesz > p.cimsor { text-align:center; font-size:1.05rem; }
+  .linksor { display:flex; gap:8px; } .linksor input { flex:1; }
+  .kesz h4 { font-size:.75rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--soft); }
+  .teendo { list-style:none; padding:0; border:1px solid var(--line); border-radius:8px; }
+  .teendo li { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 14px; font-size:.9rem; }
+  .teendo li + li { border-top:1px solid var(--line); }
+  .teendo li.kesz-ok span { color:var(--ok); }
 
   /* Fülek */
   .tabs { display:flex; align-items:center; gap:4px; padding:8px 12px 0; border-bottom:1px solid var(--line); overflow-x:auto; }
@@ -211,7 +236,11 @@
   <!-- Belépés -->
   <section id="belepes" class="card login">
     <form class="pad" id="loginForm">
-      <label class="f" for="jelszo">Jelszó</label>
+      <div class="szerep" role="radiogroup" aria-label="Bejelentkezés módja">
+        <label><input type="radio" name="szerep" value="staff" checked><span><b>Staff</b><small>teljes hozzáférés</small></span></label>
+        <label><input type="radio" name="szerep" value="checkin"><span><b>Check-in</b><small>érkeztetés, befizetés</small></span></label>
+      </div>
+      <label class="f" for="jelszo" id="jelszoCimke">Staff jelszó</label>
       <input type="password" id="jelszo" autocomplete="current-password" required>
       <label class="f" for="adminNev" style="margin-top:14px">Neved <span style="color:var(--soft);font-weight:400">(a naplóhoz, nem kötelező)</span></label>
       <input type="text" id="adminNev" autocomplete="name">
@@ -224,22 +253,24 @@
     <div class="evbar" id="evBar" hidden>
       <label for="evValaszt">Esemény</label>
       <select id="evValaszt"></select>
-      <label class="nyk" title="Nyilvános esemény: megjelenik a nevezési oldalon, a versenyzők kiválaszthatják. Több is lehet nyilvános egyszerre.">
+      <label class="nyk csakstaff" title="Nyilvános esemény: megjelenik a nevezési oldalon, a versenyzők kiválaszthatják. Több is lehet nyilvános egyszerre.">
         <span class="sw"><input type="checkbox" id="evNyilv"><span></span></span> Nyilvános
       </label>
-      <span class="tag" id="evAllapot"></span>
-      <button class="btn ghost sm" id="evLink" title="Az esemény saját linkje a nevezési oldalon – ezzel egyenesen erre az eseményre jutnak">Link másolása</button>
+      <span class="tag csakstaff" id="evAllapot"></span>
+      <button class="btn ghost sm csakstaff" id="evLink" title="Az esemény saját linkje a nevezési oldalon – ezzel egyenesen erre az eseményre jutnak">Link másolása</button>
       <span class="sp"></span>
-      <button class="btn ghost sm" id="evUjGomb">+ Új esemény</button>
+      <button class="btn sm csakstaff" id="evUjGomb" title="Új verseny: saját táblázat, saját link, saját nevezések">+ Új esemény létrehozása</button>
     </div>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="versenyzok" aria-selected="true">Versenyzők</button>
-      <button class="tab" role="tab" data-tab="nevezesek" aria-selected="false">Nevezések</button>
-      <button class="tab" role="tab" data-tab="diviziok" aria-selected="false">Divíziók</button>
-      <button class="tab" role="tab" data-tab="helyszini" aria-selected="false">Helyszíni nevezés</button>
-      <button class="tab" role="tab" data-tab="esemeny" aria-selected="false">Esemény</button>
-      <button class="tab" role="tab" data-tab="naplo" aria-selected="false">Napló</button>
+      <button class="tab csakstaff" role="tab" data-tab="nevezesek" aria-selected="false">Nevezések</button>
+      <button class="tab csakstaff" role="tab" data-tab="diviziok" aria-selected="false">Divíziók</button>
+      <button class="tab csakstaff" role="tab" data-tab="helyszini" aria-selected="false">Helyszíni nevezés</button>
+      <button class="tab csakstaff" role="tab" data-tab="esemeny" aria-selected="false">Esemény</button>
+      <button class="tab csakstaff" role="tab" data-tab="naplo" aria-selected="false">Napló</button>
       <span class="sp"></span>
+      <span class="tag gray" id="szerepTag"></span>
+      <button class="btn ghost sm csakstaff" id="hozzaferesGomb">Hozzáférések</button>
       <button class="btn ghost sm" id="kilep">Kilépés</button>
     </div>
 
@@ -426,18 +457,75 @@
 <!-- Új esemény -->
 <dialog id="ujDlg">
   <form method="dialog" id="ujForm">
-    <h3>Új esemény</h3>
+    <h3>Új esemény létrehozása</h3>
+    <div id="ujUrlap">
+      <div class="pad">
+        <div class="szakasz"><span>1</span>Alapadatok</div>
+        <div><label class="f" for="ujNev">Esemény neve *</label><input type="text" id="ujNev" required placeholder="pl. Budapest Swing Open 2027"></div>
+        <div><label class="f" for="ujRovid">Rövid név a linkben</label><input type="text" id="ujRovid" placeholder="automatikusan a névből">
+          <p class="linkelo" id="ujLinkElo"></p></div>
+        <div class="two">
+          <div><label class="f" for="ujKezdes">Első nap</label><input type="date" id="ujKezdes"></div>
+          <div><label class="f" for="ujVege">Utolsó nap</label><input type="date" id="ujVege"></div>
+        </div>
+        <div class="two">
+          <div><label class="f" for="ujHely">Helyszín</label><input type="text" id="ujHely" placeholder="pl. Budapest, Bálna"></div>
+          <div><label class="f" for="ujHatarido">Nevezési határidő</label><input type="datetime-local" id="ujHatarido"></div>
+        </div>
+        <div class="szakasz"><span>2</span>Divíziók</div>
+        <div><label class="f" for="ujForrasVal">Divíziók</label><select id="ujForrasVal"></select>
+          <p class="hint" style="margin-top:6px">Később a Divíziók fülön ki-be kapcsolhatod őket, és létszámkorlátot adhatsz meg.</p></div>
+        <div class="szakasz"><span>3</span>Közzététel</div>
+        <label class="chk"><input type="checkbox" id="ujNyilv"> Azonnal nyilvános: megjelenik a főoldalon, és indulhat a nevezés</label>
+        <p class="hint" style="margin:0">Új Google-táblázat készül ugyanabban a Drive mappában. A nevezési díjat, az ütemtervet, a borítóképet és az adatkezelési tájékoztatót utána az Esemény fülön adhatod meg.</p>
+        <p class="msg" id="msgUj" role="status"></p>
+      </div>
+      <div class="foot">
+        <span></span>
+        <span style="display:flex;gap:8px">
+          <button type="button" class="btn ghost" id="ujMegse">Mégse</button>
+          <button type="submit" class="btn" id="ujMent">Létrehozás</button>
+        </span>
+      </div>
+    </div>
+    <div id="ujKesz" hidden>
+      <div class="pad kesz">
+        <div class="okjel">✓</div>
+        <p class="cimsor"><b id="ujKeszNev"></b> elkészült</p>
+        <div><label class="f" for="ujKeszLink">A nevezési oldal linkje</label>
+          <div class="linksor"><input type="text" id="ujKeszLink" readonly><button type="button" class="btn ghost" id="ujKeszMasol">Másolás</button></div></div>
+        <p class="msg" id="ujKeszFigy"></p>
+        <h4>Következő lépések</h4>
+        <ul class="teendo">
+          <li><span>Divíziók ellenőrzése, létszámkorlát</span><button type="button" class="btn ghost sm" data-ugras="diviziok">Divíziók fül</button></li>
+          <li><span>Nevezési díj, ütemterv, borítókép, adatkezelés</span><button type="button" class="btn ghost sm" data-ugras="esemeny">Esemény fül</button></li>
+          <li id="ujKeszNyilvSor"><span id="ujKeszNyilvSz">Nyilvánossá tétel, hogy induljon a nevezés</span><button type="button" class="btn sm" id="ujKeszNyilv">Nyilvánossá teszem</button></li>
+        </ul>
+      </div>
+      <div class="foot"><span></span><button type="button" class="btn" id="ujKeszBezar">Kész</button></div>
+    </div>
+  </form>
+</dialog>
+
+<!-- Hozzáférések -->
+<dialog id="hozzDlg">
+  <form method="dialog" id="hozzForm">
+    <h3>Hozzáférések</h3>
     <div class="pad">
-      <div><label class="f" for="ujNev">Esemény neve</label><input type="text" id="ujNev" required placeholder="pl. Budapest Swing Open 2027"></div>
-      <label class="chk"><input type="checkbox" id="ujMasol" checked> Divíziók átvétele innen: <b id="ujForras" style="color:var(--ink)"></b></label>
-      <p class="hint" style="margin:0">Új táblázat készül ugyanabban a Drive mappában. A nevezési oldalon csak akkor jelenik meg, ha nyilvánossá teszed.</p>
-      <p class="msg" id="msgUj" role="status"></p>
+      <div class="teendo" style="padding:4px 0">
+        <p style="padding:8px 14px"><b>Staff</b> – minden fül és beállítás, minden eseménynél. A staff jelszót az Apps Scriptben a <code>jelszoBeallitas</code> függvénnyel lehet megváltoztatni.</p>
+        <p style="padding:8px 14px;border-top:1px solid var(--line)"><b>Check-in</b> – csak a Versenyzők fül: keresés, „Megérkezett”, befizetés. Nem véglegesíthet, nem szerkeszthet és nem törölhet, a beállításokat nem látja. A jelszó minden eseménynél érvényes.</p>
+      </div>
+      <p>Check-in jelszó: <b id="hozzAllapot"></b></p>
+      <div><label class="f" for="hozzJelszo">Új check-in jelszó</label><input type="text" id="hozzJelszo" autocomplete="off" placeholder="legalább 6 karakter"></div>
+      <p class="hint" style="margin:0">Belépés: ugyanez az admin oldal, a „Check-in” lehetőséggel.</p>
+      <p class="msg" id="msgHozz" role="status"></p>
     </div>
     <div class="foot">
-      <span></span>
+      <button type="button" class="btn danger" id="hozzTorol">Check-in jelszó törlése</button>
       <span style="display:flex;gap:8px">
-        <button type="button" class="btn ghost" id="ujMegse">Mégse</button>
-        <button type="submit" class="btn" id="ujMent">Létrehozás</button>
+        <button type="button" class="btn ghost" id="hozzMegse">Bezárás</button>
+        <button type="submit" class="btn" id="hozzMent">Mentés</button>
       </span>
     </div>
   </form>
@@ -486,6 +574,7 @@ const ICO = {
   chev: '<svg class="i chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>'
 };
 let jelszo = '';
+let szerep = 'staff';     // staff | checkin
 let adminNev = '';
 let esemenyId = '';       // az adminban kezelt esemény (táblázat); üres = az aktív
 let esemenyLista = [];
@@ -499,7 +588,7 @@ async function api(muvelet, extra = {}) {
   const v = await (await fetch(SCRIPT_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ muvelet, jelszo, ki: adminNev, ...(esemenyId ? { esemenyId } : {}), ...extra })
+    body: JSON.stringify({ muvelet, jelszo, szerep, ki: adminNev, ...(esemenyId ? { esemenyId } : {}), ...extra })
   })).json();
   if (!v.ok) throw new Error(v.hiba || 'Ismeretlen hiba.');
   return v;
@@ -512,6 +601,7 @@ async function betolt() {
     adat = await api('admin');
   }
   if (adat.esemenyId && !esemenyId) esemenyId = adat.esemenyId;
+  jogAlkalmaz();
   rajzolMind(); rajzolEsemenySav();
 }
 function esemenyValt(id) {
@@ -531,7 +621,7 @@ function rajzolEsemenySav() {
   sel.value = esemenyId || (esemenyLista.find(e => e.aktiv) || esemenyLista[0]).id;
   const e = esemenyLista.find(x => x.id === sel.value) || {};
   $('evNyilv').checked = !!nyilv(e);
-  $('evAllapot').className = 'tag ' + (nyilv(e) ? 'ok' : 'gray');
+  $('evAllapot').className = 'tag csakstaff ' + (nyilv(e) ? 'ok' : 'gray');
   $('evAllapot').textContent = nyilv(e) ? 'látszik a nevezési oldalon' : 'nem látszik a nevezési oldalon';
 }
 $('evNyilv').addEventListener('change', async () => {
@@ -554,36 +644,125 @@ $('evValaszt').addEventListener('change', async () => {
   try { await betolt(); msg('msgV'); if (!$('t-naplo').hidden) betoltNaplo(); }
   catch (err) { msg('msgV', err.message || 'Hálózati hiba.'); }
 });
+// ---------- Új esemény ----------
+const rovidNev = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+const nevezesLink = r => { const u = new URL('./nevezes', location.href); u.searchParams.set('e', r); return u.href; };
+let ujId = '';
+function ujLinkElo() {
+  const r = rovidNev($('ujRovid').value) || rovidNev($('ujNev').value);
+  $('ujLinkElo').innerHTML = '';
+  if (r) { $('ujLinkElo').append('Link: ' + nevezesLink('')); const b = document.createElement('b'); b.textContent = r; $('ujLinkElo').append(b); }
+}
+['ujNev', 'ujRovid'].forEach(i => $(i).addEventListener('input', ujLinkElo));
+$('ujKezdes').addEventListener('change', () => { if (!$('ujVege').value || $('ujVege').value < $('ujKezdes').value) $('ujVege').value = $('ujKezdes').value; });
 $('evUjGomb').addEventListener('click', () => {
-  $('ujNev').value = ''; $('ujMasol').checked = true; msg('msgUj');
-  $('ujForras').textContent = (esemenyLista.find(e => e.id === $('evValaszt').value) || {}).nev || '';
+  ['ujNev', 'ujRovid', 'ujKezdes', 'ujVege', 'ujHely', 'ujHatarido'].forEach(i => { $(i).value = ''; });
+  $('ujNyilv').checked = false; msg('msgUj'); ujLinkElo();
+  const sel = $('ujForrasVal'); sel.innerHTML = '';
+  const akt = $('evValaszt').value;
+  esemenyLista.forEach(e => { const o = document.createElement('option'); o.value = e.id; o.textContent = 'Átvétel innen: ' + e.nev; sel.append(o); });
+  const alap = document.createElement('option'); alap.value = ''; alap.textContent = 'Alap divíziók (Newcomer … Champions, Strictly)'; sel.append(alap);
+  sel.value = esemenyLista.some(e => e.id === akt) ? akt : '';
+  $('ujUrlap').hidden = false; $('ujKesz').hidden = true;
   $('ujDlg').showModal(); $('ujNev').focus();
 });
 $('ujMegse').addEventListener('click', () => $('ujDlg').close());
 $('ujForm').addEventListener('submit', async e => {
   e.preventDefault();
+  if ($('ujUrlap').hidden) return;
+  if (!$('ujNev').value.trim()) return msg('msgUj', 'Add meg az esemény nevét.');
+  if ($('ujKezdes').value && $('ujVege').value && $('ujVege').value < $('ujKezdes').value) return msg('msgUj', 'Az utolsó nap nem lehet korábban, mint az első.');
   $('ujMent').disabled = true; msg('msgUj', 'Létrehozás… (néhány másodperc)', 'info');
   try {
-    const v = await api('ujEsemeny', { nev: $('ujNev').value, diviziokMasolasa: $('ujMasol').checked });
-    esemenyLista = v.esemenyek; esemenyValt(v.uj);
-    $('ujDlg').close();
+    const v = await api('ujEsemeny', { nev: $('ujNev').value, forras: $('ujForrasVal').value, nyilvanos: $('ujNyilv').checked,
+      adatok: { rovid: $('ujRovid').value.trim(), kezdes: $('ujKezdes').value, vege: $('ujVege').value || $('ujKezdes').value,
+                helyszin: $('ujHely').value.trim(), hatarido: $('ujHatarido').value } });
+    esemenyLista = v.esemenyek; esemenyValt(v.uj); ujId = v.uj;
     await betolt();
-    document.querySelector('.tab[data-tab=esemeny]').click();
-    msg('msgEv', 'Az esemény elkészült. Töltsd ki az adatait, majd kapcsold be fent a „Nyilvános” kapcsolót, ha indulhat a nevezés.', 'ok');
+    $('ujKeszNev').textContent = $('ujNev').value.trim();
+    $('ujKeszLink').value = nevezesLink(v.rovid || v.uj);
+    msg('ujKeszFigy', v.figyelmeztetes ? 'Figyelem: ' + v.figyelmeztetes + ' – javítsd az Esemény fülön.' : '');
+    const nyilv = (esemenyLista.find(x => x.id === v.uj) || {}).nyilvanos;
+    ujNyilvRajz(nyilv);
+    $('ujUrlap').hidden = true; $('ujKesz').hidden = false;
   } catch (err) { msg('msgUj', err.message || 'Hálózati hiba.'); }
   finally { $('ujMent').disabled = false; }
 });
+function ujNyilvRajz(nyilv) {
+  $('ujKeszNyilvSor').classList.toggle('kesz-ok', !!nyilv);
+  $('ujKeszNyilvSz').textContent = nyilv ? '✓ Nyilvános – a főoldalon látszik, lehet nevezni' : 'Nyilvánossá tétel, hogy induljon a nevezés';
+  $('ujKeszNyilv').hidden = !!nyilv;
+}
+$('ujKeszNyilv').addEventListener('click', async () => {
+  $('ujKeszNyilv').disabled = true;
+  try { esemenyLista = (await api('nyilvanosAllit', { id: ujId, nyilvanos: true })).esemenyek; rajzolEsemenySav(); ujNyilvRajz(true); }
+  catch (err) { msg('ujKeszFigy', err.message || 'Hálózati hiba.'); }
+  finally { $('ujKeszNyilv').disabled = false; }
+});
+$('ujKeszMasol').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('ujKeszLink').value); $('ujKeszMasol').textContent = 'Kimásolva ✓'; }
+  catch { $('ujKeszLink').select(); }
+  setTimeout(() => { $('ujKeszMasol').textContent = 'Másolás'; }, 2000);
+});
+document.querySelectorAll('[data-ugras]').forEach(b => b.addEventListener('click', () => {
+  $('ujDlg').close(); document.querySelector('.tab[data-tab=' + b.dataset.ugras + ']').click();
+}));
+$('ujKeszBezar').addEventListener('click', () => $('ujDlg').close());
+
+// ---------- Jogosultság (staff / check-in) ----------
+function jogAlkalmaz() {
+  const uj = adat.szerep === 'checkin' ? 'checkin' : 'staff';
+  const valt = document.body.classList.contains('checkin') !== (uj === 'checkin');
+  szerep = uj;
+  document.body.classList.toggle('checkin', szerep === 'checkin');
+  $('szerepTag').textContent = szerep === 'checkin' ? 'Check-in' : 'Staff';
+  $('szerepTag').className = 'tag ' + (szerep === 'checkin' ? 'gray' : '');
+  if (szerep === 'checkin' && valt) {
+    document.querySelector('.tab[data-tab=versenyzok]').click();
+    const m = document.querySelector('#vFilt [data-f=mind]'); if (m) m.click();
+  }
+}
+$('hozzaferesGomb').addEventListener('click', () => {
+  $('hozzJelszo').value = ''; msg('msgHozz'); hozzRajz(adat.checkinBeallitva);
+  $('hozzDlg').showModal(); $('hozzJelszo').focus();
+});
+function hozzRajz(be) {
+  $('hozzAllapot').textContent = be ? 'beállítva' : 'nincs beállítva (check-in belépés nem lehetséges)';
+  $('hozzTorol').hidden = !be;
+}
+$('hozzMegse').addEventListener('click', () => $('hozzDlg').close());
+$('hozzForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const j = $('hozzJelszo').value;
+  if (j.length < 6) return msg('msgHozz', 'A jelszó legalább 6 karakter legyen.');
+  $('hozzMent').disabled = true; msg('msgHozz', 'Mentés…', 'info');
+  try { const v = await api('hozzaferes', { checkinJelszo: j }); adat.checkinBeallitva = v.checkinBeallitva; hozzRajz(true);
+        $('hozzJelszo').value = ''; msg('msgHozz', 'A check-in jelszó elmentve. Add meg a check-in csapatnak.', 'ok'); }
+  catch (err) { msg('msgHozz', /Ismeretlen művelet/.test(err.message) ? 'Ehhez frissíteni kell a Google Scriptet.' : err.message || 'Hálózati hiba.'); }
+  finally { $('hozzMent').disabled = false; }
+});
+$('hozzTorol').addEventListener('click', async () => {
+  if (!confirm('Törlöd a check-in jelszót? Utána check-in módban senki nem tud belépni.')) return;
+  try { const v = await api('hozzaferes', { torles: true }); adat.checkinBeallitva = v.checkinBeallitva; hozzRajz(false); msg('msgHozz', 'Törölve.', 'ok'); }
+  catch (err) { msg('msgHozz', err.message || 'Hálózati hiba.'); }
+});
+
 function rajzolMind() { szamolHibak(); rajzolVersenyzok(); rajzolNevezesek(); rajzolDiviziok(); rajzolHelyszini(); rajzolEsemeny(); rajzolEredmenyAllapot(); }
 
 // ---------- Belépés ----------
+document.querySelectorAll('input[name=szerep]').forEach(r => r.addEventListener('change', () => {
+  $('jelszoCimke').textContent = r.value === 'checkin' ? 'Check-in jelszó' : 'Staff jelszó'; msg('msgLogin'); $('jelszo').focus();
+}));
 $('loginForm').addEventListener('submit', async e => {
   e.preventDefault();
   jelszo = $('jelszo').value;
+  szerep = document.querySelector('input[name=szerep]:checked').value;
   $('belep').disabled = true; msg('msgLogin', 'Belépés…', 'info');
   try {
     await betolt();
     adminNev = $('adminNev').value.trim();
-    try { sessionStorage.setItem('adminJelszo', jelszo); sessionStorage.setItem('adminNev', adminNev); } catch {}
+    try { sessionStorage.setItem('adminJelszo', jelszo); sessionStorage.setItem('adminNev', adminNev); sessionStorage.setItem('adminSzerep', szerep); } catch {}
     $('jelszo').value = ''; msg('msgLogin');
     $('belepes').hidden = true; $('panel').hidden = false;
     betoltEsemenyek();
@@ -596,13 +775,14 @@ $('loginForm').addEventListener('submit', async e => {
   try { j = sessionStorage.getItem('adminJelszo') || ''; } catch {}
   if (!j) return;
   jelszo = j;
+  try { szerep = sessionStorage.getItem('adminSzerep') || 'staff'; } catch {}
   try { await betolt(); $('belepes').hidden = true; $('panel').hidden = false; betoltEsemenyek(); }
   catch { try { sessionStorage.removeItem('adminJelszo'); } catch {} jelszo = ''; }
 })();
 
 $('kilep').addEventListener('click', () => {
   jelszo = ''; adat = { sorok: [], diviziok: [] };
-  try { sessionStorage.removeItem('adminJelszo'); } catch {}
+  try { sessionStorage.removeItem('adminJelszo'); sessionStorage.removeItem('adminSzerep'); } catch {}
   $('panel').hidden = true; $('belepes').hidden = false; $('jelszo').focus();
 });
 
@@ -792,6 +972,10 @@ function rajzolVersenyzok() {
         catch (err) { msg('msgV', err.message || 'Hálózati hiba.'); }
       });
       fin.append(vv);
+    }
+    if (szerep === 'checkin') {   // check-in: a bib csak látszik, véglegesíteni nem lehet
+      fin.innerHTML = '';
+      fin.append(Object.assign(document.createElement('span'), { className: 'bibro' + (p.bib ? '' : ' nincs'), textContent: p.bib ? 'Bib ' + p.bib : 'még nincs bib' }));
     }
     // Check-in és befizetés
     const ops = document.createElement('div'); ops.className = 'ops';

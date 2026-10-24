@@ -54,7 +54,7 @@ alatta a Nevezés / Listák / Eredmények fülek. A közös stílus és kód az 
 Belépéskor kétféle hozzáférés közül választhatsz, mindkettőhöz külön jelszó tartozik. A név megadása nem kötelező, de az kerül a naplóba.
 
 - **Staff** – teljes hozzáférés: minden fül, minden beállítás, minden esemény.
-- **Check-in** – a verseny napi érkeztetéshez: csak a Versenyzők fül (keresés, „Megérkezett”, befizetés). Nem véglegesíthet,
+- **Check-in** – a verseny napi érkeztetéshez: csak a Versenyzők és a Marshalling fül (keresés, „Megérkezett”, befizetés). Nem véglegesíthet,
   nem szerkeszthet, nem törölhet, a beállításokat nem látja. A naplóban a neve mellett „[check-in]” jelenik meg.
   A check-in jelszót a staff állítja be vagy törli a **Hozzáférések** gombbal; minden eseménynél érvényes.
 
@@ -70,6 +70,7 @@ Minden eseménynek saját táblázata van ugyanabban a Drive mappában.
 | Fül | Funkciók |
 |---|---|
 | **Versenyzők** | Véglegesítés bib számmal (a következő szabad bibet javasolja, foglalt vagy nem szám bibre figyelmeztet). Check-in („Megérkezett”), befizetett összeg (egy kattintással a nevezési díj). Szűrők: függő / végleges, megérkezett / nem, fizetett / nem. Összesítő: függők, véglegesek, megérkezettek, befizetett összeg. Keresés névre, WSDC ID-ra, regisztrációs kódra, bibre. |
+| **Marshalling** | Felvonulás előtt: divízió és forduló kiválasztása, a futamok párjai (Leader / Follower), egy koppintással pipálható, ki érkezett meg; „Mind itt” futamonként, „Hiányzók” szűrő, keresés bibre vagy névre, futamonkénti és összesített számláló. A pontozó app feltöltött futambeosztásából dolgozik; több marshall is használhatja egyszerre (15 másodpercenként frissül). A check-in jogosultság is eléri. |
 | **Nevezések** | Divíziónként csoportosítva, szerkesztés és törlés. Hibák pirossal: nem szám bib, ugyanaz a bib két versenyzőnél, hiányzó szerep, dupla nevezés („Csak hibásak” szűrő). Export CSV és XLSX formátumban a pontozó appnak, szűrhető a véglegesítettekre és a verseny napján a megérkezettekre. |
 | **Divíziók** | Létszám divíziónként (Leader / Follower, függők, eltérés). Divíziónként egy kapcsoló (a Leader és Follower változat együtt), létszámkorlát szerepenként. |
 | **Helyszíni nevezés** | Nevezés a helyszínen bármely divízióba (a betelt divízióba is), bib megadásával azonnal véglegesít. A versenyző hozzájárulását be kell jelölni. |
@@ -159,7 +160,7 @@ The user interface is in Hungarian.
 At sign-in you choose between two access levels, each with its own password. Entering a name is optional; it is recorded in the log.
 
 - **Staff** – full access: every tab, every setting, every event.
-- **Check-in** – for competition-day arrivals: only the Competitors tab (search, "arrived", payment). Cannot confirm, edit,
+- **Check-in** – for competition-day arrivals: only the Competitors and Marshalling tabs (search, "arrived", payment). Cannot confirm, edit,
   delete or see settings. Log entries show "[check-in]" next to the name. Staff set or remove the check-in password with the
   **Hozzáférések** (Access) button; it is valid for every event.
 
@@ -175,6 +176,7 @@ Each event has its own spreadsheet in the same Drive folder.
 | Tab | Features |
 |---|---|
 | **Versenyzők** (Competitors) | Confirm with a bib number (suggests the next free bib, warns about taken or non-numeric bibs). Check-in, amount paid (one click for the entry fee). Filters: pending / confirmed, arrived / not, paid / not. Totals: pending, confirmed, arrived, amount paid. Search by name, WSDC ID, registration code or bib. |
+| **Marshalling** | Before the walk-on: pick division and round, see each heat's couples (Leader / Follower) and tick who has arrived with one tap; "Mind itt" (all here) per heat, "Hiányzók" (missing) filter, search by bib or name, counters per heat and in total. Uses the heats uploaded from the scoring app; several marshals can use it at once (refreshes every 15 seconds). Check-in users can use it too. |
 | **Nevezések** (Registrations) | Grouped by division, edit and delete. Errors highlighted in red: non-numeric bib, same bib for two competitors, missing role, duplicate entry ("errors only" filter). Export to CSV and XLSX for the scoring app, filtered to confirmed and, on competition day, to arrived competitors. |
 | **Divíziók** (Divisions) | Head count per division (Leader / Follower, pending, difference). One switch per division (Leader and Follower together), entry limit per role. |
 | **Helyszíni nevezés** (On-site registration) | Register on site into any division (full ones too); entering a bib confirms immediately. The competitor's consent must be ticked. |

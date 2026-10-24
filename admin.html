@@ -9,11 +9,37 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  // a téma már betöltéskor érvényesüljön (ne villanjon)
+  try { const t = localStorage.getItem('adminTema'); if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t; } catch {}
+</script>
 <style>
   :root {
     --bg:#eef1f6; --head:#0b1a45; --head-ink:#fff; --card:#fff; --ink:#111a33; --soft:#7a849b;
     --line:#dfe3ec; --accent:#1d4ed8; --on-accent:#fff; --sel:#eaf0ff; --err:#d23a46; --ok:#15803d; --zebra:#f7f9fc;
+    --ok-bg:#e6f4ec; --ok-line:#9ad3ae; --warn:#b45309; --warn-bg:#fff4e0; --warn-bg2:#fff8ec; --warn-line:#f2c27a; --err-bg:#fdecee;
+    --shadow:rgba(11,26,69,.08); --backdrop:rgba(11,26,69,.45);
+    color-scheme:light;
   }
+  /* Sötét mód: a rendszer beállítása szerint, vagy a fejléc kapcsolójával */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme=light]) {
+      --bg:#0e1320; --head:#0a1230; --card:#161c2a; --ink:#e6e9f2; --soft:#8d96ac; --line:#2a3246; --accent:#6b93ff; --on-accent:#0b1022;
+      --sel:#1e2946; --err:#ff7a86; --ok:#4ade80; --zebra:#1a2131;
+      --ok-bg:#15301f; --ok-line:#2d6a45; --warn:#fbbf24; --warn-bg:#36290f; --warn-bg2:#2b2212; --warn-line:#79591c; --err-bg:#3a1b22;
+      --shadow:rgba(0,0,0,.35); --backdrop:rgba(0,0,0,.6); color-scheme:dark;
+    }
+  }
+  :root[data-theme=dark] {
+    --bg:#0e1320; --head:#0a1230; --card:#161c2a; --ink:#e6e9f2; --soft:#8d96ac; --line:#2a3246; --accent:#6b93ff; --on-accent:#0b1022;
+    --sel:#1e2946; --err:#ff7a86; --ok:#4ade80; --zebra:#1a2131;
+    --ok-bg:#15301f; --ok-line:#2d6a45; --warn:#fbbf24; --warn-bg:#36290f; --warn-bg2:#2b2212; --warn-line:#79591c; --err-bg:#3a1b22;
+    --shadow:rgba(0,0,0,.35); --backdrop:rgba(0,0,0,.6); color-scheme:dark;
+  }
+  .tema { position:absolute; top:14px; right:16px; height:32px; padding:0 12px; border-radius:999px; border:1px solid rgba(255,255,255,.25);
+          background:transparent; color:var(--head-ink); font:500 .8rem Inter, sans-serif; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+  .tema:hover { background:rgba(255,255,255,.08); }
+  header { position:relative; }
   * { box-sizing:border-box; margin:0; }
   body { background:var(--bg); color:var(--ink); font:15px/1.5 Inter, system-ui, sans-serif; min-height:100vh; }
   svg.i { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
@@ -21,7 +47,7 @@
   header { background:var(--head); color:var(--head-ink); padding:32px 16px 92px; text-align:center; }
   header h1 { font-weight:600; font-size:clamp(1.5rem, 4vw, 2.1rem); }
   main { position:relative; z-index:1; max-width:1040px; margin:-64px auto 48px; padding:0 16px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; box-shadow:0 10px 30px rgba(11,26,69,.08); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; box-shadow:0 10px 30px var(--shadow); }
   .pad { padding:24px; }
   [hidden] { display:none !important; }
 
@@ -49,7 +75,7 @@
   .ib { width:30px; height:30px; display:inline-grid; place-items:center; border:0; border-radius:6px; background:transparent;
         color:var(--soft); cursor:pointer; }
   .ib:hover { background:var(--sel); color:var(--accent); }
-  .ib.del:hover { background:#fdecee; color:var(--err); }
+  .ib.del:hover { background:var(--err-bg); color:var(--err); }
 
   /* Belépés */
   .login { max-width:380px; margin:0 auto; }
@@ -68,13 +94,15 @@
   .mstat { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; padding:12px 24px; color:var(--soft); font-size:.9rem; border-bottom:1px solid var(--line); }
   .mstat b { color:var(--ink); font-size:1.15rem; font-variant-numeric:tabular-nums; }
   .mstat .sp { flex:1; }
+  .msor { margin:12px 24px 0; padding:8px 12px; border-radius:8px; font-size:.85rem; background:var(--sel); color:var(--accent); }
+  .msor.off { background:var(--warn-bg); color:var(--warn); }
   .mheatek { padding:16px 24px 8px; display:grid; gap:16px; }
   .mheat { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
   .mheat > .mhfej { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--zebra); border-bottom:1px solid var(--line); }
   .mheat h3 { font-size:.95rem; font-weight:600; flex:1; }
   .mheat h3 small { color:var(--soft); font-weight:400; margin-left:4px; }
-  .mheat .mdb { font-weight:600; font-variant-numeric:tabular-nums; font-size:.82rem; padding:2px 9px; border-radius:999px; background:#fff4e0; color:#b45309; }
-  .mheat.teljes .mdb { background:#e6f4ec; color:var(--ok); }
+  .mheat .mdb { font-weight:600; font-variant-numeric:tabular-nums; font-size:.82rem; padding:2px 9px; border-radius:999px; background:var(--warn-bg); color:var(--warn); }
+  .mheat.teljes .mdb { background:var(--ok-bg); color:var(--ok); }
   .mfej, .mpar { display:grid; grid-template-columns:28px 1fr 1fr; gap:8px; padding:8px 14px; }
   .mfej { padding-bottom:0; font-size:.7rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--soft); }
   .mpar + .mpar { border-top:1px solid var(--line); }
@@ -84,7 +112,7 @@
   .mszem::before { content:''; width:22px; height:22px; border-radius:6px; border:2px solid var(--line); flex:none; display:grid; place-items:center;
                    font-size:.8rem; font-weight:700; color:#fff; }
   .mszem:hover { border-color:var(--accent); }
-  .mszem.on { background:#e6f4ec; border-color:#9ad3ae; }
+  .mszem.on { background:var(--ok-bg); border-color:var(--ok-line); }
   .mszem.on::before { content:'✓'; background:var(--ok); border-color:var(--ok); }
   .mszem .mt { min-width:0; display:flex; flex-direction:column; line-height:1.25; }
   .mszem b { font-variant-numeric:tabular-nums; }
@@ -167,10 +195,10 @@
   .p .fin input { width:90px; height:36px; text-align:center; font-weight:600; }
   .p .fin .btn { height:36px; }
   .st { font-size:.72rem; font-weight:600; padding:2px 8px; border-radius:999px; }
-  .st.ok { background:#e6f4ec; color:var(--ok); }
-  .st.wait { background:#fff4e0; color:#b45309; }
+  .st.ok { background:var(--ok-bg); color:var(--ok); }
+  .st.wait { background:var(--warn-bg); color:var(--warn); }
   .dtag { font-size:.78rem; padding:2px 8px; border-radius:4px; background:var(--zebra); border:1px solid var(--line); }
-  .dtag.wait { border-color:#f2c27a; background:#fff8ec; }
+  .dtag.wait { border-color:var(--warn-line); background:var(--warn-bg2); }
   .bibcell { font-weight:700; }
   @media (max-width:640px) { .p { grid-template-columns:1fr; } .p .fin { grid-row:auto; grid-column:1; } }
 
@@ -211,28 +239,28 @@
   .result ul { list-style:none; padding:0; color:var(--soft); margin-bottom:20px; }
 
   /* Szerkesztő ablak */
-  dialog { margin:auto; border:0; border-radius:12px; padding:0; width:min(560px, calc(100% - 32px)); box-shadow:0 20px 60px rgba(11,26,69,.3); color:var(--ink); }
-  dialog::backdrop { background:rgba(11,26,69,.45); }
+  dialog { margin:auto; border:0; border-radius:12px; padding:0; width:min(560px, calc(100% - 32px)); box-shadow:0 20px 60px var(--shadow); color:var(--ink); background:var(--card); }
+  dialog::backdrop { background:var(--backdrop); }
   dialog h3 { font-size:1.05rem; padding:18px 24px; border-bottom:1px solid var(--line); }
   dialog .pad { display:grid; gap:14px; }
   dialog .two { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   dialog .foot { justify-content:space-between; }
   /* Hibák, létszám */
-  tr.hiba td { background:#fdecee; }
+  tr.hiba td { background:var(--err-bg); }
   td.bibcell.hiba, .hibatxt { color:var(--err); }
-  .st.err { background:#fdecee; color:var(--err); }
+  .st.err { background:var(--err-bg); color:var(--err); }
   .stats .err b { color:var(--err); }
   .letszam { margin-bottom:26px; }
   .letszam table { border:1px solid var(--line); border-radius:6px; }
   .letszam td.n, .letszam th.n { text-align:right; width:1%; }
-  .letszam .warn { color:#b45309; font-weight:600; }
+  .letszam .warn { color:var(--warn); font-weight:600; }
   .letszam .sub { color:var(--soft); font-size:.78rem; }
   /* Check-in, befizetés */
   .p .ops { grid-column:1 / -1; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .p .ops .fiz { width:110px; height:32px; text-align:right; }
   .p .ops .ft { color:var(--soft); font-size:.8rem; }
   .btn.ci { height:32px; padding:0 12px; font-size:.8rem; background:transparent; color:var(--soft); border:1px solid var(--line); }
-  .btn.ci.on { background:#e6f4ec; color:var(--ok); border-color:#b7e0c6; }
+  .btn.ci.on { background:var(--ok-bg); color:var(--ok); border-color:var(--ok-line); }
   .fbar select { width:auto; height:40px; }
   /* Divízió korlát */
   .row .korl { width:56px; height:30px; text-align:center; padding:0 6px; font-size:.82rem; }
@@ -240,9 +268,26 @@
   .rk b { color:var(--ink); font-weight:600; }
   .rk.red b, .rk.red span:first-child { color:var(--err); }
   @media (max-width:640px) { .row { flex-wrap:wrap; } .row .meta { flex-wrap:wrap; order:3; width:100%; } }
-  .tag.red { background:#fdecee; color:var(--err); }
+  .tag.red { background:var(--err-bg); color:var(--err); }
   /* Esemény */
   .sec { font-size:.72rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--soft); }
+  .kszerk { display:flex; flex-direction:column; gap:8px; }
+  .kszerk .kr { display:grid; grid-template-columns:1.4fr 140px 1.2fr auto 30px; gap:8px; align-items:center; }
+  .kszerk .kr input:disabled { opacity:.45; }
+  @media (max-width:700px) { .kszerk .kr { grid-template-columns:1fr 1fr 30px; } .kszerk .kr > :first-child, .kszerk .kr > :nth-child(3) { grid-column:1 / 3; } }
+  .valasz { font-size:.8rem; color:var(--soft); }
+  .valasz b { color:var(--ink); font-weight:500; }
+  .hkerd { display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin-top:18px; }
+  @media (max-width:700px) { .hkerd { grid-template-columns:1fr; } }
+  .oszerk { display:flex; flex-direction:column; gap:8px; }
+  .oszerk .or { display:grid; grid-template-columns:1fr 1fr 190px 190px 1fr 30px; gap:8px; align-items:center; }
+  .oszerk .ofej { font-size:.72rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--soft); }
+  @media (max-width:900px) { .oszerk .or { grid-template-columns:1fr 1fr 30px; } .oszerk .or > :nth-child(3), .oszerk .or > :nth-child(4) { grid-column:span 1; } .oszerk .or > :nth-child(5) { grid-column:1 / 3; } .oszerk .ofej { display:none; } }
+  .olinkek { border:1px solid var(--line); border-radius:8px; }
+  .olinkek .ol { display:flex; align-items:center; gap:12px; padding:10px 14px; flex-wrap:wrap; }
+  .olinkek .ol + .ol { border-top:1px solid var(--line); }
+  .olinkek .ol .n { font-weight:600; flex:1; min-width:140px; }
+  .olinkek .ol .s { color:var(--soft); font-size:.85rem; flex:2; min-width:200px; }
   .prog { display:flex; flex-direction:column; gap:8px; }
   .prog .pr { display:grid; grid-template-columns:200px 1fr 1fr 30px; gap:8px; align-items:center; }
   @media (max-width:700px) { .prog .pr { grid-template-columns:1fr 30px; } .prog .pr .cim, .prog .pr .megj { grid-column:1; } }
@@ -256,7 +301,7 @@
   .evbar label { font-size:.72rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--soft); }
   .evbar select { width:auto; min-width:220px; max-width:100%; font-weight:600; }
   .evbar .sp { flex:1; }
-  .tag.ok { background:#e6f4ec; color:var(--ok); }
+  .tag.ok { background:var(--ok-bg); color:var(--ok); }
   .evbar .nyk { display:inline-flex; align-items:center; gap:8px; font-size:.85rem; font-weight:500; }
   .fulvalaszto { display:flex; flex-wrap:wrap; gap:18px; margin-bottom:6px; }
   .linkszerk { display:flex; flex-direction:column; gap:8px; }
@@ -266,7 +311,7 @@
 </style>
 </head>
 <body>
-<header><h1>Admin</h1></header>
+<header><h1>Admin</h1><button type="button" class="tema" id="tema" title="Megjelenés: automatikus / sötét / világos"></button></header>
 
 <main>
   <!-- Belépés -->
@@ -304,6 +349,7 @@
       <button class="tab csakstaff" role="tab" data-tab="diviziok" aria-selected="false">Divíziók</button>
       <button class="tab csakstaff" role="tab" data-tab="helyszini" aria-selected="false">Helyszíni nevezés</button>
       <button class="tab csakstaff" role="tab" data-tab="esemeny" aria-selected="false">Esemény</button>
+      <button class="tab csakstaff" role="tab" data-tab="onkentes" aria-selected="false">Önkéntesek</button>
       <button class="tab csakstaff" role="tab" data-tab="naplo" aria-selected="false">Napló</button>
       <span class="sp"></span>
       <span class="tag gray" id="szerepTag"></span>
@@ -402,6 +448,7 @@
             <label class="chk"><input type="checkbox" id="hInaktiv"> Inaktív divíziók is</label>
           </div>
           <div id="hDivs"></div>
+          <div class="hkerd" id="hKerd"></div>
         </div>
         <div class="foot">
           <label class="chk"><input type="checkbox" id="hHozz"> A versenyző hozzájárult az adatkezeléshez</label>
@@ -439,6 +486,11 @@
         <div class="bar"><h2 class="sec">Ütemterv</h2><button class="btn ghost sm" id="pUj" type="button">+ Programpont</button></div>
         <div class="prog" id="pLista"></div>
         <datalist id="pJavaslat"></datalist>
+
+        <div class="bar"><h2 class="sec">Plusz kérdések a nevezésnél</h2><button class="btn ghost sm" id="kUj" type="button">+ Kérdés</button></div>
+        <div class="kszerk" id="kLista"></div>
+        <p class="hint" style="margin-top:6px">Pl. póló méret (választós: XS, S, M, L, XL), ételérzékenység (szöveg), vészhelyzeti kontakt (szöveg), „Először versenyzem” (igen/nem).
+          A válaszok a táblázat „Valaszok” lapjára kerülnek, és a Versenyzők fülön is látszanak. Kötelező igen/nem kérdést be kell jelölni a nevezéshez.</p>
 
         <div class="bar"><h2 class="sec">Nyilvános oldal fülei</h2></div>
         <div class="fulvalaszto">
@@ -486,9 +538,29 @@
           <svg class="i" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
         </button>
       </div>
+      <p class="msor" id="mSorAllapot" hidden></p>
       <div class="mstat" id="mStat" hidden><b id="mItt">0</b><span>/ <span id="mOssz">0</span> versenyző megérkezett</span><span class="sp"></span><span id="mFriss"></span></div>
       <div class="mheatek" id="mHeatek"></div>
       <p class="msg" id="msgM" role="status" style="padding:4px 24px 16px"></p>
+    </div>
+
+    <!-- ÖNKÉNTESEK – beosztás idősávonként, személyes linkkel -->
+    <div id="t-onkentes" hidden>
+      <div class="pad">
+        <div class="bar" style="margin-top:0"><h2 class="sec">Beosztás</h2><button class="btn ghost sm" id="oUj" type="button">+ Idősáv</button></div>
+        <div class="oszerk" id="oLista"></div>
+        <datalist id="oNevek"></datalist>
+        <datalist id="oFeladatok"><option value="Marshall"><option value="Check-in"><option value="Pult / nevezés"><option value="Fotós"><option value="Videós">
+          <option value="DJ"><option value="Pontozó app"><option value="Műsorvezető"><option value="Bírók kísérése"><option value="Büfé"></datalist>
+        <p class="hint" style="margin-top:8px">Egy sor = egy ember egy feladata egy idősávban. Ugyanaz az ember több sorban is szerepelhet.</p>
+        <div class="bar"><h2 class="sec">Személyes linkek</h2></div>
+        <div class="olinkek" id="oLinkek"></div>
+        <p class="hint" style="margin-top:8px">Mentés után mindenki saját linket kap: azon látja a beosztását, és hogy kikkel van együtt. A link addig marad ugyanaz, amíg a nevet nem írod át.</p>
+      </div>
+      <div class="foot">
+        <p class="msg" id="msgO" role="status"></p>
+        <button class="btn" id="oMent">Mentés</button>
+      </div>
     </div>
 
     <div id="t-naplo" hidden>
@@ -628,6 +700,25 @@ const ICO = {
   del:  '<svg class="i" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>',
   chev: '<svg class="i chev" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>'
 };
+// ---------- Megjelenés (automatikus / sötét / világos) ----------
+const TEMAK = [['', 'Automatikus', '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>'],
+               ['dark', 'Sötét', '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'],
+               ['light', 'Világos', '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>']];
+function temaRajz() {
+  const t = document.documentElement.dataset.theme || '';
+  const [, nev, ikon] = TEMAK.find(x => x[0] === t) || TEMAK[0];
+  $('tema').innerHTML = '<svg class="i" viewBox="0 0 24 24">' + ikon + '</svg>';
+  $('tema').append(nev);
+}
+$('tema').addEventListener('click', () => {
+  const t = document.documentElement.dataset.theme || '';
+  const uj = TEMAK[(TEMAK.findIndex(x => x[0] === t) + 1) % TEMAK.length][0];
+  if (uj) document.documentElement.dataset.theme = uj; else delete document.documentElement.dataset.theme;
+  try { if (uj) localStorage.setItem('adminTema', uj); else localStorage.removeItem('adminTema'); } catch {}
+  temaRajz();
+});
+temaRajz();
+
 let jelszo = '';
 let szerep = 'staff';     // staff | checkin
 let adminNev = '';
@@ -645,7 +736,7 @@ async function api(muvelet, extra = {}) {
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ muvelet, jelszo, szerep, ki: adminNev, ...(esemenyId ? { esemenyId } : {}), ...extra })
   })).json();
-  if (!v.ok) throw new Error(v.hiba || 'Ismeretlen hiba.');
+  if (!v.ok) { const e = new Error(v.hiba || 'Ismeretlen hiba.'); e.szerver = true; throw e; }   // a szerver utasította el (nem hálózati hiba)
   return v;
 }
 async function betolt() {
@@ -660,7 +751,7 @@ async function betolt() {
   rajzolMind(); rajzolEsemenySav();
 }
 function esemenyValt(id) {
-  esemenyId = id; evPiszkos = false; naplo = []; mAdat = null;
+  esemenyId = id; evPiszkos = false; oPiszkos = false; naplo = []; mAdat = null;
   try { sessionStorage.setItem('adminEsemeny', id); } catch {}
 }
 async function betoltEsemenyek() {
@@ -803,7 +894,110 @@ $('hozzTorol').addEventListener('click', async () => {
   catch (err) { msg('msgHozz', err.message || 'Hálózati hiba.'); }
 });
 
-function rajzolMind() { szamolHibak(); rajzolVersenyzok(); rajzolNevezesek(); rajzolDiviziok(); rajzolHelyszini(); rajzolEsemeny(); rajzolEredmenyAllapot(); }
+function rajzolMind() { szamolHibak(); rajzolVersenyzok(); rajzolNevezesek(); rajzolDiviziok(); rajzolHelyszini(); hKerdRajz(); rajzolEsemeny(); rajzolOnkentesek(); rajzolEredmenyAllapot(); }
+
+// ---------- Plusz kérdések a helyszíni nevezésnél (itt nem kötelezők) ----------
+let hKerdJel = '';
+function hKerdRajz(torol) {
+  const lista = (adat.esemeny && adat.esemeny.kerdesek) || [], jel = JSON.stringify(lista);
+  if (jel === hKerdJel && !torol) return;     // ne törölje a már beírt válaszokat
+  hKerdJel = jel;
+  const box = $('hKerd'); box.innerHTML = '';
+  lista.forEach((k, i) => {
+    const w = document.createElement('div'); w.dataset.cim = k.cim; w.dataset.tipus = k.tipus;
+    if (k.tipus === 'igen') {
+      const l = document.createElement('label'); l.className = 'chk'; l.style.marginTop = '26px';
+      const c = document.createElement('input'); c.type = 'checkbox'; l.append(c, ' ' + k.cim); w.append(l);
+    } else {
+      const l = document.createElement('label'); l.className = 'f'; l.htmlFor = 'hk' + i; l.textContent = k.cim;
+      let inp;
+      if (k.tipus === 'valaszt') { inp = document.createElement('select'); inp.append(new Option('—', '')); k.opciok.forEach(o => inp.append(new Option(o, o))); }
+      else { inp = document.createElement('input'); inp.type = 'text'; inp.maxLength = 200; }
+      inp.id = 'hk' + i; w.append(l, inp);
+    }
+    box.append(w);
+  });
+}
+function hKerdValaszok() {
+  const o = {};
+  $('hKerd').querySelectorAll('[data-cim]').forEach(w => { const i = w.querySelector('input, select'); o[w.dataset.cim] = w.dataset.tipus === 'igen' ? i.checked : i.value.trim(); });
+  return o;
+}
+
+// ======================================================================
+// ÖNKÉNTESEK – beosztás és személyes linkek
+// ======================================================================
+let oPiszkos = false;
+function onkentesSor(o = {}) {
+  const row = document.createElement('div'); row.className = 'or';
+  const mk = (tipus, ertek, ph, cimke, lista) => { const i = document.createElement('input'); i.type = tipus; i.value = ertek || ''; if (ph) i.placeholder = ph;
+    i.setAttribute('aria-label', cimke); if (lista) i.setAttribute('list', lista); return i; };
+  const del = document.createElement('button'); del.type = 'button'; del.className = 'ib del'; del.title = 'Sor törlése'; del.innerHTML = ICO.del;
+  del.addEventListener('click', () => { row.remove(); oPiszkos = true; });
+  row.append(mk('text', o.nev, 'Név', 'Név', 'oNevek'), mk('text', o.feladat, 'Feladat', 'Feladat', 'oFeladatok'),
+             mk('datetime-local', o.kezdes, '', 'Kezdés'), mk('datetime-local', o.vege, '', 'Vége'), mk('text', o.megj, 'Megjegyzés', 'Megjegyzés'), del);
+  return row;
+}
+function beosztasLink(kod) {
+  const u = new URL('./beosztas', location.href);
+  u.searchParams.set('e', (adat.esemeny && adat.esemeny.rovid) || esemenyId); u.searchParams.set('k', kod);
+  return u.href;
+}
+function rajzolOnkentesek() {
+  const lista = adat.onkentesek;
+  $('oMent').disabled = $('oUj').disabled = !lista;
+  if (!lista) { $('oLista').innerHTML = '<p class="hint" style="margin:0">Ehhez frissíteni kell a Google Scriptet.</p>'; $('oLinkek').innerHTML = ''; return; }
+  const nevek = $('oNevek'); nevek.innerHTML = '';
+  [...new Set(lista.map(o => o.nev))].forEach(n => nevek.append(new Option(n, n)));
+  if (!oPiszkos) {
+    const box = $('oLista'); box.innerHTML = '';
+    const fej = document.createElement('div'); fej.className = 'or ofej';
+    ['Név', 'Feladat', 'Kezdés', 'Vége', 'Megjegyzés', ''].forEach(t => fej.append(Object.assign(document.createElement('span'), { textContent: t })));
+    box.append(fej);
+    lista.forEach(o => box.append(onkentesSor(o)));
+    if (!lista.length) box.append(onkentesSor());
+  }
+  // személyes linkek: emberenként
+  const emberek = new Map();
+  lista.forEach(o => { if (!emberek.has(o.kod)) emberek.set(o.kod, { nev: o.nev, sorok: [] }); emberek.get(o.kod).sorok.push(o); });
+  const lb = $('oLinkek'); lb.innerHTML = '';
+  if (!emberek.size) { lb.innerHTML = '<p class="empty" style="padding:14px">Mentés után itt jelennek meg a linkek.</p>'; return; }
+  const fmtI = s => s ? s.slice(5, 10).replace('-', '.') + '. ' + s.slice(11, 16) : '';
+  emberek.forEach((e, kod) => {
+    const r = document.createElement('div'); r.className = 'ol';
+    const n = document.createElement('span'); n.className = 'n'; n.textContent = e.nev;
+    const sz = document.createElement('span'); sz.className = 's';
+    sz.textContent = e.sorok.map(o => o.feladat + ' ' + fmtI(o.kezdes) + (o.vege ? '–' + o.vege.slice(11, 16) : '')).join(' · ');
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ghost sm'; b.textContent = 'Link másolása';
+    b.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(beosztasLink(kod)); b.textContent = 'Kimásolva ✓'; } catch { prompt(e.nev + ' linkje:', beosztasLink(kod)); }
+      setTimeout(() => { b.textContent = 'Link másolása'; }, 2000);
+    });
+    const nyit = document.createElement('a'); nyit.className = 'btn ghost sm'; nyit.textContent = 'Megnyitás'; nyit.href = beosztasLink(kod); nyit.target = '_blank'; nyit.rel = 'noopener';
+    r.append(n, sz, b, nyit); lb.append(r);
+  });
+}
+$('oUj').addEventListener('click', () => {
+  const sorok = [...document.querySelectorAll('#oLista .or:not(.ofej)')];
+  const elozo = sorok.length ? sorok[sorok.length - 1].querySelectorAll('input') : null;
+  // az előző sor vége lesz az új kezdete (egymást követő idősávokhoz)
+  const r = onkentesSor(elozo ? { feladat: elozo[1].value, kezdes: elozo[3].value || elozo[2].value } : {});
+  $('oLista').append(r); r.querySelector('input').focus(); oPiszkos = true;
+});
+$('t-onkentes').addEventListener('input', () => { oPiszkos = true; });
+$('oMent').addEventListener('click', async () => {
+  const sorok = [...document.querySelectorAll('#oLista .or:not(.ofej)')].map(r => {
+    const [nev, feladat, kezdes, vege, megj] = [...r.querySelectorAll('input')].map(i => i.value.trim());
+    return { nev, feladat, kezdes, vege, megj };
+  }).filter(o => o.nev || o.feladat || o.kezdes);
+  $('oMent').disabled = true; msg('msgO', 'Mentés…', 'info');
+  try {
+    const v = await api('onkentesMentes', { sorok });
+    adat.onkentesek = v.onkentesek; oPiszkos = false; rajzolOnkentesek();
+    msg('msgO', 'Mentve. A személyes linkeket lent tudod kimásolni.', 'ok');
+  } catch (err) { msg('msgO', err.message || 'Hálózati hiba.'); }
+  finally { $('oMent').disabled = false; }
+});
 
 // ---------- Belépés ----------
 document.querySelectorAll('input[name=szerep]').forEach(r => r.addEventListener('change', () => {
@@ -844,7 +1038,7 @@ $('kilep').addEventListener('click', () => {
 // ---------- Fülek ----------
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
   document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x === t ? 'true' : 'false'));
-  ['versenyzok', 'marshalling', 'nevezesek', 'diviziok', 'helyszini', 'esemeny', 'naplo'].forEach(n => $('t-' + n).hidden = n !== t.dataset.tab);
+  ['versenyzok', 'marshalling', 'nevezesek', 'diviziok', 'helyszini', 'esemeny', 'onkentes', 'naplo'].forEach(n => $('t-' + n).hidden = n !== t.dataset.tab);
   if (t.dataset.tab === 'naplo') betoltNaplo();
   if (t.dataset.tab === 'marshalling') mBetolt();
 }));
@@ -853,22 +1047,76 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
 // MARSHALLING – felvonulás előtt: ki érkezett meg (fordulónként, bib szerint)
 // ======================================================================
 const M_TIPUS = { prelim: 'Selejtező', quarter: 'Negyeddöntő', semi: 'Elődöntő', final: 'Döntő' };
-let mAdat = null, mSzuro = 'mind', mFuggo = 0, mToltes = false;
+let mAdat = null, mSzuro = 'mind', mToltes = false, mKuldes = false, mOffline = false;
 let mKor = ''; try { mKor = sessionStorage.getItem('mKor') || ''; } catch {}
 
-async function mBetolt(csendes) {
-  if (mToltes || mFuggo) return;
-  mToltes = true;
-  if (!csendes) msg('msgM', 'Betöltés…', 'info');
+// Offline mód: a jelölések előbb a telefonon, egy helyi sorban gyűlnek, és amint van net, sorban feltöltődnek.
+// A legutóbbi futambeosztás is a telefonon marad, így térerő nélkül is látszik.
+const mHelyi = (n, ertek) => {
+  const k = 'marshall:' + n + ':' + (esemenyId || '-');
   try {
+    if (ertek === undefined) return JSON.parse(localStorage.getItem(k) || 'null');
+    if (ertek === null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(ertek));
+  } catch { return null; }
+};
+const mSor = () => mHelyi('sor') || [];
+// a szerver állapota + a még fel nem töltött helyi jelölések
+function mAlkalmaz(jelenlet) {
+  const j = JSON.parse(JSON.stringify(jelenlet || {}));
+  mSor().forEach(op => { const k = (j[op.kulcs] = j[op.kulcs] || {}); op.bibek.forEach(b => { if (op.ertek) k[b] = op.ido; else delete k[b]; }); });
+  return j;
+}
+function mAllapot() {
+  const db = mSor().length, el = $('mSorAllapot');
+  el.hidden = !db && !mOffline;
+  el.className = 'msor' + (mOffline ? ' off' : '');
+  el.textContent = mOffline ? (db ? '⚠ Nincs kapcsolat – ' + db + ' jelölés a telefonon vár, net esetén magától feltöltődik' : '⚠ Nincs kapcsolat – a mentett lista látszik')
+                            : '⏳ ' + db + ' jelölés feltöltése…';
+}
+
+async function mBetolt(csendes) {
+  if (mToltes) return;
+  mToltes = true;
+  if (!csendes && !mAdat) msg('msgM', 'Betöltés…', 'info');
+  try {
+    await mKuld();
     const v = await api('marshallLista');
-    if (mFuggo) return;          // közben jelöltek: a következő frissítés hozza
-    mAdat = v; mRajzol(); if (!csendes) msg('msgM');
-  } catch (err) { if (!csendes) msg('msgM', /Ismeretlen művelet/.test(err.message) ? 'Ehhez frissíteni kell a Google Scriptet.' : err.message || 'Hálózati hiba.'); }
-  finally { mToltes = false; }
+    mOffline = false;
+    mHelyi('adat', { diviziok: v.diviziok, frissitve: v.frissitve, jelenlet: v.jelenlet });
+    mAdat = Object.assign(v, { jelenlet: mAlkalmaz(v.jelenlet) });
+    mRajzol(); msg('msgM');
+  } catch (err) {
+    if (err.szerver) { if (!csendes) msg('msgM', /Ismeretlen művelet/.test(err.message) ? 'Ehhez frissíteni kell a Google Scriptet.' : err.message); }
+    else {
+      mOffline = true;
+      if (!mAdat) { const c = mHelyi('adat'); if (c) { mAdat = Object.assign(c, { jelenlet: mAlkalmaz(c.jelenlet) }); mRajzol(); } else msg('msgM', 'Nincs kapcsolat, és még nincs mentett lista ezen a telefonon.'); }
+    }
+  } finally { mToltes = false; mAllapot(); }
+}
+// Sorban feltölti a helyi jelöléseket; hálózati hibánál abbahagyja és később újrapróbálja
+async function mKuld() {
+  if (mKuldes) return;
+  mKuldes = true;
+  let utolso = null;
+  try {
+    let sor = mSor();
+    while (sor.length) {
+      const op = sor[0];
+      try { utolso = (await api('marshallAllit', { kulcs: op.kulcs, bibek: op.bibek, ertek: op.ertek, ido: op.ido })).jelenlet; mOffline = false; }
+      catch (err) {
+        if (!err.szerver) { mOffline = true; break; }
+        msg('msgM', 'Egy jelölést a szerver elutasított: ' + err.message);   // pl. lejárt jogosultság: eldobjuk
+      }
+      sor = mSor(); sor.shift(); mHelyi('sor', sor.length ? sor : null);
+      mAllapot();
+    }
+    if (!sor.length && utolso && mAdat) { mAdat.jelenlet = mAlkalmaz(utolso); mRajzol(); }
+  } finally { mKuldes = false; mAllapot(); }
 }
 // több marshall is dolgozhat egyszerre: nyitott fülnél 15 mp-enként frissít
 setInterval(() => { if (jelszo && !$('t-marshalling').hidden && !document.hidden) mBetolt(true); }, 15000);
+// a net visszatérésekor azonnal feltölti a sort
+window.addEventListener('online', () => { if (jelszo) mKuld().then(() => { if (!$('t-marshalling').hidden) mBetolt(true); }); });
 
 function mKorok() {
   const l = [];
@@ -954,24 +1202,16 @@ function mSzemely(bib, nev, itt, kiemel) {
   return b;
 }
 
-async function mJelol(bibek, ertek) {
+function mJelol(bibek, ertek) {
   if (!bibek.length || !mAdat) return;
-  const kulcs = mKor, jel = (mAdat.jelenlet = mAdat.jelenlet || {}), k = (jel[kulcs] = jel[kulcs] || {});
-  const elozo = Object.fromEntries(bibek.map(b => [b, k[b]]));
+  const kulcs = mKor;
   const most = new Date(), ido = most.getFullYear() + '-' + String(most.getMonth() + 1).padStart(2, '0') + '-' + String(most.getDate()).padStart(2, '0') + 'T' +
     String(most.getHours()).padStart(2, '0') + ':' + String(most.getMinutes()).padStart(2, '0');
+  const sor = mSor(); sor.push({ kulcs, bibek, ertek, ido }); mHelyi('sor', sor);
+  const k = ((mAdat.jelenlet = mAdat.jelenlet || {})[kulcs] = mAdat.jelenlet[kulcs] || {});
   bibek.forEach(b => { if (ertek) k[b] = ido; else delete k[b]; });   // azonnal látszik, a mentés a háttérben megy
-  mRajzol();
-  mFuggo++;
-  try {
-    const v = await api('marshallAllit', { kulcs, bibek, ertek });
-    if (mFuggo === 1) { mAdat.jelenlet = v.jelenlet; mRajzol(); }
-    msg('msgM');
-  } catch (err) {
-    bibek.forEach(b => { if (elozo[b]) k[b] = elozo[b]; else delete k[b]; });
-    mRajzol();
-    msg('msgM', 'Nem sikerült menteni: ' + (err.message || 'hálózati hiba') + '. Próbáld újra.');
-  } finally { mFuggo--; }
+  mRajzol(); mAllapot();
+  mKuld();
 }
 
 $('mKor').addEventListener('change', () => { mKor = $('mKor').value; try { sessionStorage.setItem('mKor', mKor); } catch {} $('mKer').value = ''; mRajzol(); });
@@ -1211,6 +1451,12 @@ function rajzolVersenyzok() {
       ops.append(dj);
     }
     el.append(nm, fin, dv, ops);
+    const va = (adat.valaszok || {})[p.regszam];
+    if (va && Object.keys(va).length) {
+      const vd = document.createElement('div'); vd.className = 'valasz';
+      Object.entries(va).forEach(([k, v], i) => { if (i) vd.append(' · '); const b = document.createElement('b'); b.textContent = v; vd.append(k + ': ', b); });
+      el.append(vd);
+    }
     box.append(el);
   });
 }
@@ -1636,7 +1882,7 @@ $('hKuld').addEventListener('click', async () => {
   $('hKuld').disabled = true; msg('msgH', 'Rögzítés…', 'info');
   try {
     const v = await api('kezi', { wsdc: $('hWsdc').value, keresztnev: kn, vezeteknev: vn,
-                                  bib: $('hBib').value.trim(), diviziok: Object.values(hValasztas),
+                                  bib: $('hBib').value.trim(), diviziok: Object.values(hValasztas), valaszok: hKerdValaszok(),
                                   hozzajarulas: $('hHozz').checked });
     $('hKeszNev').textContent = v.nev + (v.bib ? ' · Bib ' + v.bib : ' · függő');
     $('hReg').textContent = v.regszam;
@@ -1687,7 +1933,32 @@ function rajzolEsemeny() {
   $('lUj').disabled = !vanFul;
   const lb = $('lLista'); lb.innerHTML = '';
   (e.linkek || []).forEach(l => lb.append(linkSor(l)));
+  const kb = $('kLista'); kb.innerHTML = '';
+  $('kUj').disabled = !('kerdesek' in e);
+  (e.kerdesek || []).forEach(k => kb.append(kerdesSor(k)));
+  if (!(e.kerdesek || []).length) kb.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: 'Nincs plusz kérdés.', style: 'margin:0' }));
 }
+const K_TIPUS = [['szoveg', 'Szöveg'], ['valaszt', 'Választós'], ['igen', 'Igen/nem']];
+function kerdesSor(k = {}) {
+  const row = document.createElement('div'); row.className = 'kr';
+  const cim = document.createElement('input'); cim.type = 'text'; cim.value = k.cim || ''; cim.placeholder = 'Kérdés, pl. Póló méret'; cim.setAttribute('aria-label', 'Kérdés');
+  const tip = document.createElement('select'); tip.setAttribute('aria-label', 'Típus');
+  K_TIPUS.forEach(([v, t]) => tip.append(new Option(t, v))); tip.value = k.tipus || 'szoveg';
+  const opc = document.createElement('input'); opc.type = 'text'; opc.value = (k.opciok || []).join(', '); opc.placeholder = 'Lehetőségek vesszővel: S, M, L';
+  opc.setAttribute('aria-label', 'Lehetőségek');
+  const kot = document.createElement('label'); kot.className = 'chk';
+  const kc = document.createElement('input'); kc.type = 'checkbox'; kc.checked = !!k.kotelezo; kot.append(kc, ' Kötelező');
+  const del = document.createElement('button'); del.type = 'button'; del.className = 'ib del'; del.title = 'Kérdés törlése'; del.innerHTML = ICO.del;
+  del.addEventListener('click', () => { row.remove(); evPiszkos = true; });
+  const t = () => { opc.disabled = tip.value !== 'valaszt'; };
+  tip.addEventListener('change', t); t();
+  row.append(cim, tip, opc, kot, del);
+  return row;
+}
+$('kUj').addEventListener('click', () => {
+  const kb = $('kLista'); kb.querySelectorAll('p.hint').forEach(x => x.remove());
+  const r = kerdesSor(); kb.append(r); r.querySelector('input').focus(); evPiszkos = true;
+});
 function linkSor(l = {}) {
   const row = document.createElement('div'); row.className = 'lk';
   const ful = document.createElement('select'); ful.setAttribute('aria-label', 'Fül');
@@ -1718,6 +1989,11 @@ $('evMent').addEventListener('click', async () => {
   if (!$('evKezdes').disabled) Object.assign(esemeny, { kezdes: $('evKezdes').value, vege: $('evVege').value || $('evKezdes').value, kep: $('evKep').value.trim() });
   if (!$('evRovid').disabled) esemeny.rovid = $('evRovid').value.trim();
   if (!$('evAdatk').disabled) esemeny.adatkezeles = $('evAdatk').value.trim();
+  if (!$('kUj').disabled) esemeny.kerdesek = [...document.querySelectorAll('#kLista .kr')].map(r => {
+    const [cim, opc] = r.querySelectorAll('input[type=text]');
+    return { cim: cim.value.trim(), tipus: r.querySelector('select').value, opciok: opc.value.split(',').map(x => x.trim()).filter(Boolean),
+             kotelezo: r.querySelector('input[type=checkbox]').checked };
+  }).filter(k => k.cim);
   if (!$('fulNevezes').disabled) {
     ['fulNevezes', 'fulMarshalling', 'fulEredmeny'].forEach(k => { esemeny[k] = $(k).checked; });
     esemeny.linkek = [...document.querySelectorAll('#lLista .lk')].map(r => {
@@ -1869,7 +2145,7 @@ $('nFrissit').addEventListener('click', betoltNaplo);
 
 $('hUj').addEventListener('click', () => {
   $('hWsdc').value = $('hKn').value = $('hVn').value = $('hBib').value = '';
-  $('hHozz').checked = false;
+  $('hHozz').checked = false; hKerdRajz(true);
   hValasztas = {}; hJogosult = null; msg('hInfo', '', 'info');
   $('hKesz').hidden = true; $('hForm').hidden = false;
   rajzolHelyszini();

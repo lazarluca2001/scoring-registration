@@ -14,6 +14,7 @@ exportált fájlt pedig a **Scoring_Judging** pontozó app közvetlenül be tudj
 | `index.html` | főoldal: az események kártyái ([link](https://lazarluca2001.github.io/scoring-registration/)); `?korabbi=1` a korábbi események, `?q=…` keresés |
 | `nevezes?e=teca2027` | egy esemény nevezési oldala: űrlap, határidő, menetrend |
 | `nevezesem?e=teca2027` | a versenyző saját nevezése: megtekintés és lemondás a regisztrációs kóddal |
+| `beosztas?e=teca2027&k=…` | egy önkéntes saját beosztása (személyes link az adminból) |
 | `listak?e=teca2027&r=novice-1` | bevonuló párok futamonként (`r` = divízió és forduló) |
 | `eredmenyek?e=teca2027&r=newcomer-2` | a fordulók eredménye |
 | `admin.html` | szervezőknek, jelszóval ([link](https://lazarluca2001.github.io/scoring-registration/admin.html)) |
@@ -42,6 +43,8 @@ alatta a Nevezés / Listák / Eredmények fülek. A közös stílus és kód az 
 - **Regisztrációs kód**: a nevezés után 3 karakteres kód (pl. `K7M`) és egy kép a kóddal, névvel és divíziókkal.
   A „Kép mentése” gomb Androidon letölti a galéria Download albumába, iPhone-on a „Kép mentése” menüponttal a Fotókba kerül.
   A versenyző ezt a képet mutatja meg a helyszíni regisztrációnál.
+- **Plusz kérdések**: az admin által megadott további kérdések a divízióválasztás alatt (szöveg, választós vagy igen/nem,
+  kötelező is lehet), pl. póló méret, ételérzékenység, vészhelyzeti kontakt. A válaszok a táblázat „Valaszok” lapjára kerülnek.
 - **Adatkezelési hozzájárulás**: a nevezés csak a hozzájárulás bejelölésével küldhető el; az időpontja a táblázat
   „Hozzájárulás” oszlopába kerül. Az adatkezelési tájékoztató linkje az admin Esemény fülén adható meg.
 - **Nevezésem** (`nevezesem?e=…`): a regisztrációs kóddal és a vezetéknévvel a versenyző megnézheti a nevezéseit
@@ -50,6 +53,8 @@ alatta a Nevezés / Listák / Eredmények fülek. A közös stílus és kód az 
   A hibás próbálkozások száma korlátozott.
 
 ### Admin panel
+
+Az admin felület követi a rendszer sötét / világos beállítását; a jobb felső gombbal kézzel is váltható (Automatikus / Sötét / Világos).
 
 Belépéskor kétféle hozzáférés közül választhatsz, mindkettőhöz külön jelszó tartozik. A név megadása nem kötelező, de az kerül a naplóba.
 
@@ -70,11 +75,12 @@ Minden eseménynek saját táblázata van ugyanabban a Drive mappában.
 | Fül | Funkciók |
 |---|---|
 | **Versenyzők** | Véglegesítés bib számmal (a következő szabad bibet javasolja, foglalt vagy nem szám bibre figyelmeztet). Check-in („Megérkezett”), befizetett összeg (egy kattintással a nevezési díj). Szűrők: függő / végleges, megérkezett / nem, fizetett / nem. Összesítő: függők, véglegesek, megérkezettek, befizetett összeg. Keresés névre, WSDC ID-ra, regisztrációs kódra, bibre. |
-| **Marshalling** | Felvonulás előtt: divízió és forduló kiválasztása, a futamok párjai (Leader / Follower), egy koppintással pipálható, ki érkezett meg; „Mind itt” futamonként, „Hiányzók” szűrő, keresés bibre vagy névre, futamonkénti és összesített számláló. A pontozó app feltöltött futambeosztásából dolgozik; több marshall is használhatja egyszerre (15 másodpercenként frissül). A check-in jogosultság is eléri. |
+| **Marshalling** | Felvonulás előtt: divízió és forduló kiválasztása, a futamok párjai (Leader / Follower), egy koppintással pipálható, ki érkezett meg; „Mind itt” futamonként, „Hiányzók” szűrő, keresés bibre vagy névre, futamonkénti és összesített számláló. A pontozó app feltöltött futambeosztásából dolgozik; több marshall is használhatja egyszerre (15 másodpercenként frissül). A check-in jogosultság is eléri. **Offline is működik**: térerő nélkül a jelölések a telefonon gyűlnek, és amint van net, maguktól feltöltődnek (a koppintás idejével). |
 | **Nevezések** | Divíziónként csoportosítva, szerkesztés és törlés. Hibák pirossal: nem szám bib, ugyanaz a bib két versenyzőnél, hiányzó szerep, dupla nevezés („Csak hibásak” szűrő). Export CSV és XLSX formátumban a pontozó appnak, szűrhető a véglegesítettekre és a verseny napján a megérkezettekre. |
 | **Divíziók** | Létszám divíziónként (Leader / Follower, függők, eltérés). Divíziónként egy kapcsoló (a Leader és Follower változat együtt), létszámkorlát szerepenként. |
 | **Helyszíni nevezés** | Nevezés a helyszínen bármely divízióba (a betelt divízióba is), bib megadásával azonnal véglegesít. A versenyző hozzájárulását be kell jelölni. |
-| **Esemény** | Az esemény neve, első és utolsó napja, helyszíne, borítóképe, adatkezelési tájékoztatója, nevezési díja, határideje és az ütemterv. A nyilvános oldal gombjai (Nevezés, Listák, Eredmények), linkek, és a **pontozó app XLSX exportjának feltöltése** (futambeosztás és eredmények). |
+| **Esemény** | Az esemény neve, első és utolsó napja, helyszíne, borítóképe, adatkezelési tájékoztatója, nevezési díja, határideje, az ütemterv és a **plusz kérdések** a nevezéshez. A nyilvános oldal gombjai (Nevezés, Listák, Eredmények), linkek, és a **pontozó app XLSX exportjának feltöltése** (futambeosztás és eredmények). |
+| **Önkéntesek** | Beosztás idősávonként (név, feladat, kezdés, vége, megjegyzés). Mentés után mindenki saját linket kap, amin a beosztását látja („most” / „következő” jelöléssel), és hogy kikkel van együtt. |
 | **Napló** | Minden módosítás: ki, mikor, mit csinált (véglegesítés, check-in, befizetés, szerkesztés, törlés, beállítások). |
 
 ### Export a pontozó appnak
@@ -118,6 +124,7 @@ Sheet, and the exported file can be loaded directly into the **Scoring_Judging**
 | `index.html` | home page: the event cards ([link](https://lazarluca2001.github.io/scoring-registration/)); `?korabbi=1` past events, `?q=…` search |
 | `nevezes?e=teca2027` | an event's registration page: form, deadline, schedule |
 | `nevezesem?e=teca2027` | the competitor's own registration: view and cancel with the registration code |
+| `beosztas?e=teca2027&k=…` | a volunteer's own schedule (personal link from the admin) |
 | `listak?e=teca2027&r=novice-1` | walk-in pairs per heat (`r` = division and round) |
 | `eredmenyek?e=teca2027&r=newcomer-2` | round results |
 | `admin.html` | for organizers, with password ([link](https://lazarluca2001.github.io/scoring-registration/admin.html)) |
@@ -148,6 +155,8 @@ The user interface is in Hungarian.
 - **Registration code**: after registering, a 3-character code (e.g. `K7M`) and an image with the code, name and divisions.
   "Save image" downloads it to the gallery's Download album on Android; on iPhone it opens the system menu, where
   "Save Image" puts it in Photos. Competitors show this image at check-in.
+- **Extra questions**: additional questions set by the admin below the division choice (text, choice or yes/no, optionally
+  required), e.g. T-shirt size, food allergies, emergency contact. Answers go to the sheet's "Valaszok" tab.
 - **Privacy consent**: the form can only be sent with the consent box ticked; the time of consent is stored in the
   sheet's "Hozzájárulás" column. The privacy notice link is set on the admin Event tab.
 - **My registration** (`nevezesem?e=…`): with the registration code and last name, competitors can see their entries
@@ -156,6 +165,8 @@ The user interface is in Hungarian.
   Failed attempts are rate-limited.
 
 ### Admin panel
+
+The admin follows the system's dark / light setting; the button at the top right switches it manually (Automatic / Dark / Light).
 
 At sign-in you choose between two access levels, each with its own password. Entering a name is optional; it is recorded in the log.
 
@@ -176,11 +187,12 @@ Each event has its own spreadsheet in the same Drive folder.
 | Tab | Features |
 |---|---|
 | **Versenyzők** (Competitors) | Confirm with a bib number (suggests the next free bib, warns about taken or non-numeric bibs). Check-in, amount paid (one click for the entry fee). Filters: pending / confirmed, arrived / not, paid / not. Totals: pending, confirmed, arrived, amount paid. Search by name, WSDC ID, registration code or bib. |
-| **Marshalling** | Before the walk-on: pick division and round, see each heat's couples (Leader / Follower) and tick who has arrived with one tap; "Mind itt" (all here) per heat, "Hiányzók" (missing) filter, search by bib or name, counters per heat and in total. Uses the heats uploaded from the scoring app; several marshals can use it at once (refreshes every 15 seconds). Check-in users can use it too. |
+| **Marshalling** | Before the walk-on: pick division and round, see each heat's couples (Leader / Follower) and tick who has arrived with one tap; "Mind itt" (all here) per heat, "Hiányzók" (missing) filter, search by bib or name, counters per heat and in total. Uses the heats uploaded from the scoring app; several marshals can use it at once (refreshes every 15 seconds). Check-in users can use it too. **Works offline**: without signal, ticks are kept on the phone and uploaded automatically once the connection is back (with the time of the tap). |
 | **Nevezések** (Registrations) | Grouped by division, edit and delete. Errors highlighted in red: non-numeric bib, same bib for two competitors, missing role, duplicate entry ("errors only" filter). Export to CSV and XLSX for the scoring app, filtered to confirmed and, on competition day, to arrived competitors. |
 | **Divíziók** (Divisions) | Head count per division (Leader / Follower, pending, difference). One switch per division (Leader and Follower together), entry limit per role. |
 | **Helyszíni nevezés** (On-site registration) | Register on site into any division (full ones too); entering a bib confirms immediately. The competitor's consent must be ticked. |
-| **Esemény** (Event) | Event name, first and last day, venue, cover image, privacy notice link, entry fee, deadline and schedule. The public page buttons (Registration, Lists, Results), links, and **upload of the scoring app's XLSX export** (heats and results). |
+| **Esemény** (Event) | Event name, first and last day, venue, cover image, privacy notice link, entry fee, deadline, schedule and the **extra questions** for registration. The public page buttons (Registration, Lists, Results), links, and **upload of the scoring app's XLSX export** (heats and results). |
+| **Önkéntesek** (Volunteers) | Shifts per time slot (name, task, start, end, note). After saving, everyone gets a personal link showing their shifts ("now" / "next") and who they work with. |
 | **Napló** (Log) | Every change: who did what and when (confirmations, check-in, payments, edits, deletions, settings). |
 
 ### Export for the scoring app

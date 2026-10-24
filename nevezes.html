@@ -70,6 +70,7 @@
       <div class="body">
         <p class="who"><b id="whoNev"></b><span id="whoId"></span></p>
         <div id="divlist"></div>
+        <div class="kerd" id="kerdesek" hidden></div>
         <label class="chk hozz"><input type="checkbox" id="hozz">
           <span>Elfogadom az <span id="hozzTaj">adatkezelési tájékoztatót</span>, és hozzájárulok, hogy a szervezők a nevemet,
           WSDC azonosítómat és nevezésemet a verseny lebonyolításához kezeljék, és a rajt- és eredménylistákon közzétegyék.</span></label>
@@ -238,8 +239,50 @@ function mutat2() {
     });
     g.append(h2, rows); box.append(g);
   });
+  kerdesRajz();
   frissit();
   lepes(2);
+}
+
+// ---------- Plusz kérdések (az admin Esemény fülén állíthatók) ----------
+function kerdesRajz() {
+  const box = $('kerdesek'), lista = (esemeny && esemeny.kerdesek) || [];
+  const regi = kerdesValaszok();
+  box.innerHTML = ''; box.hidden = !lista.length;
+  if (!lista.length) return;
+  box.append(Object.assign(document.createElement('h2'), { textContent: 'További adatok' }));
+  lista.forEach((k, i) => {
+    const w = document.createElement('div'); w.className = 'k'; w.dataset.cim = k.cim; w.dataset.tipus = k.tipus;
+    const id = 'kerd' + i;
+    if (k.tipus === 'igen') {
+      const l = document.createElement('label'); l.className = 'chk';
+      const c = document.createElement('input'); c.type = 'checkbox'; c.id = id; c.checked = regi[k.cim] === true;
+      l.append(c, ' ' + k.cim + (k.kotelezo ? ' *' : '')); w.append(l);
+    } else {
+      const l = document.createElement('label'); l.className = 'f'; l.htmlFor = id; l.textContent = k.cim + (k.kotelezo ? ' *' : '');
+      let inp;
+      if (k.tipus === 'valaszt') {
+        inp = document.createElement('select');
+        inp.append(new Option('Válassz…', ''));
+        k.opciok.forEach(o => inp.append(new Option(o, o)));
+      } else { inp = document.createElement('input'); inp.type = 'text'; inp.maxLength = 200; }
+      inp.id = id; inp.value = regi[k.cim] || '';
+      w.append(l, inp);
+    }
+    box.append(w);
+  });
+}
+function kerdesValaszok() {
+  const o = {};
+  $('kerdesek').querySelectorAll('.k').forEach(w => {
+    const inp = w.querySelector('input, select');
+    o[w.dataset.cim] = w.dataset.tipus === 'igen' ? inp.checked : inp.value.trim();
+  });
+  return o;
+}
+function kerdesHiany() {
+  const v = kerdesValaszok();
+  return ((esemeny && esemeny.kerdesek) || []).find(k => k.kotelezo && (k.tipus === 'igen' ? v[k.cim] !== true : !v[k.cim]));
 }
 
 function kivalasztott() { return Object.values(valasztas).filter(Boolean); }
@@ -264,13 +307,15 @@ $('vissza').addEventListener('click', () => { msg('msg2'); lepes(1); });
 $('kuld').addEventListener('click', async () => {
   if ($('web').value) return; // spam-csapda
   const diviziok = kivalasztott();
+  const hiany = kerdesHiany();
+  if (hiany) { msg('msg2', (hiany.tipus === 'igen' ? 'Ezt be kell jelölnöd: ' : 'Válaszolj erre a kérdésre: ') + hiany.cim); const w = [...$('kerdesek').querySelectorAll('.k')].find(x => x.dataset.cim === hiany.cim); if (w) w.querySelector('input, select').focus(); return; }
   if (!$('hozz').checked) return msg('msg2', 'A nevezéshez fogadd el az adatkezelési tájékoztatót.');
   $('kuld').disabled = true; msg('msg2', 'Küldés…', true);
   try {
     const v = await (await fetch(SCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ wsdc: adat.wsdc, keresztnev: adat.keresztnev, vezeteknev: adat.vezeteknev, diviziok, hozzajarulas: true,
+      body: JSON.stringify({ wsdc: adat.wsdc, keresztnev: adat.keresztnev, vezeteknev: adat.vezeteknev, diviziok, hozzajarulas: true, valaszok: kerdesValaszok(),
                              ...(esemenyId ? { esemenyId } : {}) })
     })).json();
     if (!v.ok) { frissit(); return msg('msg2', v.hiba); }

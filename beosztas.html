@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Beosztásom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/stilus.css">
+</head>
+<body>
+<header>
+  <h1 id="cim">Beosztásom</h1>
+  <p class="sub" id="alcim" hidden></p>
+</header>
+
+<main>
+  <div class="card valassz" id="uzenet" hidden></div>
+  <section class="card ev" id="beo" hidden>
+    <div class="ev-dl">
+      <div><div class="l">Önkéntes</div><div class="d" id="nev"></div></div>
+      <span class="pill" id="osszes"></span>
+    </div>
+    <div class="ev-prog beo" id="lista"></div>
+  </section>
+  <p class="lablink" id="frissLink" hidden>A beosztás változhat – <a href="" id="ujra">frissítés</a></p>
+</main>
+
+<script src="assets/kozos.js"></script>
+<script>
+navRajzol('');
+const kod = (PARAM.get('k') || '').trim();
+
+function rajzol(v) {
+  const e = v.esemeny || {};
+  $('cim').textContent = 'Beosztásom';
+  document.title = 'Beosztás – ' + (e.nev || VERSENY_NEV);
+  const al = [e.nev, idoszak(e) || e.datum, e.helyszin].filter(Boolean).join(' · ');
+  $('alcim').textContent = al; $('alcim').hidden = !al;
+  $('nev').textContent = v.nev;
+  $('osszes').textContent = v.sorok.length + ' idősáv';
+  const most = new Date();
+  const sorok = v.sorok.map(s => ({ ...s, k: helyi(s.kezdes), v: s.vege ? helyi(s.vege) : null })).sort((a, b) => a.k - b.k);
+  const kovI = sorok.findIndex(s => s.k > most);
+  const box = $('lista'); box.innerHTML = '';
+  let nap = '', ol = null;
+  sorok.forEach((s, i) => {
+    const n = s.k.toDateString();
+    if (n !== nap) { nap = n; box.append(el('h2', '', nagy(fmtNap.format(s.k)))); ol = document.createElement('ol'); box.append(ol); }
+    const li = document.createElement('li');
+    const vege = s.v || new Date(s.k.getTime() + 3600e3);
+    if (vege < most) li.className = 'mult';
+    li.append(el('span', 't', fmtOra.format(s.k) + (s.v ? '–' + fmtOra.format(s.v) : '')));
+    const c = el('span', 'c', s.feladat);
+    if (s.megj) c.append(el('span', 'm', s.megj));
+    if (s.tarsak && s.tarsak.length) c.append(el('span', 'm', 'Veled: ' + s.tarsak.join(', ')));
+    li.append(c);
+    if (s.k <= most && most < vege) li.append(el('span', 'tag', 'most'));
+    else if (i === kovI) li.append(el('span', 'tag kov', 'következő'));
+    else li.append(el('span'));
+    ol.append(li);
+  });
+  $('beo').hidden = false; $('frissLink').hidden = false;
+}
+
+(async () => {
+  $('ujra').href = location.href;
+  if (!kod) { uzenet('Hiányzik a beosztás kódja a linkből. Kérd el a szervezőktől a saját linkedet.'); return; }
+  let v;
+  try { v = await jsonGet({ beosztas: kod }); } catch { v = { ok: false, hiba: 'Hálózati hiba, próbáld újra később.' }; }
+  if (!v.ok) { uzenet(v.hiba || 'A beosztás nem érhető el.'); return; }
+  rajzol(v);
+  setInterval(() => rajzol(v), 60000);   // a „most” / „következő” jelölés frissüljön
+})();
+</script>
+</body>
+</html>

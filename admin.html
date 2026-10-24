@@ -64,6 +64,42 @@
   .szerep input:checked + span { border-color:var(--accent); background:var(--sel); box-shadow:0 0 0 1px var(--accent); }
   .szerep input:focus-visible + span { outline:2px solid var(--accent); outline-offset:2px; }
   body.checkin .csakstaff { display:none !important; }
+  /* Marshalling */
+  .mstat { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; padding:12px 24px; color:var(--soft); font-size:.9rem; border-bottom:1px solid var(--line); }
+  .mstat b { color:var(--ink); font-size:1.15rem; font-variant-numeric:tabular-nums; }
+  .mstat .sp { flex:1; }
+  .mheatek { padding:16px 24px 8px; display:grid; gap:16px; }
+  .mheat { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .mheat > .mhfej { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--zebra); border-bottom:1px solid var(--line); }
+  .mheat h3 { font-size:.95rem; font-weight:600; flex:1; }
+  .mheat h3 small { color:var(--soft); font-weight:400; margin-left:4px; }
+  .mheat .mdb { font-weight:600; font-variant-numeric:tabular-nums; font-size:.82rem; padding:2px 9px; border-radius:999px; background:#fff4e0; color:#b45309; }
+  .mheat.teljes .mdb { background:#e6f4ec; color:var(--ok); }
+  .mfej, .mpar { display:grid; grid-template-columns:28px 1fr 1fr; gap:8px; padding:8px 14px; }
+  .mfej { padding-bottom:0; font-size:.7rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--soft); }
+  .mpar + .mpar { border-top:1px solid var(--line); }
+  .mn { color:var(--soft); font-size:.8rem; align-self:center; text-align:center; font-variant-numeric:tabular-nums; }
+  .mszem { display:flex; align-items:center; gap:10px; min-width:0; min-height:50px; text-align:left; border:1px solid var(--line); border-radius:8px;
+           background:var(--card); padding:8px 12px; font:inherit; font-size:.9rem; color:var(--ink); cursor:pointer; transition:background .12s, border-color .12s; }
+  .mszem::before { content:''; width:22px; height:22px; border-radius:6px; border:2px solid var(--line); flex:none; display:grid; place-items:center;
+                   font-size:.8rem; font-weight:700; color:#fff; }
+  .mszem:hover { border-color:var(--accent); }
+  .mszem.on { background:#e6f4ec; border-color:#9ad3ae; }
+  .mszem.on::before { content:'✓'; background:var(--ok); border-color:var(--ok); }
+  .mszem .mt { min-width:0; display:flex; flex-direction:column; line-height:1.25; }
+  .mszem b { font-variant-numeric:tabular-nums; }
+  .mszem .nv { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #szerepTag { white-space:nowrap; }
+  .mszem .ido { color:var(--soft); font-size:.72rem; }
+  .mszem.ures { visibility:hidden; }
+  .mszem.talalat { box-shadow:0 0 0 2px var(--accent); }
+  @media (max-width:600px) {
+    .mheatek { padding:12px 12px 4px; } .mstat { padding:10px 16px; }
+    .mfej, .mpar { grid-template-columns:20px 1fr 1fr; gap:6px; padding:8px 10px; }
+    .mszem { padding:8px; gap:7px; font-size:.84rem; } .mszem::before { width:20px; height:20px; }
+    .mszem .nv { white-space:normal; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; }
+    .mszem .nv b { display:block; }
+  }
   .bibro { font-weight:600; font-variant-numeric:tabular-nums; }
   .bibro.nincs { color:var(--soft); font-weight:400; }
   /* Új esemény párbeszéd */
@@ -238,7 +274,7 @@
     <form class="pad" id="loginForm">
       <div class="szerep" role="radiogroup" aria-label="Bejelentkezés módja">
         <label><input type="radio" name="szerep" value="staff" checked><span><b>Staff</b><small>teljes hozzáférés</small></span></label>
-        <label><input type="radio" name="szerep" value="checkin"><span><b>Check-in</b><small>érkeztetés, befizetés</small></span></label>
+        <label><input type="radio" name="szerep" value="checkin"><span><b>Check-in</b><small>érkeztetés, marshalling</small></span></label>
       </div>
       <label class="f" for="jelszo" id="jelszoCimke">Staff jelszó</label>
       <input type="password" id="jelszo" autocomplete="current-password" required>
@@ -263,6 +299,7 @@
     </div>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="versenyzok" aria-selected="true">Versenyzők</button>
+      <button class="tab" role="tab" data-tab="marshalling" aria-selected="false">Marshalling</button>
       <button class="tab csakstaff" role="tab" data-tab="nevezesek" aria-selected="false">Nevezések</button>
       <button class="tab csakstaff" role="tab" data-tab="diviziok" aria-selected="false">Divíziók</button>
       <button class="tab csakstaff" role="tab" data-tab="helyszini" aria-selected="false">Helyszíni nevezés</button>
@@ -436,6 +473,24 @@
     </div>
 
     <!-- NAPLÓ -->
+    <!-- MARSHALLING – ki érkezett meg a felvonuláshoz -->
+    <div id="t-marshalling" hidden>
+      <div class="fbar">
+        <select id="mKor" class="grow" aria-label="Divízió és forduló"></select>
+        <input type="search" id="mKer" placeholder="Bib vagy név" style="width:170px">
+        <div class="filt" id="mFilt">
+          <button data-f="mind" aria-pressed="true">Mind</button>
+          <button data-f="hiany" aria-pressed="false">Hiányzók</button>
+        </div>
+        <button class="btn ghost" id="mFrissit" title="Frissítés" aria-label="Frissítés">
+          <svg class="i" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
+        </button>
+      </div>
+      <div class="mstat" id="mStat" hidden><b id="mItt">0</b><span>/ <span id="mOssz">0</span> versenyző megérkezett</span><span class="sp"></span><span id="mFriss"></span></div>
+      <div class="mheatek" id="mHeatek"></div>
+      <p class="msg" id="msgM" role="status" style="padding:4px 24px 16px"></p>
+    </div>
+
     <div id="t-naplo" hidden>
       <div class="tools">
         <input type="search" id="nKer" class="grow" placeholder="Keresés a naplóban: név, művelet, reg. szám…">
@@ -514,7 +569,7 @@
     <div class="pad">
       <div class="teendo" style="padding:4px 0">
         <p style="padding:8px 14px"><b>Staff</b> – minden fül és beállítás, minden eseménynél. A staff jelszót az Apps Scriptben a <code>jelszoBeallitas</code> függvénnyel lehet megváltoztatni.</p>
-        <p style="padding:8px 14px;border-top:1px solid var(--line)"><b>Check-in</b> – csak a Versenyzők fül: keresés, „Megérkezett”, befizetés. Nem véglegesíthet, nem szerkeszthet és nem törölhet, a beállításokat nem látja. A jelszó minden eseménynél érvényes.</p>
+        <p style="padding:8px 14px;border-top:1px solid var(--line)"><b>Check-in</b> – csak a Versenyzők fül (keresés, „Megérkezett”, befizetés) és a Marshalling fül. Nem véglegesíthet, nem szerkeszthet és nem törölhet, a beállításokat nem látja. A jelszó minden eseménynél érvényes.</p>
       </div>
       <p>Check-in jelszó: <b id="hozzAllapot"></b></p>
       <div><label class="f" for="hozzJelszo">Új check-in jelszó</label><input type="text" id="hozzJelszo" autocomplete="off" placeholder="legalább 6 karakter"></div>
@@ -605,7 +660,7 @@ async function betolt() {
   rajzolMind(); rajzolEsemenySav();
 }
 function esemenyValt(id) {
-  esemenyId = id; evPiszkos = false; naplo = [];
+  esemenyId = id; evPiszkos = false; naplo = []; mAdat = null;
   try { sessionStorage.setItem('adminEsemeny', id); } catch {}
 }
 async function betoltEsemenyek() {
@@ -641,7 +696,7 @@ $('evLink').addEventListener('click', async () => {
 $('evValaszt').addEventListener('change', async () => {
   esemenyValt($('evValaszt').value);
   msg('msgV', 'Betöltés…', 'info');
-  try { await betolt(); msg('msgV'); if (!$('t-naplo').hidden) betoltNaplo(); }
+  try { await betolt(); msg('msgV'); if (!$('t-naplo').hidden) betoltNaplo(); if (!$('t-marshalling').hidden) mBetolt(); }
   catch (err) { msg('msgV', err.message || 'Hálózati hiba.'); }
 });
 // ---------- Új esemény ----------
@@ -789,9 +844,144 @@ $('kilep').addEventListener('click', () => {
 // ---------- Fülek ----------
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
   document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x === t ? 'true' : 'false'));
-  ['versenyzok', 'nevezesek', 'diviziok', 'helyszini', 'esemeny', 'naplo'].forEach(n => $('t-' + n).hidden = n !== t.dataset.tab);
+  ['versenyzok', 'marshalling', 'nevezesek', 'diviziok', 'helyszini', 'esemeny', 'naplo'].forEach(n => $('t-' + n).hidden = n !== t.dataset.tab);
   if (t.dataset.tab === 'naplo') betoltNaplo();
+  if (t.dataset.tab === 'marshalling') mBetolt();
 }));
+
+// ======================================================================
+// MARSHALLING – felvonulás előtt: ki érkezett meg (fordulónként, bib szerint)
+// ======================================================================
+const M_TIPUS = { prelim: 'Selejtező', quarter: 'Negyeddöntő', semi: 'Elődöntő', final: 'Döntő' };
+let mAdat = null, mSzuro = 'mind', mFuggo = 0, mToltes = false;
+let mKor = ''; try { mKor = sessionStorage.getItem('mKor') || ''; } catch {}
+
+async function mBetolt(csendes) {
+  if (mToltes || mFuggo) return;
+  mToltes = true;
+  if (!csendes) msg('msgM', 'Betöltés…', 'info');
+  try {
+    const v = await api('marshallLista');
+    if (mFuggo) return;          // közben jelöltek: a következő frissítés hozza
+    mAdat = v; mRajzol(); if (!csendes) msg('msgM');
+  } catch (err) { if (!csendes) msg('msgM', /Ismeretlen művelet/.test(err.message) ? 'Ehhez frissíteni kell a Google Scriptet.' : err.message || 'Hálózati hiba.'); }
+  finally { mToltes = false; }
+}
+// több marshall is dolgozhat egyszerre: nyitott fülnél 15 mp-enként frissít
+setInterval(() => { if (jelszo && !$('t-marshalling').hidden && !document.hidden) mBetolt(true); }, 15000);
+
+function mKorok() {
+  const l = [];
+  Object.entries((mAdat && mAdat.diviziok) || {}).forEach(([div, lista]) => lista.forEach(m => {
+    const futamok = m.futamok && m.futamok.length ? m.futamok : (m.parok && m.parok.length ? [m.parok] : []);
+    if (futamok.length) l.push({ kulcs: div + '|' + m.sorszam, cim: div + ' – ' + (M_TIPUS[m.tipus] || m.sorszam + '. forduló'), futamok, dontos: !(m.futamok && m.futamok.length) });
+  }));
+  return l;
+}
+
+function mRajzol() {
+  const korok = mKorok(), sel = $('mKor'), box = $('mHeatek');
+  sel.innerHTML = ''; box.innerHTML = '';
+  korok.forEach(k => { const o = document.createElement('option'); o.value = k.kulcs; o.textContent = k.cim; sel.append(o); });
+  sel.hidden = !korok.length;
+  if (!korok.length) {
+    $('mStat').hidden = true;
+    box.innerHTML = '<p class="empty">Még nincs futambeosztás. ' + (szerep === 'checkin' ? 'A staff tölti fel a pontozó app exportjából.' : 'Töltsd fel a pontozó app exportját az Esemény fülön.') + '</p>';
+    return;
+  }
+  if (!korok.some(k => k.kulcs === mKor)) mKor = korok[0].kulcs;
+  sel.value = mKor;
+  const kor = korok.find(k => k.kulcs === mKor);
+  const itt = (mAdat.jelenlet || {})[mKor] || {};
+  const q = $('mKer').value.trim().toLowerCase().replace(/^#/, '');
+  const talal = (b, n) => !!q && (String(b) === q || String(n || '').toLowerCase().includes(q));
+
+  const mindenki = new Set();
+  kor.futamok.forEach(f => f.forEach(p => { if (p.lb) mindenki.add(String(p.lb)); if (p.fb) mindenki.add(String(p.fb)); }));
+  $('mItt').textContent = [...mindenki].filter(b => itt[b]).length;
+  $('mOssz').textContent = mindenki.size;
+  $('mFriss').textContent = mAdat.frissitve ? 'Futambeosztás: ' + mAdat.frissitve.replace('T', ' ') : '';
+  $('mStat').hidden = false;
+
+  let latszik = 0;
+  kor.futamok.forEach((f, i) => {
+    const bibek = [...new Set(f.flatMap(p => [p.lb, p.fb]).filter(Boolean).map(String))];
+    const db = bibek.filter(b => itt[b]).length, teljes = db === bibek.length;
+    let parok = f.map((p, j) => ({ p, j }));
+    if (mSzuro === 'hiany') parok = parok.filter(({ p }) => (p.lb && !itt[p.lb]) || (p.fb && !itt[p.fb]));
+    if (q) parok = parok.filter(({ p }) => talal(p.lb, p.ln) || talal(p.fb, p.fn));
+    if (!parok.length) return;
+    latszik++;
+    const sec = document.createElement('section'); sec.className = 'mheat' + (teljes ? ' teljes' : '');
+    const h = document.createElement('div'); h.className = 'mhfej';
+    const h3 = document.createElement('h3'); h3.textContent = kor.dontos ? 'Döntő' : (i + 1) + '. futam';
+    if (!kor.dontos) { const sm = document.createElement('small'); sm.textContent = '/ ' + kor.futamok.length; h3.append(sm); }
+    const dbS = document.createElement('span'); dbS.className = 'mdb'; dbS.textContent = db + '/' + bibek.length;
+    h.append(h3, dbS);
+    if (!teljes) {
+      const mind = document.createElement('button'); mind.type = 'button'; mind.className = 'btn ghost sm'; mind.textContent = 'Mind itt';
+      mind.addEventListener('click', () => mJelol(bibek.filter(b => !itt[b]), true));
+      h.append(mind);
+    }
+    sec.append(h);
+    const fej = document.createElement('div'); fej.className = 'mfej'; fej.innerHTML = '<span></span><span>Leader</span><span>Follower</span>'; sec.append(fej);
+    parok.forEach(({ p, j }) => {
+      const sor = document.createElement('div'); sor.className = 'mpar';
+      const n = document.createElement('span'); n.className = 'mn'; n.textContent = kor.dontos && p.par ? p.par : j + 1;
+      sor.append(n, mSzemely(p.lb, p.ln, itt, talal(p.lb, p.ln)), mSzemely(p.fb, p.fn, itt, talal(p.fb, p.fn)));
+      sec.append(sor);
+    });
+    box.append(sec);
+  });
+  if (!latszik) box.innerHTML = '<p class="empty">' + (q ? 'Nincs találat ebben a fordulóban.' : 'Mindenki megérkezett. ✓') + '</p>';
+}
+
+function mSzemely(bib, nev, itt, kiemel) {
+  const b = document.createElement('button'); b.type = 'button';
+  if (!bib) { b.className = 'mszem ures'; b.tabIndex = -1; return b; }
+  bib = String(bib);
+  const on = !!itt[bib];
+  b.className = 'mszem' + (on ? ' on' : '') + (kiemel ? ' talalat' : '');
+  b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  const t = document.createElement('span'); t.className = 'mt';
+  const fo = document.createElement('span'); fo.className = 'nv';
+  const bb = document.createElement('b'); bb.textContent = '#' + bib; fo.append(bb, ' ' + (nev || ''));
+  t.append(fo);
+  if (on) { const ido = document.createElement('span'); ido.className = 'ido'; ido.textContent = 'itt · ' + String(itt[bib]).slice(11, 16); t.append(ido); }
+  b.append(t);
+  b.title = (nev || '') + (on ? ' – megérkezett (kattintás: visszavonás)' : ' – kattints, ha megérkezett');
+  b.addEventListener('click', () => mJelol([bib], !on));
+  return b;
+}
+
+async function mJelol(bibek, ertek) {
+  if (!bibek.length || !mAdat) return;
+  const kulcs = mKor, jel = (mAdat.jelenlet = mAdat.jelenlet || {}), k = (jel[kulcs] = jel[kulcs] || {});
+  const elozo = Object.fromEntries(bibek.map(b => [b, k[b]]));
+  const most = new Date(), ido = most.getFullYear() + '-' + String(most.getMonth() + 1).padStart(2, '0') + '-' + String(most.getDate()).padStart(2, '0') + 'T' +
+    String(most.getHours()).padStart(2, '0') + ':' + String(most.getMinutes()).padStart(2, '0');
+  bibek.forEach(b => { if (ertek) k[b] = ido; else delete k[b]; });   // azonnal látszik, a mentés a háttérben megy
+  mRajzol();
+  mFuggo++;
+  try {
+    const v = await api('marshallAllit', { kulcs, bibek, ertek });
+    if (mFuggo === 1) { mAdat.jelenlet = v.jelenlet; mRajzol(); }
+    msg('msgM');
+  } catch (err) {
+    bibek.forEach(b => { if (elozo[b]) k[b] = elozo[b]; else delete k[b]; });
+    mRajzol();
+    msg('msgM', 'Nem sikerült menteni: ' + (err.message || 'hálózati hiba') + '. Próbáld újra.');
+  } finally { mFuggo--; }
+}
+
+$('mKor').addEventListener('change', () => { mKor = $('mKor').value; try { sessionStorage.setItem('mKor', mKor); } catch {} $('mKer').value = ''; mRajzol(); });
+$('mKer').addEventListener('input', mRajzol);
+$('mFilt').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+  mSzuro = b.dataset.f;
+  $('mFilt').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+  mRajzol();
+}));
+$('mFrissit').addEventListener('click', () => mBetolt());
 
 // ---------- Közös ----------
 function csoport(nev) {

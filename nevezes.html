@@ -13,20 +13,16 @@
 <header>
   <h1 id="cim">Nevezés</h1>
   <p class="sub" id="alcim" hidden></p>
+  <button type="button" class="evgomb" id="evGomb" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+    <span id="evGombTxt">Határidők és program</span>
+  </button>
 </header>
 
 <main>
   <div class="card valassz" id="uzenet" hidden></div>
   <nav class="card fulek" id="fulek" hidden></nav>
   <div id="p-nevezes">
-  <!-- nevezési határidő és ütemterv (az admin Esemény fülén szerkeszthető) -->
-  <section class="card ev" id="ev" hidden>
-    <div class="ev-dl" id="evHat" hidden>
-      <div><div class="l">Nevezési határidő</div><div class="d" id="evHatIdo"></div></div>
-      <span class="pill" id="evVissza"></span>
-    </div>
-    <div class="ev-prog" id="evProg" hidden></div>
-  </section>
   <div class="card" id="zarvaKartya" hidden>
     <div class="zarva">
       <h2>A nevezés lezárult</h2>
@@ -103,6 +99,21 @@
   <p class="lablink" id="sajatKartya" hidden>Már neveztél? <a id="sajatLink2" href="nevezesem">Nevezésed megtekintése vagy lemondása »</a></p>
   </div>
 </main>
+
+<!-- nevezési határidő és ütemterv (az admin Esemény fülén szerkeszthető) – a fejléc gombjával nyílik -->
+<dialog class="evdlg" id="evDlg" aria-labelledby="evDlgCim">
+  <div class="evdlg-fej">
+    <h2 id="evDlgCim">Határidők és program</h2>
+    <button type="button" class="evdlg-x" id="evDlgX" aria-label="Bezárás">×</button>
+  </div>
+  <div class="evdlg-tart">
+    <div class="ev-dl" id="evHat" hidden>
+      <div><div class="l">Nevezési határidő</div><div class="d" id="evHatIdo"></div></div>
+      <span class="pill" id="evVissza"></span>
+    </div>
+    <div class="ev-prog" id="evProg" hidden></div>
+  </div>
+</dialog>
 
 <script src="assets/kozos.js"></script>
 <script>
@@ -467,8 +478,15 @@ function rajzolEsemeny() {
     else if (i === kovI && (mostI >= 0 || p.d - most < 24 * 3600e3)) { tg.className = 'tag kov'; tg.textContent = 'következik'; }
     li.append(t, c, tg); ol.append(li);
   });
-  $('ev').hidden = (!hat || !nevezesFul) && !prog.length;
+  const vanHat = !!hat && nevezesFul;
+  $('evGomb').hidden = !vanHat && !prog.length;
+  $('evGombTxt').textContent = vanHat && prog.length ? 'Határidők és program' : vanHat ? 'Nevezési határidő' : 'Program';
+  $('evDlgCim').textContent = $('evGombTxt').textContent;
+  $('evProg').classList.toggle('elso', !vanHat);
 }
+$('evGomb').addEventListener('click', () => { rajzolEsemeny(); $('evDlg').showModal(); });
+$('evDlgX').addEventListener('click', () => $('evDlg').close());
+$('evDlg').addEventListener('click', e => { if (e.target === $('evDlg')) $('evDlg').close(); });   // kattintás a háttérre
 
 
 $('ujra').addEventListener('click', () => {

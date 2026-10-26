@@ -141,13 +141,20 @@ async function lekerdez(id) {
   } catch { msg('msg1', 'Hálózati hiba.'); }
 }
 
+// Az azonosító nélküli nevezés divíziói előre, a háttérben töltődnek (a „Tovább” így azonnal megy).
+// 2 percnél régebbi előtöltést nem használ (a létszámkorlát miatt).
+let divElo = null, divEloIdo = 0;
+function divElotolt() { divEloIdo = Date.now(); divElo = fetch(SCRIPT_URL + eParam('?')).then(r => r.json()).catch(() => null); }
+
 $('tovabb').addEventListener('click', async () => {
   if ($('nincs').checked) {
     const kn = $('kn').value.trim(), vn = $('vn').value.trim();
     if (!kn || !vn) return msg('msg1', 'Add meg a neved.');
     $('tovabb').disabled = true; msg('msg1', 'Betöltés…', true);
     try {
-      const v = await (await fetch(SCRIPT_URL + eParam('?'))).json();
+      let v = divElo && Date.now() - divEloIdo < 120000 ? await divElo : null;
+      divElo = null;
+      if (!v || !v.ok) v = await (await fetch(SCRIPT_URL + eParam('?'))).json();
       if (!v.ok) return msg('msg1', v.hiba);
       adat = { wsdc: '', keresztnev: kn, vezeteknev: vn, diviziok: v.diviziok };
     } catch { return msg('msg1', 'Hálózati hiba.'); }
@@ -465,7 +472,7 @@ function rajzolEsemeny() {
 
 
 $('ujra').addEventListener('click', () => {
-  adat = null;
+  adat = null; divElotolt();
   $('wsdc').value = $('kn').value = $('vn').value = '';
   $('nincs').checked = false;
   $('nincs').dispatchEvent(new Event('change'));
@@ -473,6 +480,7 @@ $('ujra').addEventListener('click', () => {
 });
 
 (async () => {
+  divElotolt();   // az esemény adataival párhuzamosan
   if (!await esemenyOldal('nevezes')) { $('urlap').hidden = true; return; }
   // adatkezelési tájékoztató linkje (az admin Esemény fülén állítható)
   if (/^https?:\/\//i.test(esemeny.adatkezeles || '')) {

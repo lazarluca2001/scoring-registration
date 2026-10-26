@@ -87,12 +87,19 @@ function urlR() {
   if (aktKor) u.searchParams.set('r', aktKor); else u.searchParams.delete('r');
   history.replaceState(null, '', u);
 }
-// GET kérés a scripthez (az esemény azonosítójával)
-async function jsonGet(params) {
+// GET kérés a scripthez (az esemény azonosítójával).
+// tarolMp: ennyi másodpercig a böngészőfülben megjegyzi a választ (pl. az esemény adatait a fülek közti váltáshoz)
+async function jsonGet(params, tarolMp) {
   const u = new URL(SCRIPT_URL);
   Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
   if (esemenyId) u.searchParams.set('e', esemenyId);
-  return (await fetch(u)).json();
+  const k = 'gyors:' + u.search;
+  if (tarolMp) {
+    try { const c = JSON.parse(sessionStorage.getItem(k) || 'null'); if (c && Date.now() - c.t < tarolMp * 1000) return c.v; } catch {}
+  }
+  const v = await (await fetch(u)).json();
+  if (tarolMp && v && v.ok) { try { sessionStorage.setItem(k, JSON.stringify({ t: Date.now(), v })); } catch {} }
+  return v;
 }
 // Rövid linkek: „nevezes?e=teca2027” (a GitHub Pages a .html nélküli címet is kiszolgálja)
 const lapUrl = (lap, id) => lap.replace(/\.html$/, '') + (id ? '?e=' + encodeURIComponent(id) : '');
@@ -126,7 +133,8 @@ const LAPOK = [['nevezes', 'Nevezés', 'fulNevezes', 'nevezes.html'], ['listak',
 async function esemenyOldal(lap) {
   navRajzol('');
   let v;
-  try { v = await jsonGet({ esemeny: 1 }); } catch { v = { ok: false, hiba: 'Hálózati hiba, próbáld újra később.' }; }
+  // a Listák / Eredmények / Nevezésem fülek közti váltáskor nem tölti le újra (a nevezési oldal mindig friss adatot kér)
+  try { v = await jsonGet({ esemeny: 1 }, lap === 'nevezes' ? 0 : 60); } catch { v = { ok: false, hiba: 'Hálózati hiba, próbáld újra később.' }; }
   if (!v.ok || !v.esemeny) { $('cim').textContent = VERSENY_NEV; uzenet(v.hiba || 'Az esemény nem érhető el.'); return null; }
   esemeny = v.esemeny;
   if (!esemenyId && v.esemenyId) esemenyId = v.esemenyId;

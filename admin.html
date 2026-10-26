@@ -779,17 +779,49 @@ async function api(muvelet, extra = {}) {
 const OLVASO = ['admin', 'esemenyek', 'naplo', 'marshallLista'];
 let adatGen = 0;
 async function betolt() {
-  try { adat = await api('admin'); }
+  let v;
+  try { v = await api('admin'); }
   catch (err) {
     if (!esemenyId || !/Nincs ilyen esemény/.test(err.message)) throw err;
     esemenyValt('');               // a megjegyzett esemény már nincs meg: vissza az aktívra
-    adat = await api('admin');
+    v = await api('admin');
   }
+  alkalmaz(v);
+}
+// A szervertől kapott teljes adat megjelenítése (betöltés, illetve írás után a válaszban érkező friss adat)
+function alkalmaz(v) {
+  adat = v;
   if (adat.esemenyId && !esemenyId) esemenyId = adat.esemenyId;
   jogAlkalmaz();
   rajzolMind(); rajzolEsemenySav();
   adatGen++; eloUtolso = Date.now(); eloJelzo('ok');
+  cacheMent(v);
 }
+
+// ---------- Gyorsítás ----------
+// Az utolsó adat a böngészőfülben (sessionStorage): újratöltéskor / eseményváltáskor azonnal látszik, a friss a háttérben jön
+const cacheKulcs = id => 'adminAdat:' + (id || '-');
+function cacheMent(v) {
+  if (!v || !v.esemenyId) return;
+  try { const s = JSON.stringify(v); if (s.length < 3e6) { sessionStorage.setItem(cacheKulcs(v.esemenyId), s); sessionStorage.setItem('adminUtolso', v.esemenyId); } } catch {}
+}
+function cacheOlvas(id) {
+  try { return JSON.parse(sessionStorage.getItem(cacheKulcs(id || sessionStorage.getItem('adminUtolso'))) || 'null'); } catch { return null; }
+}
+function cacheTorol() { try { Object.keys(sessionStorage).filter(k => k.startsWith('adminAdat:') || k === 'adminUtolso').forEach(k => sessionStorage.removeItem(k)); } catch {} }
+// Írás: az új Google Script a friss adatot is visszaküldi (egy kérés). Régebbi scriptnél a változás azonnal
+// látszik helyben (helyi()), a pontos adat pedig a háttérben töltődik be.
+async function irFrissit(muvelet, extra, helyi) {
+  const v = await api(muvelet, Object.assign({}, extra, { valasz: 'admin' }));
+  if (v.admin && v.admin.sorok) alkalmaz(v.admin);
+  else { if (helyi) { helyi(); rajzolMind(); } hatterBetolt(); }
+  return v;
+}
+function hatterBetolt() {
+  const gen = adatGen, id = esemenyId;
+  api('admin').then(v => { if (gen === adatGen && id === esemenyId) alkalmaz(v); }).catch(() => {});
+}
+const sorokAhol = (feltetel, fn) => adat.sorok.forEach(s => { if (feltetel(s)) fn(s); });
 function esemenyValt(id) {
   esemenyId = id; evPiszkos = false; oPiszkos = false; naplo = []; mAdat = null;
   try { sessionStorage.setItem('adminEsemeny', id); } catch {}
@@ -826,6 +858,8 @@ $('evLink').addEventListener('click', async () => {
 });
 $('evValaszt').addEventListener('change', async () => {
   esemenyValt($('evValaszt').value);
+  const c = cacheOlvas(esemenyId);
+  if (c) { adat = c; jogAlkalmaz(); rajzolMind(); eloJelzo('off'); }   // azonnal látszik, a friss a háttérben jön
   msg('msgV', 'Betöltés…', 'info');
   try { await betolt(); msg('msgV'); if (!$('t-naplo').hidden) betoltNaplo(); if (!$('t-marshalling').hidden) mBetolt(); }
   catch (err) { msg('msgV', err.message || 'Hálózati hiba.'); }
@@ -937,7 +971,7 @@ $('hozzTorol').addEventListener('click', async () => {
 // ---------- Élő frissítés: 15 másodpercenként betölti a táblázat változásait (más gépről, online nevezésből) ----------
 const ELO_MP = 15;
 const ELO_FULEK = ['versenyzok', 'nevezesek', 'diviziok', 'helyszini'];
-let eloFut = false, eloUtolso = 0;
+let eloFut = false, eloUtolso = 0, eloSzam = 0;
 const adatJel = v => alairas([v.sorok, v.diviziok, v.valaszok, v.esemeny, v.eredmenyek]);
 function aktivFul() { const t = document.querySelector('.tab[aria-selected=true]'); return t ? t.dataset.tab : ''; }
 // Épp szerkeszt valaki? (nyitott ablak, fókusz egy listán belüli mezőben, el nem mentett érték) – akkor vár
@@ -962,13 +996,14 @@ async function eloFrissit(azonnal) {
   eloFut = true;
   const id = esemenyId, gen = adatGen;
   try {
-    const v = await api('admin');
+    const v = await api('admin', adat.ver && (eloSzam++ % 4) ? { ver: adat.ver } : {});
     eloUtolso = Date.now();
     eloJelzo('ok');
+    if (v.valtozatlan) return;
     if (gen !== adatGen) return;   // közben mentés vagy teljes betöltés volt: az ottani adat a frissebb
     if (id !== esemenyId || v.esemenyId !== adat.esemenyId || eloVar()) return;   // közben eseményt váltott / szerkeszteni kezdett
     if (adatJel(v) === adatJel(adat)) return;
-    adat = v;
+    adat = v; cacheMent(v);
     rajzolElo();
   } catch (err) { eloJelzo(err.szerver ? 'ok' : 'hiba'); }
   finally { eloFut = false; }
@@ -1104,17 +1139,28 @@ $('loginForm').addEventListener('submit', async e => {
 });
 
 (async () => {
+  await null;   // a script többi része (később deklarált konstansok) előbb töltődjön be
   let j = '';
   try { j = sessionStorage.getItem('adminJelszo') || ''; } catch {}
   if (!j) return;
   jelszo = j;
   try { szerep = sessionStorage.getItem('adminSzerep') || 'staff'; } catch {}
-  try { await betolt(); $('belepes').hidden = true; $('panel').hidden = false; betoltEsemenyek(); }
-  catch { try { sessionStorage.removeItem('adminJelszo'); } catch {} jelszo = ''; }
+  const c = cacheOlvas(esemenyId);
+  if (c && c.sorok) {   // azonnal megjelenik az utolsó állapot, a friss adat közben töltődik
+    adat = c; if (!esemenyId && c.esemenyId) esemenyId = c.esemenyId;
+    jogAlkalmaz(); rajzolMind(); $('belepes').hidden = true; $('panel').hidden = false; eloJelzo('off');
+  }
+  const ev = betoltEsemenyek();   // párhuzamosan az eseménylistával
+  try { await betolt(); $('belepes').hidden = true; $('panel').hidden = false; await ev; rajzolEsemenySav(); }
+  catch (err) {
+    if (err && !err.szerver && c) { eloJelzo('hiba'); return; }   // nincs net: marad a mentett adat
+    try { sessionStorage.removeItem('adminJelszo'); } catch {} jelszo = ''; cacheTorol();
+    $('panel').hidden = true; $('belepes').hidden = false;
+  }
 })();
 
 $('kilep').addEventListener('click', () => {
-  jelszo = ''; adat = { sorok: [], diviziok: [] }; $('elo').hidden = true;
+  jelszo = ''; adat = { sorok: [], diviziok: [] }; $('elo').hidden = true; cacheTorol();
   try { sessionStorage.removeItem('adminJelszo'); sessionStorage.removeItem('adminSzerep'); } catch {}
   $('panel').hidden = true; $('belepes').hidden = false; $('jelszo').focus();
 });
@@ -1132,6 +1178,7 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
 // MARSHALLING – felvonulás előtt: ki érkezett meg (fordulónként, bib szerint)
 // ======================================================================
 const M_TIPUS = { prelim: 'Selejtező', quarter: 'Negyeddöntő', semi: 'Elődöntő', final: 'Döntő' };
+let mSzam = 0;
 let mAdat = null, mSzuro = 'mind', mToltes = false, mKuldes = false, mOffline = false;
 let mKor = ''; try { mKor = sessionStorage.getItem('mKor') || ''; } catch {}
 
@@ -1165,8 +1212,9 @@ async function mBetolt(csendes) {
   if (!csendes && !mAdat) msg('msgM', 'Betöltés…', 'info');
   try {
     await mKuld();
-    const v = await api('marshallLista');
+    const v = await api('marshallLista', mAdat && mAdat.ver && (mSzam++ % 4) ? { ver: mAdat.ver } : {});
     mOffline = false;
+    if (v.valtozatlan) { msg('msgM'); return; }
     mHelyi('adat', { diviziok: v.diviziok, frissitve: v.frissitve, jelenlet: v.jelenlet });
     mAdat = Object.assign(v, { jelenlet: mAlkalmaz(v.jelenlet) });
     mRajzol(); msg('msgM');
@@ -1476,8 +1524,8 @@ function rajzolVersenyzok() {
       if (foglalt && !confirm(`A ${bib}-es bib már ${foglalt} versenyzőé. Biztosan ezt adod ${p.vezeteknev} ${p.keresztnev} versenyzőnek is?`)) return;
       ok.disabled = true; msg('msgV', 'Mentés…', 'info');
       try {
-        await api('veglegesit', { regszam: p.regszam, bib });
-        await betolt();
+        await irFrissit('veglegesit', { regszam: p.regszam, bib },
+          () => sorokAhol(s => s.regszam === p.regszam, s => { s.bib = bib; s.vegleges = true; }));
         msg('msgV', p.vezeteknev + ' ' + p.keresztnev + ' véglegesítve, bib: ' + bib, 'ok');
       } catch (err) { ok.disabled = false; msg('msgV', err.message || 'Hálózati hiba.'); }
     };
@@ -1490,7 +1538,7 @@ function rajzolVersenyzok() {
       vv.addEventListener('click', async () => {
         if (!confirm('Visszavonod ' + p.vezeteknev + ' ' + p.keresztnev + ' véglegesítését? A bib szám is törlődik.')) return;
         msg('msgV', 'Visszavonás…', 'info');
-        try { await api('visszavon', { regszam: p.regszam }); await betolt(); msg('msgV'); }
+        try { await irFrissit('visszavon', { regszam: p.regszam }, () => sorokAhol(s => s.regszam === p.regszam, s => { s.bib = ''; s.vegleges = false; })); msg('msgV'); }
         catch (err) { msg('msgV', err.message || 'Hálózati hiba.'); }
       });
       fin.append(vv);
@@ -1673,10 +1721,10 @@ $('dlgForm').addEventListener('submit', async e => {
   e.preventDefault();
   $('eMent').disabled = true; msg('msgDlg', 'Mentés…', 'info');
   try {
-    await api('nevezesModosit', { sor: szerk.sor, regi: regi(szerk), keresztnev: $('eKn').value,
-      vezeteknev: $('eVn').value, wsdc: $('eWsdc').value, divizio: $('eDiv').value });
+    const s = szerk, kn = $('eKn').value.trim(), vn = $('eVn').value.trim(), w = $('eWsdc').value, dv = $('eDiv').value;
+    await irFrissit('nevezesModosit', { sor: s.sor, regi: regi(s), keresztnev: kn, vezeteknev: vn, wsdc: w, divizio: dv },
+      () => { const d = adat.diviziok.find(x => x.nev === dv); Object.assign(s, { keresztnev: kn, vezeteknev: vn, wsdc: w, divizio: dv, szerep: d ? d.szerep : s.szerep }); });
     $('dlg').close();
-    await betolt();
   } catch (err) { msg('msgDlg', err.message || 'Hálózati hiba.'); }
   finally { $('eMent').disabled = false; }
 });
@@ -1687,7 +1735,7 @@ $('eTorol').addEventListener('click', async () => {
 async function torol(s, hova = 'msgPanel') {
   if (!confirm(`Biztosan törlöd?\n\n${s.vezeteknev} ${s.keresztnev}\n${s.divizio}`)) return false;
   msg(hova, 'Törlés…', 'info');
-  try { await api('nevezesTorles', { sor: s.sor, regi: regi(s) }); await betolt(); msg(hova); return true; }
+  try { await irFrissit('nevezesTorles', { sor: s.sor, regi: regi(s) }, () => { adat.sorok = adat.sorok.filter(x => x !== s); }); msg(hova); return true; }
   catch (err) { msg(hova, err.message || 'Hálózati hiba.'); return false; }
 }
 
@@ -1983,7 +2031,7 @@ $('hKuld').addEventListener('click', async () => {
   if (!kn || !vn) return msg('msgH', 'Add meg a teljes nevet.');
   $('hKuld').disabled = true; msg('msgH', 'Rögzítés…', 'info');
   try {
-    const v = await api('kezi', { wsdc: $('hWsdc').value, keresztnev: kn, vezeteknev: vn,
+    const v = await api('kezi', { valasz: 'admin', wsdc: $('hWsdc').value, keresztnev: kn, vezeteknev: vn,
                                   bib: $('hBib').value.trim(), diviziok: Object.values(hValasztas), valaszok: hKerdValaszok(),
                                   hozzajarulas: $('hHozz').checked });
     $('hKeszNev').textContent = v.nev + (v.bib ? ' · Bib ' + v.bib : ' · függő');
@@ -1992,7 +2040,7 @@ $('hKuld').addEventListener('click', async () => {
     v.osszes.forEach(d => { const li = document.createElement('li'); li.textContent = d; $('hKeszLista').append(li); });
     msg('msgH');
     $('hForm').hidden = true; $('hKesz').hidden = false;
-    betolt().catch(() => {});
+    if (v.admin && v.admin.sorok) alkalmaz(v.admin); else hatterBetolt();
   } catch (err) { msg('msgH', err.message || 'Hálózati hiba.'); $('hKuld').disabled = false; }
 });
 

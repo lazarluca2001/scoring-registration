@@ -1177,7 +1177,7 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
 // ======================================================================
 // MARSHALLING – felvonulás előtt: ki érkezett meg (fordulónként, bib szerint)
 // ======================================================================
-const M_TIPUS = { prelim: 'Selejtező', quarter: 'Negyeddöntő', semi: 'Elődöntő', final: 'Döntő' };
+const M_TIPUS = { prelim: 'Prelim', quarter: 'Quarterfinal', semi: 'Semifinal', final: 'Final' };
 let mSzam = 0;
 let mAdat = null, mSzuro = 'mind', mToltes = false, mKuldes = false, mOffline = false;
 let mKor = ''; try { mKor = sessionStorage.getItem('mKor') || ''; } catch {}
@@ -1299,7 +1299,7 @@ function mRajzol() {
     latszik++;
     const sec = document.createElement('section'); sec.className = 'mheat' + (teljes ? ' teljes' : '');
     const h = document.createElement('div'); h.className = 'mhfej';
-    const h3 = document.createElement('h3'); h3.textContent = kor.dontos ? 'Döntő' : (i + 1) + '. futam';
+    const h3 = document.createElement('h3'); h3.textContent = kor.dontos ? 'Final' : (i + 1) + '. futam';
     if (!kor.dontos) { const sm = document.createElement('small'); sm.textContent = '/ ' + kor.futamok.length; h3.append(sm); }
     const dbS = document.createElement('span'); dbS.className = 'mdb'; dbS.textContent = db + '/' + bibek.length;
     h.append(h3, dbS);
@@ -2052,7 +2052,7 @@ function programSor(p = {}) {
   const row = document.createElement('div'); row.className = 'pr';
   const ido = document.createElement('input'); ido.type = 'datetime-local'; ido.value = p.ido || ''; ido.setAttribute('aria-label', 'Kezdés');
   const cim = document.createElement('input'); cim.type = 'text'; cim.className = 'cim'; cim.value = p.cim || '';
-  cim.placeholder = 'pl. Newcomer Jack&Jill – előselejtező'; cim.setAttribute('list', 'pJavaslat'); cim.setAttribute('aria-label', 'Program');
+  cim.placeholder = 'pl. Newcomer Jack&Jill – Prelim'; cim.setAttribute('list', 'pJavaslat'); cim.setAttribute('aria-label', 'Program');
   const megj = document.createElement('input'); megj.type = 'text'; megj.className = 'megj'; megj.value = p.megj || '';
   megj.placeholder = 'Megjegyzés (nem kötelező)'; megj.setAttribute('aria-label', 'Megjegyzés');
   const del = document.createElement('button'); del.type = 'button'; del.className = 'ib del'; del.title = 'Programpont törlése'; del.innerHTML = ICO.del;
@@ -2067,7 +2067,7 @@ function rajzolEsemeny() {
   // javaslatok a programpontokhoz: divíziónevek
   const dl = $('pJavaslat'); dl.innerHTML = '';
   [...new Set(adat.diviziok.filter(d => d.aktiv).map(d => alapDivizio({ divizio: d.nev })))].forEach(n =>
-    ['előselejtező', 'középdöntő', 'döntő'].forEach(f => { const o = document.createElement('option'); o.value = n + ' – ' + f; dl.append(o); }));
+    ['Prelim', 'Semifinal', 'Final'].forEach(f => { const o = document.createElement('option'); o.value = n + ' – ' + f; dl.append(o); }));
   if (!e || evPiszkos) return;
   $('evNev').value = e.nev || ''; $('evDatum').value = e.datum || ''; $('evHely').value = e.helyszin || '';
   $('evDij').value = e.dij || ''; $('evHatarido').value = e.hatarido || '';
@@ -2232,7 +2232,7 @@ function appExportFeldolgoz(wb) {
   Object.keys(ki.diviziok).forEach(d => { const x = ki.diviziok[d]; if (!x.fordulok.length && !x.marshalling.length) delete ki.diviziok[d]; });
   return ki;
 }
-const TIPUS_NEV = { prelim: 'Selejtező', quarter: 'Negyeddöntő', semi: 'Elődöntő', final: 'Döntő' };
+const TIPUS_NEV = { prelim: 'Prelim', quarter: 'Quarterfinal', semi: 'Semifinal', final: 'Final' };
 function rajzolEredmenyAllapot() {
   const a = adat.eredmenyek;
   $('erTorol').hidden = !a || !Object.keys(a.diviziok || {}).length;

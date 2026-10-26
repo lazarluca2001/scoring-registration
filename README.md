@@ -15,7 +15,7 @@ exportált fájlt pedig a **Scoring_Judging** pontozó app közvetlenül be tudj
 | `nevezes?e=teca2027` | egy esemény nevezési oldala: űrlap, határidő, menetrend |
 | `nevezesem?e=teca2027` | a versenyző saját nevezése: megtekintés és lemondás a regisztrációs kóddal |
 | `beosztas?e=teca2027&k=…` | egy önkéntes saját beosztása (személyes link az adminból) |
-| `listak?e=teca2027&r=novice-1` | bevonuló párok futamonként (`r` = divízió és forduló) |
+| `listak?e=teca2027&r=novice-1` | bevonuló párok heatenként (`r` = divízió és forduló) |
 | `eredmenyek?e=teca2027&r=newcomer-2` | a fordulók eredménye |
 | `admin.html` | szervezőknek, jelszóval ([link](https://lazarluca2001.github.io/scoring-registration/admin.html)) |
 
@@ -28,8 +28,8 @@ alatta a Nevezés / Listák / Eredmények fülek. A közös stílus és kód az 
 - **Főoldal**: a nyilvános események kártyái (borítókép, név, dátum, helyszín) „Közelgő” és „Korábbi” bontásban, kereséssel.
   A kártyán a bekapcsolt gombok: **Nevezés**, **Listák**, **Eredmények**. Minden eseménynek saját linkje is van (`?e=<azonosító>`).
 - **Nevezés** – az űrlap (kikapcsolva online nem lehet nevezni).
-- **Listák** – a bevonuló párok futamonként (Bib, Leader, #, Bib, Follower), fordulónként választható; a pontozó app exportjából.
-  Amíg nincs futambeosztás, a véglegesített nevezettek listája látszik.
+- **Listák** – a bevonuló párok heatenként (Bib, Leader, #, Bib, Follower), fordulónként választható; a pontozó app exportjából.
+  Amíg nincs heat-beosztás, a véglegesített nevezettek listája látszik.
 - **Eredmények** – Prelim / Quarterfinal / Semifinal: bíránként Igen / Alt / Nem (a főbírónál százalék), összeg, a továbbjutók kiemelve;
   Final: párok, bírónkénti helyezések, végeredmény. Plusz az admin által megadott linkek.
 - **Fejléc**: az esemény neve, dátuma, helyszíne és a **Határidők és program** gomb: felugró ablakban a nevezési határidő visszaszámlálással és az ütemterv napokra bontva (nem a nevezés fölött).
@@ -88,11 +88,11 @@ Az oldalak a bal oldali menüben vannak (telefonon felül, vízszintesen görget
 | Oldal | Funkciók |
 |---|---|
 | **Versenyzők** | Véglegesítés bib számmal (foglalt vagy nem szám bibre figyelmeztet). Befizetett összeg (egy kattintással a nevezési díj). Szűrők: függő / végleges, fizetett / nem. Összesítő: függők, véglegesek, fizetettek, befizetett összeg. Keresés névre, WSDC ID-ra, regisztrációs kódra, bibre. |
-| **Marshalling** | Felvonulás előtt: divízió és forduló kiválasztása, a futamok párjai (Leader / Follower), egy koppintással pipálható, ki érkezett meg; „Mind itt” futamonként, „Hiányzók” szűrő, keresés bibre vagy névre, futamonkénti és összesített számláló. A pontozó app feltöltött futambeosztásából dolgozik; több marshall is használhatja egyszerre (15 másodpercenként frissül). A check-in jogosultság is eléri. **Offline is működik**: térerő nélkül a jelölések a telefonon gyűlnek, és amint van net, maguktól feltöltődnek (a koppintás idejével). |
+| **Marshalling** | Felvonulás előtt: divízió és forduló kiválasztása, a heatek párjai (Leader / Follower), egy koppintással pipálható, ki érkezett meg; „Mind itt” heatenként, „Hiányzók” szűrő, keresés bibre vagy névre, heatenkénti és összesített számláló. A pontozó app feltöltött heat-beosztásából dolgozik; több marshall is használhatja egyszerre (15 másodpercenként frissül). A check-in jogosultság is eléri. **Offline is működik**: térerő nélkül a jelölések a telefonon gyűlnek, és amint van net, maguktól feltöltődnek (a koppintás idejével). |
 | **Nevezések** | Divíziónként csoportosítva, szerkesztés és törlés. Hibák pirossal: nem szám bib, ugyanaz a bib két versenyzőnél, hiányzó szerep, dupla nevezés („Csak hibásak” szűrő). Export CSV és XLSX formátumban a pontozó appnak, szűrhető a véglegesítettekre. |
 | **Divíziók** | Létszám divíziónként (Leader / Follower, függők, eltérés). Divíziónként egy kapcsoló (a Leader és Follower változat együtt), létszámkorlát szerepenként. |
 | **Helyszíni nevezés** | Nevezés a helyszínen bármely divízióba (a betelt divízióba is), bib megadásával azonnal véglegesít. A versenyző hozzájárulását be kell jelölni. |
-| **Esemény** | Az esemény neve, első és utolsó napja, helyszíne, borítóképe, adatkezelési tájékoztatója, nevezési díja, határideje, az ütemterv és a **plusz kérdések** a nevezéshez. A nyilvános oldal gombjai (Nevezés, Listák, Eredmények), linkek, és a **pontozó app XLSX exportjának feltöltése** (futambeosztás és eredmények). |
+| **Esemény** | Az esemény neve, első és utolsó napja, helyszíne, borítóképe, adatkezelési tájékoztatója, nevezési díja, határideje, az ütemterv és a **plusz kérdések** a nevezéshez. A nyilvános oldal gombjai (Nevezés, Listák, Eredmények), linkek, és a **pontozó app XLSX exportjának feltöltése** (heat-beosztás és eredmények). |
 | **Önkéntesek** | Beosztás idősávonként (név, feladat, kezdés, vége, megjegyzés). Mentés után mindenki saját linket kap, amin a beosztását látja („most” / „következő” jelöléssel), és hogy kikkel van együtt. |
 
 Minden módosítás (ki, mikor, mit csinált) az esemény táblázatának **Naplo** lapjára kerül; az admin felületen nincs külön napló fül.
@@ -117,7 +117,7 @@ egy lap van. Ha a fájlt az app nem tudná beolvasni (pl. függő nevezés, ism�
 3. **Verseny napja**: a versenyző megmutatja a kódját, rákeresel, befizetés. Helyszíni nevezés a külön fülön.
 4. **Pontozás**: Nevezések fül → „Csak véglegesítettek” → CSV vagy XLSX → betöltés a pontozó appba.
 5. **Listák és eredmények**: az Esemény fülön a Listák és az Eredmények bekapcsolása, majd a pontozó app exportjának (XLSX) feltöltése
-   fordulónként. Az eredmények minden feltöltéskor frissülnek, a korábbi fordulók futambeosztása megmarad.
+   fordulónként. Az eredmények minden feltöltéskor frissülnek, a korábbi fordulók heat-beosztása megmarad.
 
 ### Felépítés
 

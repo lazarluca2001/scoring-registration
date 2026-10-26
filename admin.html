@@ -543,7 +543,7 @@
 
         <section class="evsz">
           <div class="bar"><h2 class="sec">Pontozó app exportja</h2></div>
-          <p class="sdesc">Az app XLSX exportja: a futambeosztás a Listák, az eredmények az Eredmények fülre kerülnek. Bármikor újra feltölthető.</p>
+          <p class="sdesc">Az app XLSX exportja: a heat-beosztás a Listák, az eredmények az Eredmények fülre kerülnek. Bármikor újra feltölthető.</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <input type="file" id="erFajl" accept=".xlsx" style="flex:1;min-width:220px">
             <button class="btn" id="erFel" type="button" disabled>Feltöltés</button>
@@ -1291,7 +1291,7 @@ function mRajzol() {
   sel.hidden = !korok.length;
   if (!korok.length) {
     $('mStat').hidden = true;
-    const t = 'Még nincs futambeosztás. ' + (szerep === 'checkin' ? 'A staff tölti fel a pontozó app exportjából.' : 'Töltsd fel a pontozó app exportját az Esemény fülön.');
+    const t = 'Még nincs heat-beosztás. ' + (szerep === 'checkin' ? 'A staff tölti fel a pontozó app exportjából.' : 'Töltsd fel a pontozó app exportját az Esemény fülön.');
     return kulcsosFrissit(box, [{ k: 'ures', sig: t, node: uresElem('p', 'empty', t) }]);
   }
   if (!korok.some(k => k.kulcs === mKor)) mKor = korok[0].kulcs;
@@ -1305,7 +1305,7 @@ function mRajzol() {
   kor.futamok.forEach(f => f.forEach(p => { if (p.lb) mindenki.add(String(p.lb)); if (p.fb) mindenki.add(String(p.fb)); }));
   $('mItt').textContent = [...mindenki].filter(b => itt[b]).length;
   $('mOssz').textContent = mindenki.size;
-  $('mFriss').textContent = mAdat.frissitve ? 'Futambeosztás: ' + mAdat.frissitve.replace('T', ' ') : '';
+  $('mFriss').textContent = mAdat.frissitve ? 'Heat-beosztás: ' + mAdat.frissitve.replace('T', ' ') : '';
   $('mStat').hidden = false;
 
   let latszik = 0;
@@ -1319,7 +1319,7 @@ function mRajzol() {
     latszik++;
     const sec = document.createElement('section'); sec.className = 'mheat' + (teljes ? ' teljes' : '');
     const h = document.createElement('div'); h.className = 'mhfej';
-    const h3 = document.createElement('h3'); h3.textContent = kor.dontos ? 'Final' : (i + 1) + '. futam';
+    const h3 = document.createElement('h3'); h3.textContent = kor.dontos ? 'Final' : 'Heat ' + (i + 1);
     if (!kor.dontos) { const sm = document.createElement('small'); sm.textContent = '/ ' + kor.futamok.length; h3.append(sm); }
     const dbS = document.createElement('span'); dbS.className = 'mdb'; dbS.textContent = db + '/' + bibek.length;
     h.append(h3, dbS);
@@ -2111,7 +2111,7 @@ function linkSor(l = {}) {
   const ful = document.createElement('select'); ful.setAttribute('aria-label', 'Fül');
   [['marshalling', 'Marshalling'], ['eredmeny', 'Eredmények']].forEach(([v, t]) => { const o = document.createElement('option'); o.value = v; o.textContent = t; ful.append(o); });
   ful.value = l.ful || 'marshalling';
-  const cim = document.createElement('input'); cim.type = 'text'; cim.value = l.cim || ''; cim.placeholder = 'Cím, pl. Futambeosztás – szombat'; cim.setAttribute('aria-label', 'Cím');
+  const cim = document.createElement('input'); cim.type = 'text'; cim.value = l.cim || ''; cim.placeholder = 'Cím, pl. Heat-beosztás – szombat'; cim.setAttribute('aria-label', 'Cím');
   const url = document.createElement('input'); url.type = 'text'; url.value = l.url || ''; url.placeholder = 'https://…'; url.setAttribute('aria-label', 'Link');
   const del = document.createElement('button'); del.type = 'button'; del.className = 'ib del'; del.title = 'Link törlése'; del.innerHTML = ICO.del;
   del.addEventListener('click', () => { row.remove(); evPiszkos = true; });
@@ -2236,9 +2236,9 @@ function rajzolEredmenyAllapot() {
   if (!a) { $('erAllapot').textContent = 'Ehhez frissíteni kell a Google Scriptet.'; $('erFajl').disabled = true; return; }
   const sorok = Object.entries(a.diviziok || {}).map(([d, x]) => d + ': ' +
     [x.fordulok.length ? 'eredmény – ' + x.fordulok.map(f => TIPUS_NEV[f.tipus]).join(', ') : '',
-     x.marshalling.length ? 'futambeosztás – ' + x.marshalling.map(m => TIPUS_NEV[m.tipus]).join(', ') : ''].filter(Boolean).join('; '));
+     x.marshalling.length ? 'heat-beosztás – ' + x.marshalling.map(m => TIPUS_NEV[m.tipus]).join(', ') : ''].filter(Boolean).join('; '));
   $('erAllapot').innerHTML = '';
-  if (!sorok.length) { $('erAllapot').textContent = 'Még nincs feltöltve futambeosztás vagy eredmény.'; return; }
+  if (!sorok.length) { $('erAllapot').textContent = 'Még nincs feltöltve heat-beosztás vagy eredmény.'; return; }
   const p = document.createElement('div'); p.textContent = 'Feltöltve' + (a.frissitve ? ' (' + a.frissitve.replace('T', ' ') + ')' : '') + ':'; $('erAllapot').append(p);
   const ul = document.createElement('ul'); ul.style.margin = '4px 0 0 18px';
   sorok.forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.append(li); }); $('erAllapot').append(ul);
@@ -2251,7 +2251,7 @@ $('erFel').addEventListener('click', async () => {
   try {
     const feld = appExportFeldolgoz(XLSX.read(await f.arrayBuffer(), { type: 'array' }));
     const divs = Object.keys(feld.diviziok);
-    if (!divs.length) throw new Error('Ebben a fájlban nem találtam futambeosztást vagy eredményt. A pontozó app XLSX exportját töltsd fel.');
+    if (!divs.length) throw new Error('Ebben a fájlban nem találtam heat-beosztást vagy eredményt. A pontozó app XLSX exportját töltsd fel.');
     msg('msgEr', 'Feltöltés…', 'info');
     const v = await api('eredmenyFeltoltes', { adat: feld, fajl: f.name });
     adat.eredmenyek = v.eredmenyek; rajzolEredmenyAllapot();
@@ -2260,7 +2260,7 @@ $('erFel').addEventListener('click', async () => {
   } catch (err) { msg('msgEr', /Ismeretlen művelet/.test(err.message) ? 'Ehhez frissíteni kell a Google Scriptet.' : (err.message || 'Hiba a feldolgozásban.')); $('erFel').disabled = false; }
 });
 $('erTorol').addEventListener('click', async () => {
-  if (!confirm('Törlöd az ehhez az eseményhez feltöltött összes futambeosztást és eredményt?')) return;
+  if (!confirm('Törlöd az ehhez az eseményhez feltöltött összes heat-beosztást és eredményt?')) return;
   try { const v = await api('eredmenyTorles'); adat.eredmenyek = v.eredmenyek; rajzolEredmenyAllapot(); msg('msgEr', 'Törölve.', 'ok'); }
   catch (err) { msg('msgEr', err.message || 'Hálózati hiba.'); }
 });

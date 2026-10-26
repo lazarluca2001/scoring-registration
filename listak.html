@@ -44,13 +44,13 @@ function rajzolListak() {
   valasztoTolt($('lValaszt'), elemek);
   const x = elemek.find(e => e.kulcs === aktKor);
   $('lCim').textContent = x ? x.cim : 'Listák';
-  $('lInfo').textContent = !x ? 'A listák hamarosan felkerülnek.' : nevezettek ? 'A futambeosztás még nem készült el – addig a véglegesített nevezettek láthatók.'
+  $('lInfo').textContent = !x ? 'A listák hamarosan felkerülnek.' : nevezettek ? 'A heat-beosztás még nem készült el – addig a véglegesített nevezettek láthatók.'
     : eredmenyek.frissitve ? 'Frissítve: ' + fmtTeljes.format(helyi(eredmenyek.frissitve)) : '';
   if (!x) return;
   if (x.m) {
     const m = x.m;
     if (m.futamok.length) m.futamok.forEach((f, i) => {
-      const b = el('div', 'blokk'), h3 = el('h3', '', (i + 1) + '. futam'); h3.append(el('small', '', '/ ' + m.futamok.length)); b.append(h3);
+      const b = el('div', 'blokk'), h3 = el('h3', '', 'Heat ' + (i + 1)); h3.append(el('small', '', '/ ' + m.futamok.length)); b.append(h3);
       b.append(tabla([['Bib', 'b'], ['Leader', 'n'], ['#'], ['Bib', 'b elv'], ['Follower', 'n']],
         f.map((p, j) => sor([['#' + p.lb, 'b'], [nevB(p.lb, p.ln), 'n'], [j + 1, 'sor'], ['#' + p.fb, 'b elv'], [nevB(p.fb, p.fn), 'n']])), true));
       box.append(b);

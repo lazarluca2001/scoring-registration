@@ -30,8 +30,8 @@ alatta a Nevezés / Listák / Eredmények fülek. A közös stílus és kód az 
 - **Nevezés** – az űrlap, a határidővel és az ütemtervvel (kikapcsolva online nem lehet nevezni).
 - **Listák** – a bevonuló párok futamonként (Bib, Leader, #, Bib, Follower), fordulónként választható; a pontozó app exportjából.
   Amíg nincs futambeosztás, a véglegesített nevezettek listája látszik.
-- **Eredmények** – selejtező / negyeddöntő / elődöntő: bíránként Igen / Alt / Nem (a főbírónál százalék), összeg, a továbbjutók kiemelve;
-  döntő: párok, bírónkénti helyezések, végeredmény. Plusz az admin által megadott linkek.
+- **Eredmények** – Prelim / Quarterfinal / Semifinal: bíránként Igen / Alt / Nem (a főbírónál százalék), összeg, a továbbjutók kiemelve;
+  Final: párok, bírónkénti helyezések, végeredmény. Plusz az admin által megadott linkek.
 - **Eseménykártya**: az esemény neve, dátuma, helyszíne, a nevezési határidő visszaszámlálással és az ütemterv napokra bontva.
   A verseny napján jelzi, mi zajlik éppen („most”) és mi következik.
 - **Nevezés WSDC azonosítóval**: a név és a jogosult divíziók automatikusan betöltődnek a WSDC adatbázisból (szint, szerep).

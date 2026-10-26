@@ -11,7 +11,7 @@ const PARAM = new URLSearchParams(location.search);
 let esemenyId = PARAM.get('e') || '';   // a kiválasztott esemény (a lap címében: ?e=…)
 let esemeny = null;                      // az esemény adatai a scriptből
 let aktKor = PARAM.get('r') || '';       // a kiválasztott forduló a Listák / Eredmények lapon (?r=…)
-const TIPUS_NEV = { prelim: 'Selejtező', quarter: 'Negyeddöntő', semi: 'Elődöntő', final: 'Döntő' };
+const TIPUS_NEV = { prelim: 'Prelim', quarter: 'Quarterfinal', semi: 'Semifinal', final: 'Final' };
 
 const helyi = s => { const [d, t = '00:00'] = String(s).split('T'); const [y, M, D] = d.split('-').map(Number); const [h, m] = t.split(':').map(Number);
                      return new Date(y, M - 1, D, h, m); };

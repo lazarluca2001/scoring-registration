@@ -101,6 +101,16 @@
   .msor { margin:12px 24px 0; padding:8px 12px; border-radius:8px; font-size:.85rem; background:var(--sel); color:var(--accent); }
   .msor.off { background:var(--warn-bg); color:var(--warn); }
   .mheatek { padding:16px 24px 8px; display:grid; gap:16px; }
+  /* Heat-választó gombok */
+  .mhgomb { display:flex; gap:8px; flex-wrap:wrap; padding:12px 24px; border-bottom:1px solid var(--line); }
+  .mhg { display:inline-flex; align-items:center; gap:8px; height:38px; padding:0 14px; border:1px solid var(--line); border-radius:999px;
+         background:var(--card); color:var(--ink); font:600 .88rem Inter, sans-serif; cursor:pointer; }
+  .mhg small { font-weight:600; font-size:.75rem; font-variant-numeric:tabular-nums; padding:1px 7px; border-radius:999px; background:var(--warn-bg); color:var(--warn); }
+  .mhg.kesz small { background:var(--ok-bg); color:var(--ok); }
+  .mhg:hover { border-color:var(--accent); }
+  .mhg[aria-selected="true"] { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+  .mhg[aria-selected="true"] small { background:rgba(255,255,255,.22); color:var(--on-accent); }
+  .mhg.talalat { box-shadow:0 0 0 2px var(--warn); }
   .mheat { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
   .mheat > .mhfej { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--zebra); border-bottom:1px solid var(--line); }
   .mheat h3 { font-size:.95rem; font-weight:600; flex:1; }
@@ -574,6 +584,7 @@
         </button>
       </div>
       <p class="msor" id="mSorAllapot" hidden></p>
+      <div class="mhgomb" id="mHeatGomb" role="tablist" aria-label="Heatek" hidden></div>
       <div class="mstat" id="mStat" hidden><b id="mItt">0</b><span>/ <span id="mOssz">0</span> versenyző megérkezett</span><span class="sp"></span><span id="mFriss"></span></div>
       <div class="mheatek" id="mHeatek"></div>
       <p class="msg" id="msgM" role="status" style="padding:4px 24px 16px"></p>
@@ -1195,12 +1206,16 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
 }));
 
 // ======================================================================
-// MARSHALLING – felvonulás előtt: ki érkezett meg (fordulónként, bib szerint)
+// MARSHALLING – felvonulás előtt: ki érkezett meg (heatenként, bib szerint)
 // ======================================================================
 const M_TIPUS = { prelim: 'Prelim', quarter: 'Quarterfinal', semi: 'Semifinal', final: 'Final' };
 let mSzam = 0;
 let mAdat = null, mSzuro = 'mind', mToltes = false, mKuldes = false, mOffline = false;
 let mKor = ''; try { mKor = sessionStorage.getItem('mKor') || ''; } catch {}
+// A jelenlét heatenként külön számít: aki két heatben is táncol, mindkettőbe külön kell megérkeznie.
+// Kulcs: "<divízió>|<forduló>|<heat>"
+let mHeat = 0; try { mHeat = Number(sessionStorage.getItem('mHeat')) || 0; } catch {}
+const mHeatKulcs = (kor, i) => kor + '|' + (i + 1);
 
 // Offline mód: a jelölések előbb a telefonon, egy helyi sorban gyűlnek, és amint van net, sorban feltöltődnek.
 // A legutóbbi futambeosztás is a telefonon marad, így térerő nélkül is látszik.
@@ -1290,36 +1305,50 @@ function mRajzol() {
   }
   sel.hidden = !korok.length;
   if (!korok.length) {
-    $('mStat').hidden = true;
+    $('mStat').hidden = true; $('mHeatGomb').hidden = true;
     const t = 'Még nincs heat-beosztás. ' + (szerep === 'checkin' ? 'A staff tölti fel a pontozó app exportjából.' : 'Töltsd fel a pontozó app exportját az Esemény fülön.');
     return kulcsosFrissit(box, [{ k: 'ures', sig: t, node: uresElem('p', 'empty', t) }]);
   }
   if (!korok.some(k => k.kulcs === mKor)) mKor = korok[0].kulcs;
   sel.value = mKor;
   const kor = korok.find(k => k.kulcs === mKor);
-  const itt = (mAdat.jelenlet || {})[mKor] || {};
+  if (mHeat >= kor.futamok.length) mHeat = 0;
+  const jel = mAdat.jelenlet || {};
   const q = $('mKer').value.trim().toLowerCase().replace(/^#/, '');
   const talal = (b, n) => !!q && (String(b) === q || String(n || '').toLowerCase().includes(q));
+  const heatBibek = f => [...new Set(f.flatMap(p => [p.lb, p.fb]).filter(Boolean).map(String))];
 
-  const mindenki = new Set();
-  kor.futamok.forEach(f => f.forEach(p => { if (p.lb) mindenki.add(String(p.lb)); if (p.fb) mindenki.add(String(p.fb)); }));
-  $('mItt').textContent = [...mindenki].filter(b => itt[b]).length;
-  $('mOssz').textContent = mindenki.size;
+  // heat-választó gombok (darabszámmal); keresésnél kiemeli, melyik heatben van találat
+  const gomb = $('mHeatGomb'), gElemek = [];
+  kor.futamok.forEach((f, i) => {
+    const itt = jel[mHeatKulcs(mKor, i)] || {}, bibek = heatBibek(f), db = bibek.filter(b => itt[b]).length;
+    const van = !!q && f.some(p => talal(p.lb, p.ln) || talal(p.fb, p.fn));
+    const cim = kor.dontos ? 'Final' : 'Heat ' + (i + 1);
+    const bt = document.createElement('button'); bt.type = 'button'; bt.setAttribute('role', 'tab');
+    bt.className = 'mhg' + (db === bibek.length ? ' kesz' : '') + (van && i !== mHeat ? ' talalat' : '');
+    bt.setAttribute('aria-selected', i === mHeat ? 'true' : 'false');
+    const sm = document.createElement('small'); sm.textContent = db + '/' + bibek.length;
+    bt.append(cim, sm);
+    bt.addEventListener('click', () => { mHeat = i; try { sessionStorage.setItem('mHeat', i); } catch {} mRajzol(); });
+    gElemek.push({ k: 'g:' + mKor + ':' + i, node: bt, sig: alairas([cim, db, bibek.length, i === mHeat, van]) });
+  });
+  kulcsosFrissit(gomb, gElemek);
+  gomb.hidden = kor.futamok.length < 2;
+
+  const f = kor.futamok[mHeat], hk = mHeatKulcs(mKor, mHeat), itt = jel[hk] || {};
+  const bibek = heatBibek(f), db = bibek.filter(b => itt[b]).length, teljes = db === bibek.length;
+  $('mItt').textContent = db;
+  $('mOssz').textContent = bibek.length;
   $('mFriss').textContent = mAdat.frissitve ? 'Heat-beosztás: ' + mAdat.frissitve.replace('T', ' ') : '';
   $('mStat').hidden = false;
 
-  let latszik = 0;
-  kor.futamok.forEach((f, i) => {
-    const bibek = [...new Set(f.flatMap(p => [p.lb, p.fb]).filter(Boolean).map(String))];
-    const db = bibek.filter(b => itt[b]).length, teljes = db === bibek.length;
-    let parok = f.map((p, j) => ({ p, j }));
-    if (mSzuro === 'hiany') parok = parok.filter(({ p }) => (p.lb && !itt[p.lb]) || (p.fb && !itt[p.fb]));
-    if (q) parok = parok.filter(({ p }) => talal(p.lb, p.ln) || talal(p.fb, p.fn));
-    if (!parok.length) return;
-    latszik++;
+  let parok = f.map((p, j) => ({ p, j }));
+  if (mSzuro === 'hiany') parok = parok.filter(({ p }) => (p.lb && !itt[p.lb]) || (p.fb && !itt[p.fb]));
+  if (q) parok = parok.filter(({ p }) => talal(p.lb, p.ln) || talal(p.fb, p.fn));
+  if (parok.length) {
     const sec = document.createElement('section'); sec.className = 'mheat' + (teljes ? ' teljes' : '');
     const h = document.createElement('div'); h.className = 'mhfej';
-    const h3 = document.createElement('h3'); h3.textContent = kor.dontos ? 'Final' : 'Heat ' + (i + 1);
+    const h3 = document.createElement('h3'); h3.textContent = kor.dontos ? 'Final' : 'Heat ' + (mHeat + 1);
     if (!kor.dontos) { const sm = document.createElement('small'); sm.textContent = '/ ' + kor.futamok.length; h3.append(sm); }
     const dbS = document.createElement('span'); dbS.className = 'mdb'; dbS.textContent = db + '/' + bibek.length;
     h.append(h3, dbS);
@@ -1336,10 +1365,13 @@ function mRajzol() {
       sor.append(n, mSzemely(p.lb, p.ln, itt, talal(p.lb, p.ln)), mSzemely(p.fb, p.fn, itt, talal(p.fb, p.fn)));
       sec.append(sor);
     });
-    elemek.push({ k: 'h:' + mKor + ':' + i, node: sec,
-                  sig: alairas([f, bibek.map(b => itt[b] || ''), mSzuro, q, kor.dontos, kor.futamok.length]) });
-  });
-  if (!latszik) { const t = q ? 'Nincs találat ebben a fordulóban.' : 'Mindenki megérkezett. ✓'; elemek.push({ k: 'ures', sig: t, node: uresElem('p', 'empty', t) }); }
+    elemek.push({ k: 'h:' + hk, node: sec, sig: alairas([f, bibek.map(b => itt[b] || ''), mSzuro, q, kor.dontos, kor.futamok.length]) });
+  } else {
+    const masik = q ? kor.futamok.findIndex(x => x.some(p => talal(p.lb, p.ln) || talal(p.fb, p.fn))) : -1;
+    const t = q ? (masik >= 0 ? 'Ebben a heatben nincs találat – lásd: Heat ' + (masik + 1) + '.' : 'Nincs találat ebben a fordulóban.')
+                : 'Ebben a heatben mindenki megérkezett. ✓';
+    elemek.push({ k: 'ures', sig: t, node: uresElem('p', 'empty', t) });
+  }
   kulcsosFrissit(box, elemek);
 }
 
@@ -1363,7 +1395,7 @@ function mSzemely(bib, nev, itt, kiemel) {
 
 function mJelol(bibek, ertek) {
   if (!bibek.length || !mAdat) return;
-  const kulcs = mKor;
+  const kulcs = mHeatKulcs(mKor, mHeat);
   const most = new Date(), ido = most.getFullYear() + '-' + String(most.getMonth() + 1).padStart(2, '0') + '-' + String(most.getDate()).padStart(2, '0') + 'T' +
     String(most.getHours()).padStart(2, '0') + ':' + String(most.getMinutes()).padStart(2, '0');
   const sor = mSor(); sor.push({ kulcs, bibek, ertek, ido }); mHelyi('sor', sor);
@@ -1373,7 +1405,7 @@ function mJelol(bibek, ertek) {
   mKuld();
 }
 
-$('mKor').addEventListener('change', () => { mKor = $('mKor').value; try { sessionStorage.setItem('mKor', mKor); } catch {} $('mKer').value = ''; mRajzol(); });
+$('mKor').addEventListener('change', () => { mKor = $('mKor').value; mHeat = 0; try { sessionStorage.setItem('mKor', mKor); sessionStorage.setItem('mHeat', 0); } catch {} $('mKer').value = ''; mRajzol(); });
 $('mKer').addEventListener('input', mRajzol);
 $('mFilt').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
   mSzuro = b.dataset.f;

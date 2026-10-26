@@ -27,12 +27,12 @@ alatta a Nevezés / Listák / Eredmények fülek. A közös stílus és kód az 
 
 - **Főoldal**: a nyilvános események kártyái (borítókép, név, dátum, helyszín) „Közelgő” és „Korábbi” bontásban, kereséssel.
   A kártyán a bekapcsolt gombok: **Nevezés**, **Listák**, **Eredmények**. Minden eseménynek saját linkje is van (`?e=<azonosító>`).
-- **Nevezés** – az űrlap, a határidővel és az ütemtervvel (kikapcsolva online nem lehet nevezni).
+- **Nevezés** – az űrlap (kikapcsolva online nem lehet nevezni).
 - **Listák** – a bevonuló párok futamonként (Bib, Leader, #, Bib, Follower), fordulónként választható; a pontozó app exportjából.
   Amíg nincs futambeosztás, a véglegesített nevezettek listája látszik.
 - **Eredmények** – Prelim / Quarterfinal / Semifinal: bíránként Igen / Alt / Nem (a főbírónál százalék), összeg, a továbbjutók kiemelve;
   Final: párok, bírónkénti helyezések, végeredmény. Plusz az admin által megadott linkek.
-- **Eseménykártya**: az esemény neve, dátuma, helyszíne, a nevezési határidő visszaszámlálással és az ütemterv napokra bontva.
+- **Fejléc**: az esemény neve, dátuma, helyszíne és a **Határidők és program** gomb: felugró ablakban a nevezési határidő visszaszámlálással és az ütemterv napokra bontva (nem a nevezés fölött).
   A verseny napján jelzi, mi zajlik éppen („most”) és mi következik.
 - **Nevezés WSDC azonosítóval**: a név és a jogosult divíziók automatikusan betöltődnek a WSDC adatbázisból (szint, szerep).
 - **Nevezés azonosító nélkül**: névvel, a Newcomer és Novice divíziókba.
@@ -153,12 +153,12 @@ The user interface is in Hungarian.
 
 - **Home page**: cards of the public events (cover image, name, dates, venue), split into upcoming and past, with search.
   Each card shows the enabled buttons: **Nevezés** (Registration), **Listák** (Lists), **Eredmények** (Results). Every event also has its own link (`?e=<id>`).
-- **Registration** – the form with the deadline and the schedule (when off, online registration is closed).
+- **Registration** – the form (when off, online registration is closed).
 - **Lists** – the walk-in pairs per heat (Bib, Leader, #, Bib, Follower), selectable per round, from the scoring app's export.
   Until the heats exist, the list of confirmed competitors is shown.
 - **Results** – prelim / quarterfinal / semifinal: each judge's Yes / Alt / No (the head judge's percentage), total, advancing competitors highlighted;
   final: couples, each judge's ranking, final placing. Plus links entered by the admin.
-- **Event card**: event name, date, venue, registration deadline with a countdown, and the schedule grouped by day.
+- **Header**: event name, date, venue and a **Határidők és program** (deadlines and schedule) button that opens the registration deadline with a countdown and the schedule grouped by day in a pop-up, not above the form.
   On competition day it marks what is happening now and what comes next.
 - **Registration with a WSDC ID**: the name and the eligible divisions are loaded automatically from the WSDC database (level, role).
 - **Registration without an ID**: by name, into the Newcomer and Novice divisions.

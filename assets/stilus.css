@@ -90,6 +90,21 @@ header .sub { margin-top:10px; color:rgba(255,255,255,.75); font-size:.98rem; }
 .pill.soon { background:#fff4e0; color:#b45309; }
 .pill.off { background:#fdecee; color:var(--err); }
 .ev-prog { border-top:1px solid var(--line); padding:8px 24px 20px; }
+.ev-prog.elso { border-top:0; }
+/* Határidők és program: gomb a fejlécben, tartalom felugró ablakban */
+.evgomb { display:inline-flex; align-items:center; gap:8px; margin-top:16px; padding:8px 16px; border-radius:999px; cursor:pointer;
+          border:1px solid rgba(255,255,255,.35); background:rgba(255,255,255,.08); color:var(--head-ink); font:500 .9rem Inter, system-ui, sans-serif; }
+.evgomb:hover { background:rgba(255,255,255,.16); border-color:rgba(255,255,255,.55); }
+.evgomb svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.evdlg { margin:auto; border:0; padding:0; border-radius:12px; width:min(560px, calc(100vw - 32px)); max-height:min(85vh, 720px);
+         background:var(--card); color:var(--ink); box-shadow:0 20px 60px rgba(11,26,69,.35); }
+.evdlg[open] { display:flex; flex-direction:column; }
+.evdlg::backdrop { background:rgba(11,26,69,.55); }
+.evdlg-fej { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 16px 16px 24px; border-bottom:1px solid var(--line); }
+.evdlg-fej h2 { font-size:1.05rem; font-weight:600; }
+.evdlg-x { width:36px; height:36px; border:0; border-radius:8px; background:none; color:var(--soft); font-size:1.6rem; line-height:1; cursor:pointer; }
+.evdlg-x:hover { background:var(--sel); color:var(--ink); }
+.evdlg-tart { overflow:auto; }
 .ev-prog h2 { font-size:.75rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--soft); margin:14px 0 6px; }
 .ev-prog ol { list-style:none; padding:0; }
 .ev-prog li { display:grid; grid-template-columns:64px 1fr auto; gap:12px; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--line); }

@@ -72,7 +72,7 @@ Belépéskor kétféle hozzáférés közül választhatsz, mindkettőhöz kül�
   nem szerkeszthet, nem törölhet, a beállításokat nem látja. A naplóban a neve mellett „[check-in]” jelenik meg.
   A check-in jelszót a staff állítja be vagy törli a **Hozzáférések** gombbal; minden eseménynél érvényes.
 
-**Új esemény létrehozása** (gomb felül): egy ablakban három lépés – alapadatok (név, rövid név a linkhez előnézettel, első és
+**Új esemény létrehozása** (bal oldali menü, Egyéb): egy ablakban három lépés – alapadatok (név, rövid név a linkhez előnézettel, első és
 utolsó nap, helyszín, nevezési határidő), divíziók (átvétel egy meglévő eseményből vagy az alap divíziók), közzététel
 (azonnal nyilvános-e). Utána megjelenik az esemény linkje másolás gombbal és a következő lépések (Divíziók fül, Esemény fül,
 nyilvánossá tétel).
@@ -81,7 +81,11 @@ nyilvánossá tétel).
 a nevezési oldalon – több esemény is lehet nyilvános egyszerre) és a **Link másolása** gomb (az esemény saját linkje).
 Minden eseménynek saját táblázata van ugyanabban a Drive mappában.
 
-| Fül | Funkciók |
+Az oldalak a bal oldali menüben vannak (telefonon felül, vízszintesen görgethető sávban):
+**Szervezés** – Esemény, Divíziók, Önkéntesek; **Verseny** – Versenyzők, Nevezések, Helyszíni nevezés, Marshalling;
+**Egyéb** – Új esemény, Hozzáférések, Kilépés. A check-in csak a Versenyzők, a Marshalling és a Kilépés menüpontot látja.
+
+| Oldal | Funkciók |
 |---|---|
 | **Versenyzők** | Véglegesítés bib számmal (foglalt vagy nem szám bibre figyelmeztet). Befizetett összeg (egy kattintással a nevezési díj). Szűrők: függő / végleges, fizetett / nem. Összesítő: függők, véglegesek, fizetettek, befizetett összeg. Keresés névre, WSDC ID-ra, regisztrációs kódra, bibre. |
 | **Marshalling** | Felvonulás előtt: divízió és forduló kiválasztása, a futamok párjai (Leader / Follower), egy koppintással pipálható, ki érkezett meg; „Mind itt” futamonként, „Hiányzók” szűrő, keresés bibre vagy névre, futamonkénti és összesített számláló. A pontozó app feltöltött futambeosztásából dolgozik; több marshall is használhatja egyszerre (15 másodpercenként frissül). A check-in jogosultság is eléri. **Offline is működik**: térerő nélkül a jelölések a telefonon gyűlnek, és amint van net, maguktól feltöltődnek (a koppintás idejével). |
@@ -194,7 +198,7 @@ At sign-in you choose between two access levels, each with its own password. Ent
   delete or see settings. Log entries show "[check-in]" next to the name. Staff set or remove the check-in password with the
   **Hozzáférések** (Access) button; it is valid for every event.
 
-**Create new event** (button at the top): one dialog with three steps – basics (name, short link name with preview, first and
+**Create new event** (left menu, Egyéb): one dialog with three steps – basics (name, short link name with preview, first and
 last day, venue, registration deadline), divisions (copy from an existing event or use the default divisions), publishing
 (public right away or not). Afterwards it shows the event link with a copy button and the next steps (Divisions tab,
 Event tab, make public).
@@ -203,7 +207,11 @@ Event tab, make public).
 the registration page – several events can be public at once) and **Copy link** (the event's own link).
 Each event has its own spreadsheet in the same Drive folder.
 
-| Tab | Features |
+The pages are in the left menu (on phones a horizontally scrollable bar at the top):
+**Szervezés** (Organising) – Event, Divisions, Volunteers; **Verseny** (Competition) – Competitors, Registrations, On-site registration,
+Marshalling; **Egyéb** (Other) – New event, Access, Sign out. Check-in users only see Competitors, Marshalling and Sign out.
+
+| Page | Features |
 |---|---|
 | **Versenyzők** (Competitors) | Confirm with a bib number (warns about taken or non-numeric bibs). Amount paid (one click for the entry fee). Filters: pending / confirmed, paid / not. Totals: pending, confirmed, paid, amount paid. Search by name, WSDC ID, registration code or bib. |
 | **Marshalling** | Before the walk-on: pick division and round, see each heat's couples (Leader / Follower) and tick who has arrived with one tap; "Mind itt" (all here) per heat, "Hiányzók" (missing) filter, search by bib or name, counters per heat and in total. Uses the heats uploaded from the scoring app; several marshals can use it at once (refreshes every 15 seconds). Check-in users can use it too. **Works offline**: without signal, ticks are kept on the phone and uploaded automatically once the connection is back (with the time of the tap). |

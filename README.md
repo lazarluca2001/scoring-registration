@@ -90,7 +90,8 @@ Minden eseménynek saját táblázata van ugyanabban a Drive mappában.
 | **Helyszíni nevezés** | Nevezés a helyszínen bármely divízióba (a betelt divízióba is), bib megadásával azonnal véglegesít. A versenyző hozzájárulását be kell jelölni. |
 | **Esemény** | Az esemény neve, első és utolsó napja, helyszíne, borítóképe, adatkezelési tájékoztatója, nevezési díja, határideje, az ütemterv és a **plusz kérdések** a nevezéshez. A nyilvános oldal gombjai (Nevezés, Listák, Eredmények), linkek, és a **pontozó app XLSX exportjának feltöltése** (futambeosztás és eredmények). |
 | **Önkéntesek** | Beosztás idősávonként (név, feladat, kezdés, vége, megjegyzés). Mentés után mindenki saját linket kap, amin a beosztását látja („most” / „következő” jelöléssel), és hogy kikkel van együtt. |
-| **Napló** | Minden módosítás: ki, mikor, mit csinált (véglegesítés, befizetés, szerkesztés, törlés, beállítások). |
+
+Minden módosítás (ki, mikor, mit csinált) az esemény táblázatának **Naplo** lapjára kerül; az admin felületen nincs külön napló fül.
 
 ### Export a pontozó appnak
 
@@ -211,7 +212,8 @@ Each event has its own spreadsheet in the same Drive folder.
 | **Helyszíni nevezés** (On-site registration) | Register on site into any division (full ones too); entering a bib confirms immediately. The competitor's consent must be ticked. |
 | **Esemény** (Event) | Event name, first and last day, venue, cover image, privacy notice link, entry fee, deadline, schedule and the **extra questions** for registration. The public page buttons (Registration, Lists, Results), links, and **upload of the scoring app's XLSX export** (heats and results). |
 | **Önkéntesek** (Volunteers) | Shifts per time slot (name, task, start, end, note). After saving, everyone gets a personal link showing their shifts ("now" / "next") and who they work with. |
-| **Napló** (Log) | Every change: who did what and when (confirmations, payments, edits, deletions, settings). |
+
+Every change (who did what and when) is written to the **Naplo** sheet of the event's spreadsheet; there is no log tab in the admin panel.
 
 ### Export for the scoring app
 

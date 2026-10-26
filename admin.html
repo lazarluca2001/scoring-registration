@@ -302,9 +302,6 @@
            padding:12px 14px; margin-bottom:12px; border:1px solid var(--line); border-radius:8px; background:var(--zebra); }
   .evfej p { font-size:.9rem; }
   .evbar .nincs { color:var(--soft); font-size:.9rem; }
-  /* Napló */
-  #t-naplo td.r { white-space:normal; min-width:280px; }
-  #t-naplo td.t { color:var(--soft); }
   /* Eseményválasztó */
   .evbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:14px 24px; border-bottom:1px solid var(--line);
            background:var(--zebra); border-radius:10px 10px 0 0; }
@@ -333,7 +330,7 @@
       </div>
       <label class="f" for="jelszo" id="jelszoCimke">Staff jelszó</label>
       <input type="password" id="jelszo" autocomplete="current-password" required>
-      <label class="f" for="adminNev" style="margin-top:14px">Neved <span style="color:var(--soft);font-weight:400">(a naplóhoz, nem kötelező)</span></label>
+      <label class="f" for="adminNev" style="margin-top:14px">Neved <span style="color:var(--soft);font-weight:400">(a táblázat naplójához, nem kötelező)</span></label>
       <input type="text" id="adminNev" autocomplete="name">
       <button class="btn full" id="belep">Belépés</button>
       <p class="msg" id="msgLogin" role="status"></p>
@@ -360,7 +357,6 @@
       <button class="tab csakstaff" role="tab" data-tab="helyszini" aria-selected="false">Helyszíni nevezés</button>
       <button class="tab csakstaff" role="tab" data-tab="esemeny" aria-selected="false">Esemény</button>
       <button class="tab csakstaff" role="tab" data-tab="onkentes" aria-selected="false">Önkéntesek</button>
-      <button class="tab csakstaff" role="tab" data-tab="naplo" aria-selected="false">Napló</button>
       <span class="sp"></span>
       <span class="tag gray" id="szerepTag"></span>
       <button class="btn ghost sm csakstaff" id="hozzaferesGomb">Hozzáférések</button>
@@ -582,22 +578,6 @@
         <p class="msg" id="msgO" role="status"></p>
         <button class="btn" id="oMent">Mentés</button>
       </div>
-    </div>
-
-    <div id="t-naplo" hidden>
-      <div class="tools">
-        <input type="search" id="nKer" class="grow" placeholder="Keresés a naplóban: név, művelet, reg. szám…">
-        <button class="btn ghost" id="nFrissit" title="Frissítés" aria-label="Frissítés">
-          <svg class="i" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>
-        </button>
-      </div>
-      <div class="tbl">
-        <table>
-          <thead><tr><th>Időpont</th><th>Ki</th><th>Művelet</th><th>Részletek</th></tr></thead>
-          <tbody id="nTest"></tbody>
-        </table>
-      </div>
-      <p class="msg" id="msgN" role="status" style="padding:12px 24px 16px"></p>
     </div>
   </section>
 </main>
@@ -840,7 +820,7 @@ function hatterBetolt() {
 }
 const sorokAhol = (feltetel, fn) => adat.sorok.forEach(s => { if (feltetel(s)) fn(s); });
 function esemenyValt(id) {
-  esemenyId = id; evPiszkos = false; oPiszkos = false; naplo = []; mAdat = null;
+  esemenyId = id; evPiszkos = false; oPiszkos = false; mAdat = null;
   try { sessionStorage.setItem('adminEsemeny', id); } catch {}
 }
 async function betoltEsemenyek() {
@@ -881,7 +861,7 @@ $('evValaszt').addEventListener('change', async () => {
   const c = cacheOlvas(esemenyId);
   if (c) { adat = c; jogAlkalmaz(); rajzolMind(); eloJelzo('off'); }   // azonnal látszik, a friss a háttérben jön
   msg('msgV', 'Betöltés…', 'info');
-  try { await betolt(); msg('msgV'); if (!$('t-naplo').hidden) betoltNaplo(); if (!$('t-marshalling').hidden) mBetolt(); }
+  try { await betolt(); msg('msgV'); if (!$('t-marshalling').hidden) mBetolt(); }
   catch (err) { msg('msgV', err.message || 'Hálózati hiba.'); }
 });
 // ---------- Új esemény ----------
@@ -1190,8 +1170,7 @@ $('kilep').addEventListener('click', () => {
 // ---------- Fülek ----------
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
   document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x === t ? 'true' : 'false'));
-  ['versenyzok', 'marshalling', 'nevezesek', 'diviziok', 'helyszini', 'esemeny', 'onkentes', 'naplo'].forEach(n => $('t-' + n).hidden = n !== t.dataset.tab);
-  if (t.dataset.tab === 'naplo') betoltNaplo();
+  ['versenyzok', 'marshalling', 'nevezesek', 'diviziok', 'helyszini', 'esemeny', 'onkentes'].forEach(n => $('t-' + n).hidden = n !== t.dataset.tab);
   if (t.dataset.tab === 'marshalling') mBetolt();
   if (ELO_FULEK.includes(t.dataset.tab) && Date.now() - eloUtolso > ELO_MP * 1000) eloFrissit(true);
 }));
@@ -2266,31 +2245,6 @@ $('erTorol').addEventListener('click', async () => {
   try { const v = await api('eredmenyTorles'); adat.eredmenyek = v.eredmenyek; rajzolEredmenyAllapot(); msg('msgEr', 'Törölve.', 'ok'); }
   catch (err) { msg('msgEr', err.message || 'Hálózati hiba.'); }
 });
-
-// ======================================================================
-// NAPLÓ
-// ======================================================================
-let naplo = [];
-async function betoltNaplo() {
-  msg('msgN', 'Betöltés…', 'info');
-  try { const v = await api('naplo', { db: 500 }); naplo = v.sorok; rajzolNaplo();
-        msg('msgN', v.osszes > naplo.length ? `A legutóbbi ${naplo.length} bejegyzés (összesen ${v.osszes}, a táblázat Naplo lapján mind megvan).` : '', 'info'); }
-  catch (err) { msg('msgN', /Ismeretlen művelet/.test(err.message) ? 'A naplóhoz frissíteni kell a Google Scriptet.' : (err.message || 'Hálózati hiba.')); }
-}
-function rajzolNaplo() {
-  const q = $('nKer').value.trim().toLowerCase();
-  const tb = $('nTest'); tb.innerHTML = '';
-  const l = naplo.filter(x => !q || [x.ki, x.muvelet, x.reszlet].join(' ').toLowerCase().includes(q));
-  if (!l.length) { tb.innerHTML = '<tr><td colspan="4" class="empty">' + (naplo.length ? 'Nincs találat.' : 'Még nincs bejegyzés.') + '</td></tr>'; return; }
-  l.forEach(x => {
-    const tr = document.createElement('tr');
-    [[x.ido, 't'], [x.ki, ''], [x.muvelet, ''], [x.reszlet, 'r']].forEach(([v, c]) => {
-      const td = document.createElement('td'); td.textContent = v; if (c) td.className = c; tr.append(td); });
-    tb.append(tr);
-  });
-}
-$('nKer').addEventListener('input', rajzolNaplo);
-$('nFrissit').addEventListener('click', betoltNaplo);
 
 $('hUj').addEventListener('click', () => {
   $('hWsdc').value = $('hKn').value = $('hVn').value = $('hBib').value = '';

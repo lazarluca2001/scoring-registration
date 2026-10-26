@@ -68,11 +68,13 @@ function rajzolListak() {
 $('lValaszt').addEventListener('change', () => { aktKor = $('lValaszt').value; rajzolListak(); urlR(); });
 
 (async () => {
-  if (!await esemenyOldal('listak')) { $('p-lista').hidden = true; return; }
-  await Promise.all([
+  // a listák az esemény adataival párhuzamosan töltődnek (nem egymás után)
+  const adatok = Promise.all([
     jsonGet({ eredmenyek: 1 }).then(r => { if (r.ok) eredmenyek = r; }).catch(() => {}),
     jsonGet({ rajtlista: 1 }).then(r => { if (r.ok) rajtlista = r; }).catch(() => {}),
   ]);
+  if (!await esemenyOldal('listak')) { $('p-lista').hidden = true; return; }
+  await adatok;
   rajzolListak(); urlR();
 })();
 </script>

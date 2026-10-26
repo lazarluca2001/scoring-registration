@@ -56,6 +56,15 @@ alatta a Nevezés / Listák / Eredmények fülek. A közös stílus és kód az 
 
 Az admin felület követi a rendszer sötét / világos beállítását; a jobb felső gombbal kézzel is váltható (Automatikus / Sötét / Világos).
 
+**Élő frissítés**: a Versenyzők, Nevezések, Divíziók és Helyszíni nevezés fül 15 másodpercenként magától betölti a változásokat
+(más gépen végzett véglegesítés, check-in, új online nevezés), így több gépen is lehet egyszerre dolgozni. Csak a megváltozott sorok
+cserélődnek, a görgetés, a lenyitott divíziók és a keresés megmarad; amíg valaki egy mezőbe gépel vagy nyitva van egy ablak, a frissítés vár.
+A bal felső sarokban az „Élő · óó:pp:mm” jelzi az utolsó frissítést.
+
+**Gyorsítás**: újratöltéskor és eseményváltáskor az utolsó adat azonnal megjelenik (a böngészőfülben marad), a friss a háttérben jön.
+Mentés után nem kell külön újratölteni: a változás azonnal látszik. A nyilvános oldalakon a lekérések párhuzamosan futnak,
+a fülek közti váltáskor az esemény adatai nem töltődnek le újra, a nevezésnél pedig a divíziók előre betöltődnek.
+
 Belépéskor kétféle hozzáférés közül választhatsz, mindkettőhöz külön jelszó tartozik. A név megadása nem kötelező, de az kerül a naplóba.
 
 - **Staff** – teljes hozzáférés: minden fül, minden beállítás, minden esemény.
@@ -167,6 +176,15 @@ The user interface is in Hungarian.
 ### Admin panel
 
 The admin follows the system's dark / light setting; the button at the top right switches it manually (Automatic / Dark / Light).
+
+**Live refresh**: the Competitors, Registrations, Divisions and On-site registration tabs load changes every 15 seconds on their own
+(confirmations and check-ins made on another device, new online registrations), so several devices can work at the same time. Only the
+changed rows are replaced; scroll position, opened divisions and the search are kept, and the refresh waits while someone is typing into a
+field or a dialog is open. "Élő · hh:mm:ss" at the top left shows the last refresh.
+
+**Speed**: on reload and when switching events the last data shows immediately (kept in the browser tab) while fresh data loads in
+the background. After saving there is no separate reload: the change shows at once. Public pages run their requests in parallel,
+switching between the tabs does not download the event details again, and the registration form preloads the divisions.
 
 At sign-in you choose between two access levels, each with its own password. Entering a name is optional; it is recorded in the log.
 

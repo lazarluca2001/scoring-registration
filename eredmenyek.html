@@ -66,8 +66,10 @@ const monogram = n => String(n).split(/\s+/).filter(Boolean).map(w => w[0]).join
 $('eValaszt').addEventListener('change', () => { aktKor = $('eValaszt').value; rajzolEredmenyek(); urlR(); });
 
 (async () => {
+  // az eredmények az esemény adataival párhuzamosan töltődnek (nem egymás után)
+  const adat = jsonGet({ eredmenyek: 1 }).then(r => { if (r.ok) eredmenyek = r; }).catch(() => {});
   if (!await esemenyOldal('eredmenyek')) { $('p-eredmeny').hidden = true; return; }
-  try { const r = await jsonGet({ eredmenyek: 1 }); if (r.ok) eredmenyek = r; } catch {}
+  await adat;
   rajzolEredmenyek(); urlR();
 })();
 </script>

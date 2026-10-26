@@ -59,7 +59,7 @@ function kartya(x) {
 
 (async () => {
   let lista = null;
-  try { const v = await jsonGet({ esemenyek: 1 }); if (v.ok && Array.isArray(v.esemenyek)) lista = v.esemenyek; } catch {}
+  try { const v = await jsonGet({ esemenyek: 1 }, 60); if (v.ok && Array.isArray(v.esemenyek)) lista = v.esemenyek; } catch {}
   if (!lista) { location.replace('nevezes'); return; }   // régi script: egy esemény
   const l = lista
     .filter(x => q ? [x.nev, x.helyszin].join(' ').toLowerCase().includes(q) : elmult(x) === korabbi)

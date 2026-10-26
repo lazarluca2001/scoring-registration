@@ -263,8 +263,6 @@
   .p .ops { grid-column:1 / -1; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .p .ops .fiz { width:110px; height:32px; text-align:right; }
   .p .ops .ft { color:var(--soft); font-size:.8rem; }
-  .btn.ci { height:32px; padding:0 12px; font-size:.8rem; background:transparent; color:var(--soft); border:1px solid var(--line); }
-  .btn.ci.on { background:var(--ok-bg); color:var(--ok); border-color:var(--ok-line); }
   .fbar select { width:auto; height:40px; }
   /* Divízió korlát */
   .row .korl { width:56px; height:30px; text-align:center; padding:0 6px; font-size:.82rem; }
@@ -296,6 +294,14 @@
   .prog .pr { display:grid; grid-template-columns:200px 1fr 1fr 30px; gap:8px; align-items:center; }
   @media (max-width:700px) { .prog .pr { grid-template-columns:1fr 30px; } .prog .pr .cim, .prog .pr .megj { grid-column:1; } }
   .hint { color:var(--soft); font-size:.82rem; margin-top:14px; }
+  .sdesc { color:var(--soft); font-size:.85rem; margin:-4px 0 14px; max-width:70ch; }
+  .mezohint { color:var(--soft); font-size:.78rem; margin-top:5px; }
+  .evsz + .evsz { border-top:1px solid var(--line); margin-top:24px; }
+  .evsz:first-of-type .bar { margin-top:4px; }
+  .evfej { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+           padding:12px 14px; margin-bottom:12px; border:1px solid var(--line); border-radius:8px; background:var(--zebra); }
+  .evfej p { font-size:.9rem; }
+  .evbar .nincs { color:var(--soft); font-size:.9rem; }
   /* Napló */
   #t-naplo td.r { white-space:normal; min-width:280px; }
   #t-naplo td.t { color:var(--soft); }
@@ -323,7 +329,7 @@
     <form class="pad" id="loginForm">
       <div class="szerep" role="radiogroup" aria-label="Bejelentkezés módja">
         <label><input type="radio" name="szerep" value="staff" checked><span><b>Staff</b><small>teljes hozzáférés</small></span></label>
-        <label><input type="radio" name="szerep" value="checkin"><span><b>Check-in</b><small>érkeztetés, marshalling</small></span></label>
+        <label><input type="radio" name="szerep" value="checkin"><span><b>Check-in</b><small>befizetés, marshalling</small></span></label>
       </div>
       <label class="f" for="jelszo" id="jelszoCimke">Staff jelszó</label>
       <input type="password" id="jelszo" autocomplete="current-password" required>
@@ -337,14 +343,14 @@
   <section id="panel" class="card" hidden>
     <div class="evbar" id="evBar" hidden>
       <label for="evValaszt">Esemény</label>
-      <select id="evValaszt"></select>
+      <select id="evValaszt"></select><span class="nincs" id="evNincs" hidden>Még nincs esemény – hozz létre egyet</span>
       <label class="nyk csakstaff" title="Nyilvános esemény: megjelenik a nevezési oldalon, a versenyzők kiválaszthatják. Több is lehet nyilvános egyszerre.">
         <span class="sw"><input type="checkbox" id="evNyilv"><span></span></span> Nyilvános
       </label>
       <span class="tag csakstaff" id="evAllapot"></span>
       <button class="btn ghost sm csakstaff" id="evLink" title="Az esemény saját linkje a nevezési oldalon – ezzel egyenesen erre az eseményre jutnak">Link másolása</button>
       <span class="sp"></span>
-      <button class="btn sm csakstaff" id="evUjGomb" title="Új verseny: saját táblázat, saját link, saját nevezések">+ Új esemény létrehozása</button>
+      <button class="btn sm csakstaff" id="evUjGomb" title="Új verseny: saját táblázat, saját link, saját nevezések">+ Új esemény</button>
     </div>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="versenyzok" aria-selected="true">Versenyzők</button>
@@ -370,10 +376,8 @@
           <button data-f="vegleges" aria-pressed="false">Végleges</button>
           <button data-f="mind" aria-pressed="false">Mind</button>
         </div>
-        <select id="vHely" aria-label="Szűrés check-in és befizetés szerint">
+        <select id="vHely" aria-label="Szűrés befizetés szerint">
           <option value="">Mindenki</option>
-          <option value="nincsitt">Még nem érkezett meg</option>
-          <option value="itt">Megérkezett</option>
           <option value="nemfiz">Nem fizetett</option>
           <option value="fiz">Fizetett</option>
         </select>
@@ -384,8 +388,6 @@
       <div class="stats">
         <div><b id="vFuggo">0</b><span>függő</span></div>
         <div><b id="vVegl">0</b><span>végleges</span></div>
-        <div><b id="vKov">–</b><span>következő szabad bib</span></div>
-        <div><b id="vItt">0</b><span>megérkezett</span></div>
         <div><b id="vFiz">0</b><span>fizetett</span></div>
         <div><b id="vOsszeg">0 Ft</b><span>befizetve összesen</span></div>
       </div>
@@ -402,7 +404,6 @@
         </button>
         <label class="chk"><input type="checkbox" id="csakVegl" checked> Csak véglegesítettek</label>
         <label class="chk"><input type="checkbox" id="csakHiba"> Csak hibásak</label>
-        <label class="chk" title="A verseny napján: csak a megérkezett versenyzők kerülnek az exportba"><input type="checkbox" id="csakItt"> Csak megérkezettek</label>
         <button class="btn" id="csvOssz">CSV</button>
         <button class="btn" id="xlsxOssz">XLSX</button>
       </div>
@@ -472,55 +473,71 @@
     <!-- ESEMÉNY -->
     <div id="t-esemeny" hidden>
       <div class="pad">
+        <div class="evfej">
+          <p>A kiválasztott esemény beállításai: <b id="evFejNev">–</b></p>
+          <button class="btn ghost sm" id="evUjGomb2" type="button">+ Új esemény</button>
+        </div>
         <p class="msg" id="evRegi" style="margin-bottom:12px"></p>
-        <div class="grid">
-          <div class="full"><label class="f" for="evNev">Esemény neve</label><input type="text" id="evNev" placeholder="pl. TECA 2027"></div>
-          <div><label class="f" for="evKezdes">Első nap</label><input type="date" id="evKezdes"></div>
-          <div><label class="f" for="evVege">Utolsó nap</label><input type="date" id="evVege"></div>
-          <div><label class="f" for="evDatum">Dátum szövegesen <span style="color:var(--soft);font-weight:400">(ha eltér)</span></label><input type="text" id="evDatum" placeholder="üresen a napokból számolja"></div>
-          <div><label class="f" for="evHely">Helyszín</label><input type="text" id="evHely" placeholder="pl. Budapest, …"></div>
-          <div><label class="f" for="evDij">Nevezési díj (Ft)</label><input type="text" id="evDij" inputmode="numeric" placeholder="pl. 12000"></div>
-          <div><label class="f" for="evHatarido">Nevezési határidő</label><input type="datetime-local" id="evHatarido"></div>
-          <div><label class="f" for="evRovid">Rövid név a linkben</label><input type="text" id="evRovid" placeholder="pl. teca2027"></div>
-          <div class="full"><label class="f" for="evKep">Borítókép (link) <span style="color:var(--soft);font-weight:400">– a főoldali kártyán 16:9 arányban jelenik meg (ajánlott: 1920×1080); Drive-link is jó, ha „Bárki, aki rendelkezik a linkkel” megosztású</span></label>
-            <input type="text" id="evKep" placeholder="https://…"></div>
-          <div class="full"><label class="f" for="evAdatk">Adatkezelési tájékoztató (link) <span style="color:var(--soft);font-weight:400">– a nevezési űrlap hozzájárulás-jelölőnégyzeténél jelenik meg</span></label>
-            <input type="text" id="evAdatk" placeholder="https://…"></div>
-        </div>
-        <div class="bar"><h2 class="sec">Ütemterv</h2><button class="btn ghost sm" id="pUj" type="button">+ Programpont</button></div>
-        <div class="prog" id="pLista"></div>
-        <datalist id="pJavaslat"></datalist>
 
-        <div class="bar"><h2 class="sec">Plusz kérdések a nevezésnél</h2><button class="btn ghost sm" id="kUj" type="button">+ Kérdés</button></div>
-        <div class="kszerk" id="kLista"></div>
-        <p class="hint" style="margin-top:6px">Pl. póló méret (választós: XS, S, M, L, XL), ételérzékenység (szöveg), vészhelyzeti kontakt (szöveg), „Először versenyzem” (igen/nem).
-          A válaszok a táblázat „Valaszok” lapjára kerülnek, és a Versenyzők fülön is látszanak. Kötelező igen/nem kérdést be kell jelölni a nevezéshez.</p>
+        <section class="evsz">
+          <div class="bar"><h2 class="sec">Alapadatok</h2></div>
+          <p class="sdesc">A nevezési oldal tetején, az esemény kártyáján jelennek meg. A határidő után az online nevezés lezárul, a helyszíni nevezés továbbra is működik.</p>
+          <div class="grid">
+            <div class="full"><label class="f" for="evNev">Esemény neve</label><input type="text" id="evNev" placeholder="pl. TECA 2027"></div>
+            <div><label class="f" for="evKezdes">Első nap</label><input type="date" id="evKezdes"></div>
+            <div><label class="f" for="evVege">Utolsó nap</label><input type="date" id="evVege"></div>
+            <div><label class="f" for="evDatum">Dátum szövegesen</label><input type="text" id="evDatum" placeholder="üresen a napokból számolja"></div>
+            <div><label class="f" for="evHely">Helyszín</label><input type="text" id="evHely" placeholder="pl. Budapest, …"></div>
+            <div><label class="f" for="evDij">Nevezési díj (Ft)</label><input type="text" id="evDij" inputmode="numeric" placeholder="pl. 12000"></div>
+            <div><label class="f" for="evHatarido">Nevezési határidő</label><input type="datetime-local" id="evHatarido"></div>
+            <div><label class="f" for="evRovid">Rövid név a linkben</label><input type="text" id="evRovid" placeholder="pl. teca2027"></div>
+            <div class="full"><label class="f" for="evKep">Borítókép (link)</label><input type="text" id="evKep" placeholder="https://…">
+              <p class="mezohint">16:9 arány, pl. 1920×1080. Drive-link is jó, ha „Bárki, aki rendelkezik a linkkel” megosztású.</p></div>
+            <div class="full"><label class="f" for="evAdatk">Adatkezelési tájékoztató (link)</label><input type="text" id="evAdatk" placeholder="https://…">
+              <p class="mezohint">A nevezési űrlapon, a hozzájárulás jelölőnégyzeténél jelenik meg.</p></div>
+          </div>
+        </section>
 
-        <div class="bar"><h2 class="sec">Nyilvános oldal fülei</h2></div>
-        <div class="fulvalaszto">
-          <label class="chk"><input type="checkbox" id="fulNevezes"> Nevezés</label>
-          <label class="chk"><input type="checkbox" id="fulMarshalling"> Listák</label>
-          <label class="chk"><input type="checkbox" id="fulEredmeny"> Eredmények</label>
-        </div>
-        <p class="hint" style="margin-top:4px">A Marshalling listák fülön automatikusan megjelenik a rajtlista (a véglegesített versenyzők divíziónként, bib szerint), alatta pedig az itt megadott linkek.
-          Ha a Nevezés fül ki van kapcsolva, online nem lehet nevezni.</p>
+        <section class="evsz">
+          <div class="bar"><h2 class="sec">Ütemterv</h2><button class="btn ghost sm" id="pUj" type="button">+ Programpont</button></div>
+          <p class="sdesc">Időrendben látszik a nevezési oldalon.</p>
+          <div class="prog" id="pLista"></div>
+          <datalist id="pJavaslat"></datalist>
+        </section>
 
-        <div class="bar"><h2 class="sec">Linkek</h2><button class="btn ghost sm" id="lUj" type="button">+ Link</button></div>
-        <div class="linkszerk" id="lLista"></div>
-        <p class="hint">Pl. a pontozó appból exportált futambeosztás vagy eredmény PDF-ként a Drive-on (megosztás: „Bárki, aki rendelkezik a linkkel”).</p>
+        <section class="evsz">
+          <div class="bar"><h2 class="sec">Plusz kérdések a nevezésnél</h2><button class="btn ghost sm" id="kUj" type="button">+ Kérdés</button></div>
+          <p class="sdesc">Pl. pólóméret, ételérzékenység, „Először versenyzem”. A válaszok a Versenyzők fülön is látszanak.</p>
+          <div class="kszerk" id="kLista"></div>
+        </section>
 
-        <div class="bar"><h2 class="sec">Futambeosztás és eredmények a pontozó appból</h2></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <input type="file" id="erFajl" accept=".xlsx" style="flex:1;min-width:220px">
-          <button class="btn" id="erFel" type="button" disabled>Feltöltés</button>
-          <button class="btn danger sm" id="erTorol" type="button">Feltöltöttek törlése</button>
-        </div>
-        <p class="msg" id="msgEr" role="status" style="margin-top:8px"></p>
-        <div class="hint" id="erAllapot"></div>
-        <p class="hint">A pontozó appban: Munkamenet → exportálás (XLSX). A fájlból a nevezési oldal Listák fülére a futambeosztás (bevonuló párok),
-          az Eredmények fülre a fordulók eredménye kerül. Bármikor újra feltöltheted: az eredmények frissülnek, a korábbi fordulók futambeosztása megmarad.</p>
-        <p class="hint">A nevezési oldal tetején megjelenik egy kártya az esemény adataival, a nevezési határidővel és az ütemtervvel.
-          A határidő után az online nevezés lezárul; a helyszíni nevezés az admin felületen továbbra is működik.</p>
+        <section class="evsz">
+          <div class="bar"><h2 class="sec">Nyilvános oldal fülei</h2></div>
+          <p class="sdesc">Ezeket a füleket látják a versenyzők. Ha a Nevezés ki van kapcsolva, online nem lehet nevezni.</p>
+          <div class="fulvalaszto">
+            <label class="chk"><input type="checkbox" id="fulNevezes"> Nevezés</label>
+            <label class="chk"><input type="checkbox" id="fulMarshalling"> Listák</label>
+            <label class="chk"><input type="checkbox" id="fulEredmeny"> Eredmények</label>
+          </div>
+        </section>
+
+        <section class="evsz">
+          <div class="bar"><h2 class="sec">Linkek</h2><button class="btn ghost sm" id="lUj" type="button">+ Link</button></div>
+          <p class="sdesc">A Listák fülön jelennek meg a rajtlista alatt, pl. egy PDF a Drive-ról.</p>
+          <div class="linkszerk" id="lLista"></div>
+        </section>
+
+        <section class="evsz">
+          <div class="bar"><h2 class="sec">Pontozó app exportja</h2></div>
+          <p class="sdesc">Az app XLSX exportja: a futambeosztás a Listák, az eredmények az Eredmények fülre kerülnek. Bármikor újra feltölthető.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input type="file" id="erFajl" accept=".xlsx" style="flex:1;min-width:220px">
+            <button class="btn" id="erFel" type="button" disabled>Feltöltés</button>
+            <button class="btn danger sm" id="erTorol" type="button">Feltöltöttek törlése</button>
+          </div>
+          <p class="msg" id="msgEr" role="status" style="margin-top:8px"></p>
+          <div class="hint" id="erAllapot"></div>
+        </section>
       </div>
       <div class="foot">
         <p class="msg" id="msgEv" role="status"></p>
@@ -645,7 +662,7 @@
     <div class="pad">
       <div class="teendo" style="padding:4px 0">
         <p style="padding:8px 14px"><b>Staff</b> – minden fül és beállítás, minden eseménynél. A staff jelszót az Apps Scriptben a <code>jelszoBeallitas</code> függvénnyel lehet megváltoztatni.</p>
-        <p style="padding:8px 14px;border-top:1px solid var(--line)"><b>Check-in</b> – csak a Versenyzők fül (keresés, „Megérkezett”, befizetés) és a Marshalling fül. Nem véglegesíthet, nem szerkeszthet és nem törölhet, a beállításokat nem látja. A jelszó minden eseménynél érvényes.</p>
+        <p style="padding:8px 14px;border-top:1px solid var(--line)"><b>Check-in</b> – csak a Versenyzők fül (keresés, befizetés) és a Marshalling fül. Nem véglegesíthet, nem szerkeszthet és nem törölhet, a beállításokat nem látja. A jelszó minden eseménynél érvényes.</p>
       </div>
       <p>Check-in jelszó: <b id="hozzAllapot"></b></p>
       <div><label class="f" for="hozzJelszo">Új check-in jelszó</label><input type="text" id="hozzJelszo" autocomplete="off" placeholder="legalább 6 karakter"></div>
@@ -828,11 +845,14 @@ function esemenyValt(id) {
 }
 async function betoltEsemenyek() {
   try { esemenyLista = (await api('esemenyek')).esemenyek; rajzolEsemenySav(); }
-  catch { $('evBar').hidden = true; }   // régi script: nincs eseménykezelés
+  catch { esemenyLista = []; rajzolEsemenySav(); }   // régi script: az új esemény gomb ekkor is látszik
 }
 function rajzolEsemenySav() {
-  if (!esemenyLista.length) return;
   $('evBar').hidden = false;
+  const van = esemenyLista.length > 0;
+  ['evValaszt', 'evAllapot', 'evLink'].forEach(i => { $(i).hidden = !van; });
+  $('evNyilv').closest('label').hidden = !van; $('evNincs').hidden = van;
+  if (!van) return;
   const sel = $('evValaszt'); sel.innerHTML = '';
   const nyilv = e => e.nyilvanos !== undefined ? e.nyilvanos : e.aktiv;
   esemenyLista.forEach(e => { const o = document.createElement('option'); o.value = e.id; o.textContent = e.nev + (nyilv(e) ? ' (nyilvános)' : ''); sel.append(o); });
@@ -876,7 +896,7 @@ function ujLinkElo() {
 }
 ['ujNev', 'ujRovid'].forEach(i => $(i).addEventListener('input', ujLinkElo));
 $('ujKezdes').addEventListener('change', () => { if (!$('ujVege').value || $('ujVege').value < $('ujKezdes').value) $('ujVege').value = $('ujKezdes').value; });
-$('evUjGomb').addEventListener('click', () => {
+function ujEsemenyNyit() {
   ['ujNev', 'ujRovid', 'ujKezdes', 'ujVege', 'ujHely', 'ujHatarido'].forEach(i => { $(i).value = ''; });
   $('ujNyilv').checked = false; msg('msgUj'); ujLinkElo();
   const sel = $('ujForrasVal'); sel.innerHTML = '';
@@ -886,7 +906,9 @@ $('evUjGomb').addEventListener('click', () => {
   sel.value = esemenyLista.some(e => e.id === akt) ? akt : '';
   $('ujUrlap').hidden = false; $('ujKesz').hidden = true;
   $('ujDlg').showModal(); $('ujNev').focus();
-});
+}
+$('evUjGomb').addEventListener('click', ujEsemenyNyit);
+$('evUjGomb2').addEventListener('click', ujEsemenyNyit);
 $('ujMegse').addEventListener('click', () => $('ujDlg').close());
 $('ujForm').addEventListener('submit', async e => {
   e.preventDefault();
@@ -906,7 +928,7 @@ $('ujForm').addEventListener('submit', async e => {
     const nyilv = (esemenyLista.find(x => x.id === v.uj) || {}).nyilvanos;
     ujNyilvRajz(nyilv);
     $('ujUrlap').hidden = true; $('ujKesz').hidden = false;
-  } catch (err) { msg('msgUj', err.message || 'Hálózati hiba.'); }
+  } catch (err) { msg('msgUj', /Ismeretlen művelet/.test(err.message) ? 'Ehhez frissíteni kell a Google Scriptet (Kod.gs).' : (err.message || 'Hálózati hiba.')); }
   finally { $('ujMent').disabled = false; }
 });
 function ujNyilvRajz(nyilv) {
@@ -1462,19 +1484,10 @@ function versenyzok() {
   return [...m.values()];
 }
 
-function kovetkezoBib() {
-  const foglalt = new Set(adat.sorok.map(s => parseInt(s.bib, 10)).filter(n => !isNaN(n)));
-  // a legkisebb kiosztott bibtől keresi az első szabadot (pl. ha 101-től számoztok, 1 helyett 128-at ajánl)
-  let n = foglalt.size ? Math.min(...foglalt) : 1; while (foglalt.has(n)) n++;
-  return n;
-}
-
 function rajzolVersenyzok() {
   const lista = versenyzok();
   $('vFuggo').textContent = lista.filter(p => p.allapot === 'fuggo').length;
   $('vVegl').textContent = lista.filter(p => p.allapot === 'vegleges').length;
-  $('vKov').textContent = kovetkezoBib();
-  $('vItt').textContent = lista.filter(p => p.checkin).length;
   $('vFiz').textContent = lista.filter(fizetett).length;
   $('vOsszeg').textContent = ftFormat(lista.reduce((a, p) => a + (fizetett(p) ? Number(p.fizetve) : 0), 0));
   const hely = $('vHely').value;
@@ -1483,7 +1496,7 @@ function rajzolVersenyzok() {
   const mutat = lista
     .filter(p => vSzuro === 'mind' || p.allapot === vSzuro)
     .filter(p => talal(q, p))
-    .filter(p => !hely || (hely === 'itt' ? !!p.checkin : hely === 'nincsitt' ? !p.checkin : hely === 'fiz' ? fizetett(p) : !fizetett(p)))
+    .filter(p => !hely || (hely === 'fiz' ? fizetett(p) : !fizetett(p)))
     .sort((a, b) => vSzuro === 'fuggo' ? a.elso.localeCompare(b.elso) : rendezo(a, b));
 
   const box = $('people'), elemek = [];
@@ -1518,7 +1531,7 @@ function rajzolVersenyzok() {
     ok.textContent = p.allapot === 'vegleges' ? 'Mentés' : 'Véglegesít';
     const ment = async () => {
       const bib = inp.value.trim();
-      if (!bib) { inp.value = p.bib || String(kovetkezoBib()); inp.focus(); inp.select(); return; }
+      if (!bib) { msg('msgV', 'Írd be a bib számot.'); inp.focus(); return; }
       if (!/^\d+$/.test(bib)) { msg('msgV', 'A bib csak szám lehet, különben a pontozó app nem tudja beolvasni.'); inp.focus(); return; }
       const foglalt = bibFoglalta(bib, p.regszam || emberKulcs(p));
       if (foglalt && !confirm(`A ${bib}-es bib már ${foglalt} versenyzőé. Biztosan ezt adod ${p.vezeteknev} ${p.keresztnev} versenyzőnek is?`)) return;
@@ -1547,22 +1560,8 @@ function rajzolVersenyzok() {
       fin.innerHTML = '';
       fin.append(Object.assign(document.createElement('span'), { className: 'bibro' + (p.bib ? '' : ' nincs'), textContent: p.bib ? 'Bib ' + p.bib : 'még nincs bib' }));
     }
-    // Check-in és befizetés
+    // Befizetés
     const ops = document.createElement('div'); ops.className = 'ops';
-    const ci = document.createElement('button'); ci.type = 'button';
-    const ciRajz = () => { ci.className = 'btn ci' + (p.checkin ? ' on' : ''); ci.textContent = p.checkin ? '✓ Megérkezett' : 'Megérkezett?';
-      ci.title = p.checkin ? 'Megérkezett: ' + p.checkin + ' (kattintás: visszavonás)' : 'Check-in'; };
-    ciRajz();
-    ci.disabled = !p.regszam;
-    ci.addEventListener('click', async () => {
-      const uj = !p.checkin;
-      if (!uj && !confirm('Visszavonod ' + p.vezeteknev + ' ' + p.keresztnev + ' check-injét?')) return;
-      ci.disabled = true; msg('msgV', 'Mentés…', 'info');
-      try { await api('checkin', { regszam: p.regszam, ertek: uj });
-            sorokFrissit(p.regszam, 'checkin', uj ? new Date().toISOString().slice(0, 16).replace('T', ' ') : '');
-            msg('msgV', p.vezeteknev + ' ' + p.keresztnev + (uj ? ' megérkezett.' : ': check-in visszavonva.'), 'ok'); }
-      catch (err) { ci.disabled = false; msg('msgV', err.message || 'Hálózati hiba.'); }
-    });
     const fiz = document.createElement('input'); fiz.type = 'text'; fiz.className = 'fiz'; fiz.inputMode = 'numeric';
     fiz.placeholder = 'Fizetve';
     fiz.value = p.fizetve !== undefined && p.fizetve !== '' ? String(p.fizetve) : ''; fiz.dataset.eredeti = fiz.value;
@@ -1583,7 +1582,7 @@ function rajzolVersenyzok() {
     fiz.addEventListener('keydown', e => { if (e.key === 'Enter') fizMent(); });
     fiz.addEventListener('blur', fizMent);
     // Ha van nevezési díj, egy kattintással beírható
-    ops.append(ci, fiz, ft);
+    ops.append(fiz, ft);
     if (adat.esemeny && adat.esemeny.dij && !fizetett(p)) {
       const dj = document.createElement('button'); dj.type = 'button'; dj.className = 'btn ghost sm';
       dj.textContent = ftFormat(adat.esemeny.dij) + ' befizetve';
@@ -1630,8 +1629,7 @@ function rendezo(a, b) {
 }
 const talal = (q, s) => !q || [s.keresztnev + ' ' + s.vezeteknev, s.vezeteknev + ' ' + s.keresztnev, s.wsdc,
   s.regszam.replace(/-/g, ''), s.bib].join(' ').toLowerCase().includes(q);
-const exportSorok = () => adat.sorok.filter(s => (!$('csakVegl').checked || s.vegleges) && (!$('csakItt').checked || s.checkin));
-$('csakItt').addEventListener('change', rajzolNevezesek);
+const exportSorok = () => adat.sorok.filter(s => !$('csakVegl').checked || s.vegleges);
 
 function szurt() {
   const q = $('kereses').value.trim().toLowerCase().replace(/-/g, '');
@@ -2062,6 +2060,7 @@ function programSor(p = {}) {
 }
 function rajzolEsemeny() {
   const e = adat.esemeny;
+  $('evFejNev').textContent = (e && e.nev) || ((esemenyLista.find(x => x.id === esemenyId) || {}).nev) || '–';
   $('evRegi').textContent = e ? '' : 'A Google Script még a régi változat: az esemény adatait csak a script frissítése után lehet menteni.';
   $('evMent').disabled = !e;
   // javaslatok a programpontokhoz: divíziónevek

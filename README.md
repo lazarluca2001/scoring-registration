@@ -57,7 +57,7 @@ alatta a Nevezés / Listák / Eredmények fülek. A közös stílus és kód az 
 Az admin felület követi a rendszer sötét / világos beállítását; a jobb felső gombbal kézzel is váltható (Automatikus / Sötét / Világos).
 
 **Élő frissítés**: a Versenyzők, Nevezések, Divíziók és Helyszíni nevezés fül 15 másodpercenként magától betölti a változásokat
-(más gépen végzett véglegesítés, check-in, új online nevezés), így több gépen is lehet egyszerre dolgozni. Csak a megváltozott sorok
+(más gépen végzett véglegesítés, befizetés, új online nevezés), így több gépen is lehet egyszerre dolgozni. Csak a megváltozott sorok
 cserélődnek, a görgetés, a lenyitott divíziók és a keresés megmarad; amíg valaki egy mezőbe gépel vagy nyitva van egy ablak, a frissítés vár.
 A bal felső sarokban az „Élő · óó:pp:mm” jelzi az utolsó frissítést.
 
@@ -68,7 +68,7 @@ a fülek közti váltáskor az esemény adatai nem töltődnek le újra, a nevez
 Belépéskor kétféle hozzáférés közül választhatsz, mindkettőhöz külön jelszó tartozik. A név megadása nem kötelező, de az kerül a naplóba.
 
 - **Staff** – teljes hozzáférés: minden fül, minden beállítás, minden esemény.
-- **Check-in** – a verseny napi érkeztetéshez: csak a Versenyzők és a Marshalling fül (keresés, „Megérkezett”, befizetés). Nem véglegesíthet,
+- **Check-in** – a verseny napjára: csak a Versenyzők és a Marshalling fül (keresés, befizetés). Nem véglegesíthet,
   nem szerkeszthet, nem törölhet, a beállításokat nem látja. A naplóban a neve mellett „[check-in]” jelenik meg.
   A check-in jelszót a staff állítja be vagy törli a **Hozzáférések** gombbal; minden eseménynél érvényes.
 
@@ -83,14 +83,14 @@ Minden eseménynek saját táblázata van ugyanabban a Drive mappában.
 
 | Fül | Funkciók |
 |---|---|
-| **Versenyzők** | Véglegesítés bib számmal (a következő szabad bibet javasolja, foglalt vagy nem szám bibre figyelmeztet). Check-in („Megérkezett”), befizetett összeg (egy kattintással a nevezési díj). Szűrők: függő / végleges, megérkezett / nem, fizetett / nem. Összesítő: függők, véglegesek, megérkezettek, befizetett összeg. Keresés névre, WSDC ID-ra, regisztrációs kódra, bibre. |
+| **Versenyzők** | Véglegesítés bib számmal (foglalt vagy nem szám bibre figyelmeztet). Befizetett összeg (egy kattintással a nevezési díj). Szűrők: függő / végleges, fizetett / nem. Összesítő: függők, véglegesek, fizetettek, befizetett összeg. Keresés névre, WSDC ID-ra, regisztrációs kódra, bibre. |
 | **Marshalling** | Felvonulás előtt: divízió és forduló kiválasztása, a futamok párjai (Leader / Follower), egy koppintással pipálható, ki érkezett meg; „Mind itt” futamonként, „Hiányzók” szűrő, keresés bibre vagy névre, futamonkénti és összesített számláló. A pontozó app feltöltött futambeosztásából dolgozik; több marshall is használhatja egyszerre (15 másodpercenként frissül). A check-in jogosultság is eléri. **Offline is működik**: térerő nélkül a jelölések a telefonon gyűlnek, és amint van net, maguktól feltöltődnek (a koppintás idejével). |
-| **Nevezések** | Divíziónként csoportosítva, szerkesztés és törlés. Hibák pirossal: nem szám bib, ugyanaz a bib két versenyzőnél, hiányzó szerep, dupla nevezés („Csak hibásak” szűrő). Export CSV és XLSX formátumban a pontozó appnak, szűrhető a véglegesítettekre és a verseny napján a megérkezettekre. |
+| **Nevezések** | Divíziónként csoportosítva, szerkesztés és törlés. Hibák pirossal: nem szám bib, ugyanaz a bib két versenyzőnél, hiányzó szerep, dupla nevezés („Csak hibásak” szűrő). Export CSV és XLSX formátumban a pontozó appnak, szűrhető a véglegesítettekre. |
 | **Divíziók** | Létszám divíziónként (Leader / Follower, függők, eltérés). Divíziónként egy kapcsoló (a Leader és Follower változat együtt), létszámkorlát szerepenként. |
 | **Helyszíni nevezés** | Nevezés a helyszínen bármely divízióba (a betelt divízióba is), bib megadásával azonnal véglegesít. A versenyző hozzájárulását be kell jelölni. |
 | **Esemény** | Az esemény neve, első és utolsó napja, helyszíne, borítóképe, adatkezelési tájékoztatója, nevezési díja, határideje, az ütemterv és a **plusz kérdések** a nevezéshez. A nyilvános oldal gombjai (Nevezés, Listák, Eredmények), linkek, és a **pontozó app XLSX exportjának feltöltése** (futambeosztás és eredmények). |
 | **Önkéntesek** | Beosztás idősávonként (név, feladat, kezdés, vége, megjegyzés). Mentés után mindenki saját linket kap, amin a beosztását látja („most” / „következő” jelöléssel), és hogy kikkel van együtt. |
-| **Napló** | Minden módosítás: ki, mikor, mit csinált (véglegesítés, check-in, befizetés, szerkesztés, törlés, beállítások). |
+| **Napló** | Minden módosítás: ki, mikor, mit csinált (véglegesítés, befizetés, szerkesztés, törlés, beállítások). |
 
 ### Export a pontozó appnak
 
@@ -109,8 +109,8 @@ egy lap van. Ha a fájlt az app nem tudná beolvasni (pl. függő nevezés, ism�
 1. **Esemény**: új esemény létrehozása (vagy a meglévő kiválasztása), az adatok, a határidő és az ütemterv kitöltése,
    a divíziók és létszámkorlátok beállítása, végül a „Nyilvános” kapcsoló bekapcsolása.
 2. **Nevezési időszak**: a versenyzők neveznek; a Versenyzők fülön véglegesíted őket bib számmal, a Divíziók fülön figyeled a létszámot.
-3. **Verseny napja**: a versenyző megmutatja a kódját, rákeresel, „Megérkezett”, befizetés. Helyszíni nevezés a külön fülön.
-4. **Pontozás**: Nevezések fül → „Csak véglegesítettek” és „Csak megérkezettek” → CSV vagy XLSX → betöltés a pontozó appba.
+3. **Verseny napja**: a versenyző megmutatja a kódját, rákeresel, befizetés. Helyszíni nevezés a külön fülön.
+4. **Pontozás**: Nevezések fül → „Csak véglegesítettek” → CSV vagy XLSX → betöltés a pontozó appba.
 5. **Listák és eredmények**: az Esemény fülön a Listák és az Eredmények bekapcsolása, majd a pontozó app exportjának (XLSX) feltöltése
    fordulónként. Az eredmények minden feltöltéskor frissülnek, a korábbi fordulók futambeosztása megmarad.
 
@@ -178,7 +178,7 @@ The user interface is in Hungarian.
 The admin follows the system's dark / light setting; the button at the top right switches it manually (Automatic / Dark / Light).
 
 **Live refresh**: the Competitors, Registrations, Divisions and On-site registration tabs load changes every 15 seconds on their own
-(confirmations and check-ins made on another device, new online registrations), so several devices can work at the same time. Only the
+(confirmations and payments made on another device, new online registrations), so several devices can work at the same time. Only the
 changed rows are replaced; scroll position, opened divisions and the search are kept, and the refresh waits while someone is typing into a
 field or a dialog is open. "Élő · hh:mm:ss" at the top left shows the last refresh.
 
@@ -189,7 +189,7 @@ switching between the tabs does not download the event details again, and the re
 At sign-in you choose between two access levels, each with its own password. Entering a name is optional; it is recorded in the log.
 
 - **Staff** – full access: every tab, every setting, every event.
-- **Check-in** – for competition-day arrivals: only the Competitors and Marshalling tabs (search, "arrived", payment). Cannot confirm, edit,
+- **Check-in** – for competition day: only the Competitors and Marshalling tabs (search, payment). Cannot confirm, edit,
   delete or see settings. Log entries show "[check-in]" next to the name. Staff set or remove the check-in password with the
   **Hozzáférések** (Access) button; it is valid for every event.
 
@@ -204,14 +204,14 @@ Each event has its own spreadsheet in the same Drive folder.
 
 | Tab | Features |
 |---|---|
-| **Versenyzők** (Competitors) | Confirm with a bib number (suggests the next free bib, warns about taken or non-numeric bibs). Check-in, amount paid (one click for the entry fee). Filters: pending / confirmed, arrived / not, paid / not. Totals: pending, confirmed, arrived, amount paid. Search by name, WSDC ID, registration code or bib. |
+| **Versenyzők** (Competitors) | Confirm with a bib number (warns about taken or non-numeric bibs). Amount paid (one click for the entry fee). Filters: pending / confirmed, paid / not. Totals: pending, confirmed, paid, amount paid. Search by name, WSDC ID, registration code or bib. |
 | **Marshalling** | Before the walk-on: pick division and round, see each heat's couples (Leader / Follower) and tick who has arrived with one tap; "Mind itt" (all here) per heat, "Hiányzók" (missing) filter, search by bib or name, counters per heat and in total. Uses the heats uploaded from the scoring app; several marshals can use it at once (refreshes every 15 seconds). Check-in users can use it too. **Works offline**: without signal, ticks are kept on the phone and uploaded automatically once the connection is back (with the time of the tap). |
-| **Nevezések** (Registrations) | Grouped by division, edit and delete. Errors highlighted in red: non-numeric bib, same bib for two competitors, missing role, duplicate entry ("errors only" filter). Export to CSV and XLSX for the scoring app, filtered to confirmed and, on competition day, to arrived competitors. |
+| **Nevezések** (Registrations) | Grouped by division, edit and delete. Errors highlighted in red: non-numeric bib, same bib for two competitors, missing role, duplicate entry ("errors only" filter). Export to CSV and XLSX for the scoring app, filtered to confirmed competitors. |
 | **Divíziók** (Divisions) | Head count per division (Leader / Follower, pending, difference). One switch per division (Leader and Follower together), entry limit per role. |
 | **Helyszíni nevezés** (On-site registration) | Register on site into any division (full ones too); entering a bib confirms immediately. The competitor's consent must be ticked. |
 | **Esemény** (Event) | Event name, first and last day, venue, cover image, privacy notice link, entry fee, deadline, schedule and the **extra questions** for registration. The public page buttons (Registration, Lists, Results), links, and **upload of the scoring app's XLSX export** (heats and results). |
 | **Önkéntesek** (Volunteers) | Shifts per time slot (name, task, start, end, note). After saving, everyone gets a personal link showing their shifts ("now" / "next") and who they work with. |
-| **Napló** (Log) | Every change: who did what and when (confirmations, check-in, payments, edits, deletions, settings). |
+| **Napló** (Log) | Every change: who did what and when (confirmations, payments, edits, deletions, settings). |
 
 ### Export for the scoring app
 
@@ -231,8 +231,8 @@ bibs), the admin panel says so when exporting.
 1. **Event**: create a new event (or select an existing one), fill in the details, deadline and schedule, set up the
    divisions and entry limits, then switch on "Public".
 2. **Registration period**: competitors register; confirm them with bib numbers on the Competitors tab and watch the head count on the Divisions tab.
-3. **Competition day**: the competitor shows their code, you search for it, mark them as arrived and record the payment. On-site entries go on their own tab.
-4. **Scoring**: Registrations tab → "confirmed only" and "arrived only" → CSV or XLSX → load into the scoring app.
+3. **Competition day**: the competitor shows their code, you search for it and record the payment. On-site entries go on their own tab.
+4. **Scoring**: Registrations tab → "confirmed only" → CSV or XLSX → load into the scoring app.
 5. **Lists and results**: on the Event tab switch on Lists and Results, then upload the scoring app's export (XLSX) after each round.
    Results are refreshed on every upload; the heat lists of earlier rounds are kept.
 

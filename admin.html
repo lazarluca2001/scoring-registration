@@ -46,7 +46,7 @@
 
   header { background:var(--head); color:var(--head-ink); padding:32px 16px 92px; text-align:center; }
   header h1 { font-weight:600; font-size:clamp(1.5rem, 4vw, 2.1rem); }
-  main { position:relative; z-index:1; max-width:1040px; margin:-64px auto 48px; padding:0 16px; }
+  main { position:relative; z-index:1; max-width:1240px; margin:-64px auto 48px; padding:0 16px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:10px; box-shadow:0 10px 30px var(--shadow); }
   .pad { padding:24px; }
   [hidden] { display:none !important; }
@@ -150,12 +150,28 @@
   .teendo li.kesz-ok span { color:var(--ok); }
 
   /* Fülek */
-  .tabs { display:flex; align-items:center; gap:4px; padding:8px 12px 0; border-bottom:1px solid var(--line); overflow-x:auto; }
-  .tab { border:0; background:none; padding:12px 14px; font:600 .9rem Inter, sans-serif; color:var(--soft); cursor:pointer;
-         border-bottom:2px solid transparent; margin-bottom:-1px; white-space:nowrap; }
-  .tab:hover { color:var(--ink); }
-  .tab[aria-selected="true"] { color:var(--accent); border-color:var(--accent); }
-  .tabs .sp { flex:1; }
+  /* Bal oldali menü */
+  #panel { display:grid; grid-template-columns:220px minmax(0, 1fr); }
+  .oldalmenu { display:flex; flex-direction:column; gap:2px; padding:18px 12px; border-right:1px solid var(--line);
+               background:var(--zebra); border-radius:10px 0 0 10px; }
+  .oldalmenu .csop { font-size:.7rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--soft); padding:14px 10px 6px; }
+  .oldalmenu .csop:first-child { padding-top:0; }
+  .mi { display:flex; align-items:center; gap:10px; width:100%; border:0; background:none; text-align:left; padding:9px 10px; border-radius:7px;
+        font:500 .9rem Inter, sans-serif; color:var(--ink); cursor:pointer; white-space:nowrap; }
+  .mi svg.i { color:var(--soft); }
+  .mi:hover { background:var(--sel); }
+  .mi[aria-selected="true"] { background:var(--sel); color:var(--accent); font-weight:600; }
+  .mi[aria-selected="true"] svg.i { color:var(--accent); }
+  .oldalmenu .szerep-sor { margin-top:auto; padding:16px 10px 0; }
+  .tartalom { min-width:0; }
+  .tartalom .evbar { border-radius:0 10px 0 0; }
+  @media (max-width:800px) {
+    #panel { grid-template-columns:1fr; }
+    .oldalmenu { flex-direction:row; overflow-x:auto; gap:4px; padding:8px; border-right:0; border-bottom:1px solid var(--line); border-radius:10px 10px 0 0; }
+    .oldalmenu .csop, .oldalmenu .szerep-sor { display:none; }
+    .mi { width:auto; flex:none; }
+    .tartalom .evbar { border-radius:0; }
+  }
 
   /* Nevezések */
   .tools { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:16px 24px; border-bottom:1px solid var(--line); }
@@ -338,6 +354,23 @@
   </section>
 
   <section id="panel" class="card" hidden>
+    <nav class="oldalmenu" role="tablist" aria-orientation="vertical" aria-label="Admin menü">
+      <div class="csop csakstaff">Szervezés</div>
+      <button class="tab mi csakstaff" role="tab" data-tab="esemeny" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Esemény</span></button>
+      <button class="tab mi csakstaff" role="tab" data-tab="diviziok" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Divíziók</span></button>
+      <button class="tab mi csakstaff" role="tab" data-tab="onkentes" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></svg><span>Önkéntesek</span></button>
+      <div class="csop">Verseny</div>
+      <button class="tab mi" role="tab" data-tab="versenyzok" aria-selected="true"><svg class="i" viewBox="0 0 24 24"><circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 14 0M16 11l2 2 4-4"/></svg><span>Versenyzők</span></button>
+      <button class="tab mi csakstaff" role="tab" data-tab="nevezesek" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg><span>Nevezések</span></button>
+      <button class="tab mi csakstaff" role="tab" data-tab="helyszini" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 14 0M19 8v6M16 11h6"/></svg><span>Helyszíni nevezés</span></button>
+      <button class="tab mi" role="tab" data-tab="marshalling" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><span>Marshalling</span></button>
+      <div class="csop">Egyéb</div>
+      <button class="mi csakstaff" type="button" id="evUjGomb" title="Új verseny: saját táblázat, saját link, saját nevezések"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Új esemény</span></button>
+      <button class="mi csakstaff" type="button" id="hozzaferesGomb"><svg class="i" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/></svg><span>Hozzáférések</span></button>
+      <button class="mi" type="button" id="kilep"><svg class="i" viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 17l-5-5 5-5M5 12h11"/></svg><span>Kilépés</span></button>
+      <div class="szerep-sor"><span class="tag gray" id="szerepTag"></span></div>
+    </nav>
+    <div class="tartalom">
     <div class="evbar" id="evBar" hidden>
       <label for="evValaszt">Esemény</label>
       <select id="evValaszt"></select><span class="nincs" id="evNincs" hidden>Még nincs esemény – hozz létre egyet</span>
@@ -346,21 +379,6 @@
       </label>
       <span class="tag csakstaff" id="evAllapot"></span>
       <button class="btn ghost sm csakstaff" id="evLink" title="Az esemény saját linkje a nevezési oldalon – ezzel egyenesen erre az eseményre jutnak">Link másolása</button>
-      <span class="sp"></span>
-      <button class="btn sm csakstaff" id="evUjGomb" title="Új verseny: saját táblázat, saját link, saját nevezések">+ Új esemény</button>
-    </div>
-    <div class="tabs" role="tablist">
-      <button class="tab" role="tab" data-tab="versenyzok" aria-selected="true">Versenyzők</button>
-      <button class="tab" role="tab" data-tab="marshalling" aria-selected="false">Marshalling</button>
-      <button class="tab csakstaff" role="tab" data-tab="nevezesek" aria-selected="false">Nevezések</button>
-      <button class="tab csakstaff" role="tab" data-tab="diviziok" aria-selected="false">Divíziók</button>
-      <button class="tab csakstaff" role="tab" data-tab="helyszini" aria-selected="false">Helyszíni nevezés</button>
-      <button class="tab csakstaff" role="tab" data-tab="esemeny" aria-selected="false">Esemény</button>
-      <button class="tab csakstaff" role="tab" data-tab="onkentes" aria-selected="false">Önkéntesek</button>
-      <span class="sp"></span>
-      <span class="tag gray" id="szerepTag"></span>
-      <button class="btn ghost sm csakstaff" id="hozzaferesGomb">Hozzáférések</button>
-      <button class="btn ghost sm" id="kilep">Kilépés</button>
     </div>
 
     <!-- VERSENYZŐK – véglegesítés -->
@@ -578,6 +596,7 @@
         <p class="msg" id="msgO" role="status"></p>
         <button class="btn" id="oMent">Mentés</button>
       </div>
+    </div>
     </div>
   </section>
 </main>

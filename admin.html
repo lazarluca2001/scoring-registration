@@ -60,6 +60,10 @@
   .grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
   .grid .full { grid-column:1 / -1; }
   @media (max-width:700px) { .grid { grid-template-columns:1fr; } }
+  .elo { position:absolute; top:21px; left:16px; display:inline-flex; align-items:center; gap:6px; font-size:.74rem;
+         color:rgba(255,255,255,.7); white-space:nowrap; }
+  .elo i { width:7px; height:7px; border-radius:50%; background:var(--ok); flex:none; }
+  .elo.off i { background:var(--soft); } .elo.hiba i { background:var(--err); }
   .msg { min-height:20px; font-size:.88rem; color:var(--err); }
   .msg.info { color:var(--soft); } .msg.ok { color:var(--ok); }
 
@@ -311,7 +315,7 @@
 </style>
 </head>
 <body>
-<header><h1>Admin</h1><button type="button" class="tema" id="tema" title="Megjelenés: automatikus / sötét / világos"></button></header>
+<header><h1>Admin</h1><span class="elo off" id="elo" hidden title="A lista 15 másodpercenként magától frissül, így a többi gépen végzett változások is látszanak"><i></i><span id="eloTxt"></span></span><button type="button" class="tema" id="tema" title="Megjelenés: automatikus / sötét / világos"></button></header>
 
 <main>
   <!-- Belépés -->
@@ -729,6 +733,38 @@ try { adminNev = sessionStorage.getItem('adminNev') || ''; } catch {}
 let adat = { sorok: [], diviziok: [] };
 const nyitott = new Set();   // nyitva hagyott divíziók újrarajzoláskor
 
+// ---------- Villódzásmentes frissítés ----------
+// A listák elemei kulcsot (data-k) és az adataikból számolt ujjlenyomatot (data-sig) kapnak.
+// Újrarajzoláskor a változatlan elemek a helyükön maradnak (fókusz, görgetés, lenyitott állapot is),
+// csak a megváltozottak cserélődnek, és a sorrend igazodik.
+function alairas(x) {
+  const s = JSON.stringify(x) || '';
+  let h1 = 0x811c9dc5, h2 = 0x01000193;
+  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 16777619); h2 = Math.imul(h2 + c, 2246822519); }
+  return (h1 >>> 0).toString(36) + (h2 >>> 0).toString(36) + s.length.toString(36);
+}
+function kulcsosFrissit(box, elemek) {
+  const regi = new Map();
+  [...box.children].forEach(c => { if (c.dataset.k) regi.set(c.dataset.k, c); });
+  const celok = elemek.map(e => {
+    const r = regi.get(e.k);
+    if (r && r.dataset.sig === e.sig) { regi.delete(e.k); return r; }
+    const n = e.node; n.dataset.k = e.k; n.dataset.sig = e.sig; return n;
+  });
+  const marad = new Set(celok);
+  [...box.childNodes].forEach(c => { if (!marad.has(c)) c.remove(); });
+  // a fókuszt tartalmazó elem ne mozduljon (áthelyezéskor elveszne a fókusz)
+  const ae = document.activeElement;
+  const fi = celok.findIndex(c => c.contains(ae));
+  if (fi < 0) celok.forEach((c, i) => { if (box.childNodes[i] !== c) box.insertBefore(c, box.childNodes[i] || null); });
+  else {
+    if (celok[fi].parentNode !== box) box.append(celok[fi]);
+    for (let i = fi - 1; i >= 0; i--) if (celok[i].nextSibling !== celok[i + 1]) box.insertBefore(celok[i], celok[i + 1]);
+    for (let i = fi + 1; i < celok.length; i++) if (celok[i - 1].nextSibling !== celok[i]) box.insertBefore(celok[i], celok[i - 1].nextSibling);
+  }
+}
+const uresElem = (tag, osztaly, html) => { const e = document.createElement(tag); e.className = osztaly; e.innerHTML = html; return e; };
+
 // ---------- API ----------
 async function api(muvelet, extra = {}) {
   const v = await (await fetch(SCRIPT_URL, {
@@ -737,8 +773,11 @@ async function api(muvelet, extra = {}) {
     body: JSON.stringify({ muvelet, jelszo, szerep, ki: adminNev, ...(esemenyId ? { esemenyId } : {}), ...extra })
   })).json();
   if (!v.ok) { const e = new Error(v.hiba || 'Ismeretlen hiba.'); e.szerver = true; throw e; }   // a szerver utasította el (nem hálózati hiba)
+  if (!OLVASO.includes(muvelet)) adatGen++;   // írás történt: a közben indult élő lekérés eredménye már elavult
   return v;
 }
+const OLVASO = ['admin', 'esemenyek', 'naplo', 'marshallLista'];
+let adatGen = 0;
 async function betolt() {
   try { adat = await api('admin'); }
   catch (err) {
@@ -749,6 +788,7 @@ async function betolt() {
   if (adat.esemenyId && !esemenyId) esemenyId = adat.esemenyId;
   jogAlkalmaz();
   rajzolMind(); rajzolEsemenySav();
+  adatGen++; eloUtolso = Date.now(); eloJelzo('ok');
 }
 function esemenyValt(id) {
   esemenyId = id; evPiszkos = false; oPiszkos = false; naplo = []; mAdat = null;
@@ -894,6 +934,50 @@ $('hozzTorol').addEventListener('click', async () => {
   catch (err) { msg('msgHozz', err.message || 'Hálózati hiba.'); }
 });
 
+// ---------- Élő frissítés: 15 másodpercenként betölti a táblázat változásait (más gépről, online nevezésből) ----------
+const ELO_MP = 15;
+const ELO_FULEK = ['versenyzok', 'nevezesek', 'diviziok', 'helyszini'];
+let eloFut = false, eloUtolso = 0;
+const adatJel = v => alairas([v.sorok, v.diviziok, v.valaszok, v.esemeny, v.eredmenyek]);
+function aktivFul() { const t = document.querySelector('.tab[aria-selected=true]'); return t ? t.dataset.tab : ''; }
+// Épp szerkeszt valaki? (nyitott ablak, fókusz egy listán belüli mezőben, el nem mentett érték) – akkor vár
+function eloVar() {
+  if (document.querySelector('dialog[open]')) return true;
+  const ae = document.activeElement;
+  if (ae && ae.matches && ae.matches('#people input, #divs input, #divKapcs input, #hDivs input')) return true;
+  return [...document.querySelectorAll('#panel [data-eredeti]')].some(i => i.value.trim() !== i.dataset.eredeti);
+}
+function eloJelzo(allapot) {
+  const e = $('elo'); e.hidden = !jelszo;
+  e.className = 'elo' + (allapot === 'ok' ? '' : allapot === 'hiba' ? ' hiba' : ' off');
+  $('eloTxt').textContent = allapot === 'ok' ? 'Élő · ' + new Date().toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                          : allapot === 'hiba' ? 'Nincs kapcsolat' : 'Szünetel';
+}
+async function eloFrissit(azonnal) {
+  if (!jelszo || eloFut || $('panel').hidden) return;
+  if (document.hidden) return eloJelzo('szunet');
+  if (!ELO_FULEK.includes(aktivFul())) return;
+  if (!azonnal && Date.now() - eloUtolso < (ELO_MP - 1) * 1000) return;
+  if (eloVar()) return;
+  eloFut = true;
+  const id = esemenyId, gen = adatGen;
+  try {
+    const v = await api('admin');
+    eloUtolso = Date.now();
+    eloJelzo('ok');
+    if (gen !== adatGen) return;   // közben mentés vagy teljes betöltés volt: az ottani adat a frissebb
+    if (id !== esemenyId || v.esemenyId !== adat.esemenyId || eloVar()) return;   // közben eseményt váltott / szerkeszteni kezdett
+    if (adatJel(v) === adatJel(adat)) return;
+    adat = v;
+    rajzolElo();
+  } catch (err) { eloJelzo(err.szerver ? 'ok' : 'hiba'); }
+  finally { eloFut = false; }
+}
+// Csak a listák (az Esemény és az Önkéntesek űrlapja nem íródik felül szerkesztés közben)
+function rajzolElo() { szamolHibak(); rajzolVersenyzok(); rajzolNevezesek(); rajzolDiviziok(); rajzolHelyszini(); hKerdRajz(); rajzolEredmenyAllapot(); }
+setInterval(() => eloFrissit(), 3000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) eloFrissit(true); else if (jelszo) eloJelzo('szunet'); });
+
 function rajzolMind() { szamolHibak(); rajzolVersenyzok(); rajzolNevezesek(); rajzolDiviziok(); rajzolHelyszini(); hKerdRajz(); rajzolEsemeny(); rajzolOnkentesek(); rajzolEredmenyAllapot(); }
 
 // ---------- Plusz kérdések a helyszíni nevezésnél (itt nem kötelezők) ----------
@@ -1030,7 +1114,7 @@ $('loginForm').addEventListener('submit', async e => {
 })();
 
 $('kilep').addEventListener('click', () => {
-  jelszo = ''; adat = { sorok: [], diviziok: [] };
+  jelszo = ''; adat = { sorok: [], diviziok: [] }; $('elo').hidden = true;
   try { sessionStorage.removeItem('adminJelszo'); sessionStorage.removeItem('adminSzerep'); } catch {}
   $('panel').hidden = true; $('belepes').hidden = false; $('jelszo').focus();
 });
@@ -1041,6 +1125,7 @@ document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
   ['versenyzok', 'marshalling', 'nevezesek', 'diviziok', 'helyszini', 'esemeny', 'onkentes', 'naplo'].forEach(n => $('t-' + n).hidden = n !== t.dataset.tab);
   if (t.dataset.tab === 'naplo') betoltNaplo();
   if (t.dataset.tab === 'marshalling') mBetolt();
+  if (ELO_FULEK.includes(t.dataset.tab) && Date.now() - eloUtolso > ELO_MP * 1000) eloFrissit(true);
 }));
 
 // ======================================================================
@@ -1128,14 +1213,18 @@ function mKorok() {
 }
 
 function mRajzol() {
-  const korok = mKorok(), sel = $('mKor'), box = $('mHeatek');
-  sel.innerHTML = ''; box.innerHTML = '';
-  korok.forEach(k => { const o = document.createElement('option'); o.value = k.kulcs; o.textContent = k.cim; sel.append(o); });
+  const korok = mKorok(), sel = $('mKor'), box = $('mHeatek'), elemek = [];
+  // a választó csak akkor épül újra, ha változtak a fordulók (különben nyitott lenyílónál bezárulna)
+  const selJel = alairas(korok.map(k => [k.kulcs, k.cim]));
+  if (sel.dataset.sig !== selJel) {
+    sel.innerHTML = ''; sel.dataset.sig = selJel;
+    korok.forEach(k => { const o = document.createElement('option'); o.value = k.kulcs; o.textContent = k.cim; sel.append(o); });
+  }
   sel.hidden = !korok.length;
   if (!korok.length) {
     $('mStat').hidden = true;
-    box.innerHTML = '<p class="empty">Még nincs futambeosztás. ' + (szerep === 'checkin' ? 'A staff tölti fel a pontozó app exportjából.' : 'Töltsd fel a pontozó app exportját az Esemény fülön.') + '</p>';
-    return;
+    const t = 'Még nincs futambeosztás. ' + (szerep === 'checkin' ? 'A staff tölti fel a pontozó app exportjából.' : 'Töltsd fel a pontozó app exportját az Esemény fülön.');
+    return kulcsosFrissit(box, [{ k: 'ures', sig: t, node: uresElem('p', 'empty', t) }]);
   }
   if (!korok.some(k => k.kulcs === mKor)) mKor = korok[0].kulcs;
   sel.value = mKor;
@@ -1179,9 +1268,11 @@ function mRajzol() {
       sor.append(n, mSzemely(p.lb, p.ln, itt, talal(p.lb, p.ln)), mSzemely(p.fb, p.fn, itt, talal(p.fb, p.fn)));
       sec.append(sor);
     });
-    box.append(sec);
+    elemek.push({ k: 'h:' + mKor + ':' + i, node: sec,
+                  sig: alairas([f, bibek.map(b => itt[b] || ''), mSzuro, q, kor.dontos, kor.futamok.length]) });
   });
-  if (!latszik) box.innerHTML = '<p class="empty">' + (q ? 'Nincs találat ebben a fordulóban.' : 'Mindenki megérkezett. ✓') + '</p>';
+  if (!latszik) { const t = q ? 'Nincs találat ebben a fordulóban.' : 'Mindenki megérkezett. ✓'; elemek.push({ k: 'ures', sig: t, node: uresElem('p', 'empty', t) }); }
+  kulcsosFrissit(box, elemek);
 }
 
 function mSzemely(bib, nev, itt, kiemel) {
@@ -1347,11 +1438,12 @@ function rajzolVersenyzok() {
     .filter(p => !hely || (hely === 'itt' ? !!p.checkin : hely === 'nincsitt' ? !p.checkin : hely === 'fiz' ? fizetett(p) : !fizetett(p)))
     .sort((a, b) => vSzuro === 'fuggo' ? a.elso.localeCompare(b.elso) : rendezo(a, b));
 
-  const box = $('people'); box.innerHTML = '';
+  const box = $('people'), elemek = [];
   if (!mutat.length) {
-    box.innerHTML = '<p class="empty">' + (vSzuro === 'fuggo' ? 'Nincs véglegesítésre váró versenyző.' : 'Nincs találat.') + '</p>';
-    return;
+    const t = vSzuro === 'fuggo' ? 'Nincs véglegesítésre váró versenyző.' : 'Nincs találat.';
+    return kulcsosFrissit(box, [{ k: 'ures', sig: t, node: uresElem('p', 'empty', t) }]);
   }
+  const dij = adat.esemeny && adat.esemeny.dij;
   mutat.forEach(p => {
     const el = document.createElement('div'); el.className = 'p';
     const nm = document.createElement('div'); nm.className = 'nm';
@@ -1373,7 +1465,7 @@ function rajzolVersenyzok() {
 
     const fin = document.createElement('div'); fin.className = 'fin';
     const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Bib';
-    inp.value = p.bib || ''; inp.setAttribute('aria-label', 'Bib szám – ' + p.vezeteknev + ' ' + p.keresztnev);
+    inp.value = p.bib || ''; inp.dataset.eredeti = inp.value; inp.setAttribute('aria-label', 'Bib szám – ' + p.vezeteknev + ' ' + p.keresztnev);
     const ok = document.createElement('button'); ok.className = 'btn';
     ok.textContent = p.allapot === 'vegleges' ? 'Mentés' : 'Véglegesít';
     const ment = async () => {
@@ -1425,7 +1517,7 @@ function rajzolVersenyzok() {
     });
     const fiz = document.createElement('input'); fiz.type = 'text'; fiz.className = 'fiz'; fiz.inputMode = 'numeric';
     fiz.placeholder = 'Fizetve';
-    fiz.value = p.fizetve !== undefined && p.fizetve !== '' ? String(p.fizetve) : '';
+    fiz.value = p.fizetve !== undefined && p.fizetve !== '' ? String(p.fizetve) : ''; fiz.dataset.eredeti = fiz.value;
     fiz.setAttribute('aria-label', 'Befizetett összeg – ' + p.vezeteknev + ' ' + p.keresztnev);
     fiz.disabled = !p.regszam;
     const ft = document.createElement('span'); ft.className = 'ft'; ft.textContent = 'Ft';
@@ -1457,8 +1549,10 @@ function rajzolVersenyzok() {
       Object.entries(va).forEach(([k, v], i) => { if (i) vd.append(' · '); const b = document.createElement('b'); b.textContent = v; vd.append(k + ': ', b); });
       el.append(vd);
     }
-    box.append(el);
+    elemek.push({ k: 'p:' + szemely(p), node: el,
+                  sig: alairas([p, p.sorok.map(s => hibaMap.get(s) || []), (adat.valaszok || {})[p.regszam], szerep, dij]) });
   });
+  kulcsosFrissit(box, elemek);
 }
 
 // ======================================================================
@@ -1505,9 +1599,11 @@ function rajzolNevezesek() {
   const hdb = alap.filter(s => hibaMap.has(s)).length;
   $('stHiba').textContent = hdb; $('stHibaBox').className = hdb ? 'err' : '';
 
-  const box = $('divs');
-  box.innerHTML = '';
-  if (!cs.length) { box.innerHTML = '<p class="empty">' + ($('csakHiba').checked ? 'Nincs hibás nevezés.' : $('csakVegl').checked ? 'Nincs véglegesített nevezés.' : 'Nincs nevezés.') + '</p>'; return; }
+  const box = $('divs'), elemek = [], keres = !!$('kereses').value.trim();
+  if (!cs.length) {
+    const t = $('csakHiba').checked ? 'Nincs hibás nevezés.' : $('csakVegl').checked ? 'Nincs véglegesített nevezés.' : 'Nincs nevezés.';
+    return kulcsosFrissit(box, [{ k: 'ures', sig: t, node: uresElem('p', 'empty', t) }]);
+  }
 
   cs.forEach(([div, lista]) => {
     const det = document.createElement('details');
@@ -1547,8 +1643,9 @@ function rajzolNevezesek() {
     });
     t.append(tb); wrap.append(t);
     det.append(sum, wrap);
-    box.append(det);
+    elemek.push({ k: 'd:' + div, node: det, sig: alairas([lista, lista.map(s => hibaMap.get(s) || []), keres]) });
   });
+  kulcsosFrissit(box, elemek);
 }
 
 // ---- Szerkesztés / törlés ----
@@ -1697,8 +1794,8 @@ function rajzolLetszam() {
     if (!m.has(d)) m.set(d, { Leader: [0, 0], Follower: [0, 0] });
     m.get(d)[sz][s.vegleges ? 0 : 1]++;
   });
-  const box = $('letszam'); box.innerHTML = '';
-  if (!m.size) return;
+  const box = $('letszam');
+  if (!m.size) return kulcsosFrissit(box, []);
   const h = document.createElement('h2'); h.textContent = 'Létszám'; h.className = 'dgrp-h';
   h.style.cssText = 'font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);margin-bottom:8px';
   const t = document.createElement('table');
@@ -1718,7 +1815,8 @@ function rajzolLetszam() {
   });
   t.append(tb);
   const w = document.createElement('div'); w.className = 'tbl'; w.append(t);
-  box.append(h, w);
+  const sig = alairas([...m]);
+  kulcsosFrissit(box, [{ k: 'h', sig, node: h }, { k: 't', sig, node: w }]);
 }
 
 function rajzolDiviziok() {
@@ -1731,7 +1829,7 @@ function rajzolDiviziok() {
   const csop = {};
   sorok.forEach((l, a) => (csop[csoport(a)] ||= []).push([a, l]));
   const rend = { Leader: 0, Follower: 1 };
-  const box = $('divKapcs'); box.innerHTML = '';
+  const box = $('divKapcs'), elemek = [];
   ['Jack & Jill', 'Strictly', 'Egyéb'].filter(c => csop[c]).forEach(c => {
     const g = document.createElement('div'); g.className = 'dgrp';
     const h = document.createElement('h2'); h.textContent = c;
@@ -1758,7 +1856,7 @@ function rajzolDiviziok() {
         if ('korlat' in d) {
           const per = document.createElement('span'); per.textContent = '/';
           const k = document.createElement('input'); k.type = 'text'; k.className = 'korl'; k.inputMode = 'numeric';
-          k.placeholder = 'max'; k.value = d.korlat || ''; k.title = 'Létszámkorlát (üres = nincs). Betelt divízióba online nem lehet nevezni.';
+          k.placeholder = 'max'; k.value = d.korlat || ''; k.dataset.eredeti = k.value; k.title = 'Létszámkorlát (üres = nincs). Betelt divízióba online nem lehet nevezni.';
           k.setAttribute('aria-label', d.nev + ' létszámkorlát');
           const kMent = async () => {
             const v = k.value.trim();
@@ -1792,8 +1890,10 @@ function rajzolDiviziok() {
       sw.append(cb, document.createElement('span'));
       row.append(n, meta, sw); rows.append(row);
     });
-    g.append(h, rows); box.append(g);
+    g.append(h, rows);
+    elemek.push({ k: 'g:' + c, node: g, sig: alairas(csop[c].map(([a, l]) => [a, l, l.map(d => db[d.nev] || 0)])) });
   });
+  kulcsosFrissit(box, elemek);
 }
 
 // ======================================================================
@@ -1811,7 +1911,7 @@ function rajzolHelyszini() {
 
   const csop = {};
   sorok.forEach((l, alap) => (csop[csoport(alap)] ||= []).push([alap, l]));
-  const box = $('hDivs'); box.innerHTML = '';
+  const box = $('hDivs'), elemek = [];
   const rend = { Leader: 0, Follower: 1 };
   ['Jack & Jill', 'Strictly', 'Egyéb'].filter(c => csop[c]).forEach(c => {
     const g = document.createElement('div'); g.className = 'grp';
@@ -1847,9 +1947,11 @@ function rajzolHelyszini() {
       });
       row.append(n, meta, seg); rows.append(row);
     });
-    g.append(h, rows); box.append(g);
+    g.append(h, rows);
+    elemek.push({ k: 'g:' + c, node: g, sig: alairas(csop[c].map(([a, l]) => [a, l, hValasztas[a] || '',
+      hJogosult ? l.some(d => hJogosult.has(d.nev)) : null])) });
   });
-  if (!sorok.size) box.innerHTML = '<p class="empty">Nincs aktív divízió.</p>';
+  kulcsosFrissit(box, sorok.size ? elemek : [{ k: 'ures', sig: '-', node: uresElem('p', 'empty', 'Nincs aktív divízió.') }]);
   $('hKuld').disabled = !Object.keys(hValasztas).length || !$('hHozz').checked;
 }
 $('hInaktiv').addEventListener('change', rajzolHelyszini);
